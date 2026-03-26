@@ -18,13 +18,9 @@ npm install --omit=dev 2>&1 | tail -5
 npm install tsx 2>&1 | tail -3
 
 # Restart with PM2
-if pm2 describe phoneclaw-dashboard > /dev/null 2>&1; then
-    echo "Restarting existing PM2 process..."
-    pm2 restart phoneclaw-dashboard
-else
-    echo "Starting new PM2 process..."
-    pm2 start deploy/ecosystem.config.cjs
-fi
+pm2 delete phoneclaw-dashboard 2>/dev/null || true
+echo "Starting PM2 process..."
+pm2 start deploy/ecosystem.config.cjs
 
 pm2 save
 
