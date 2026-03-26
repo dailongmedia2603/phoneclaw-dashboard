@@ -17,8 +17,10 @@ router.get('/:deviceId', (req, res) => {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${device.name} - PhoneClaw VNC</title>
 <style>
-  body { margin: 0; background: #1a1a2e; overflow: hidden; }
-  #screen { width: 100%; height: 100vh; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #0f172a; }
+  #screen { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+  #screen canvas { max-width: 100% !important; max-height: 100% !important; object-fit: contain !important; }
 </style>
 </head><body>
 <div id="screen"></div>
@@ -36,14 +38,21 @@ const rfb = new RFB(document.getElementById('screen'), url, {
   wsProtocols: ['binary'],
 });
 rfb.scaleViewport = true;
+rfb.clipViewport = false;
 rfb.resizeSession = false;
 rfb.showDotCursor = false;
+rfb.qualityLevel = 6;
+rfb.compressionLevel = 2;
 
 rfb.addEventListener('disconnect', (e) => {
   if (!e.detail.clean) {
     setTimeout(() => window.location.reload(), 3000);
   }
 });
+
+// Re-scale on container resize
+const ro = new ResizeObserver(() => { rfb.scaleViewport = true; });
+ro.observe(document.getElementById('screen'));
 </script>
 </body></html>`;
 
