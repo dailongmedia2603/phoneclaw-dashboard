@@ -41,8 +41,8 @@ rfb.scaleViewport = true;
 rfb.clipViewport = false;
 rfb.resizeSession = false;
 rfb.showDotCursor = false;
-rfb.qualityLevel = 6;
-rfb.compressionLevel = 2;
+rfb.qualityLevel = 5;
+rfb.compressionLevel = 6;
 
 rfb.addEventListener('disconnect', (e) => {
   if (!e.detail.clean) {
