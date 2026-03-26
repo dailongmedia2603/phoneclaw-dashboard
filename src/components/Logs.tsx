@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Image as ImageIcon, Activity, FileText, Download, Settings,
   Search, Filter, Calendar, Smartphone, ChevronRight, ChevronDown, X,

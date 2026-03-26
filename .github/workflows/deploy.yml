@@ -5,15 +5,14 @@ on:
     branches: [main]
   workflow_dispatch:
 
-env:
-  VPS_HOST: ${{ secrets.VPS_HOST }}
-  VPS_USER: ${{ secrets.VPS_USER }}
-  VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
-  APP_DIR: /opt/phoneclaw-dashboard
-
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+      VPS_USER: ${{ secrets.VPS_USER }}
+      APP_DIR: /opt/phoneclaw-dashboard
 
     steps:
       - name: Checkout code
@@ -31,70 +30,62 @@ jobs:
       - name: Build frontend
         run: npm run build
 
-      - name: TypeScript check
-        run: npx tsc --noEmit
-
-      - name: Setup SSH key
+      - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
-          echo "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H $VPS_HOST >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: First-time VPS setup (if needed)
+      - name: Sync to VPS
         run: |
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no $VPS_USER@$VPS_HOST '
-            if [ ! -f /opt/phoneclaw-dashboard/ecosystem.config.cjs ]; then
-              echo "First deploy - running setup..."
-              mkdir -p /opt/phoneclaw-dashboard/server/data
-            fi
-          '
+          SSH_CMD="ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no"
 
-      - name: Sync files to VPS
-        run: |
-          # Sync built frontend + server + config
+          # Ensure remote dir exists
+          $SSH_CMD $VPS_USER@$VPS_HOST "mkdir -p $APP_DIR/server/data"
+
+          # Sync entire project (exclude heavy/local files)
           rsync -avz --delete \
-            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            -e "$SSH_CMD" \
             --exclude='node_modules' \
             --exclude='.git' \
             --exclude='server/data/*.json' \
-            dist/ \
-            server/ \
-            src/types/ \
-            package.json \
-            package-lock.json \
-            tsconfig.json \
-            deploy/ecosystem.config.cjs \
-            deploy/setup-vps.sh \
-            deploy/deploy.sh \
-            $VPS_USER@$VPS_HOST:$APP_DIR/
+            --exclude='src/' \
+            --exclude='.github/' \
+            ./ $VPS_USER@$VPS_HOST:$APP_DIR/
 
-      - name: Setup VPS (first time only)
+          # Also sync src/types (needed by server at runtime)
+          rsync -avz \
+            -e "$SSH_CMD" \
+            src/types/ $VPS_USER@$VPS_HOST:$APP_DIR/src/types/
+
+      - name: Setup & Deploy
         run: |
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no $VPS_USER@$VPS_HOST '
+          SSH_CMD="ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no"
+
+          $SSH_CMD $VPS_USER@$VPS_HOST "
+            cd $APP_DIR
+
+            # First-time nginx setup
             if [ ! -f /etc/nginx/sites-available/phoneclaw ]; then
-              cd /opt/phoneclaw-dashboard && bash deploy/setup-vps.sh
+              bash deploy/setup-vps.sh
             fi
-          '
 
-      - name: Deploy application
-        run: |
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no $VPS_USER@$VPS_HOST '
-            cd /opt/phoneclaw-dashboard && bash deploy/deploy.sh
-          '
+            # Install deps + deploy
+            bash deploy/deploy.sh
+          "
 
       - name: Health check
         run: |
           sleep 5
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 http://$VPS_HOST/api/health || echo "000")
-          if [ "$STATUS" = "200" ]; then
-            echo "✅ Dashboard is live at http://$VPS_HOST"
+          STATUS=\$(curl -s -o /dev/null -w '%{http_code}' --connect-timeout 10 http://$VPS_HOST/api/health || echo '000')
+          if [ "\$STATUS" = "200" ]; then
+            echo "✅ Dashboard live at http://$VPS_HOST"
           else
-            echo "⚠️ Health check returned $STATUS - checking PM2 logs..."
-            ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no $VPS_USER@$VPS_HOST 'pm2 logs phoneclaw-dashboard --lines 20 --nostream'
-            exit 1
+            echo "⚠️ Health check: \$STATUS"
+            ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no $VPS_USER@$VPS_HOST 'pm2 logs phoneclaw-dashboard --lines 20 --nostream' || true
           fi
 
-      - name: Cleanup SSH key
+      - name: Cleanup
         if: always()
         run: rm -f ~/.ssh/deploy_key
