@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { LayoutDashboard, Cpu, Sliders, Wand2, CalendarDays, Camera, Settings, Plus, Zap, HelpCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, Cpu, Sliders, Wand2, CalendarDays, Camera, Settings, Zap, HelpCircle, ChevronLeft, ChevronRight, LogOut, User } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  onLogout?: () => void;
+  userName?: string;
 }
 
-export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
+export default function Sidebar({ activeTab, setActiveTab, onLogout, userName }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const navItems = [
@@ -24,13 +26,13 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
       {/* Logo */}
       <div className={`h-20 flex items-center ${isCollapsed ? 'justify-center' : 'px-6'}`}>
         <div className="text-xl font-bold tracking-tight flex items-center gap-1">
-          <span className="text-blue-600">PRO</span>
-          {!isCollapsed && <span className="text-slate-800">MOBILE</span>}
+          <span className="text-blue-600">Phone</span>
+          {!isCollapsed && <span className="text-slate-800">Claw</span>}
         </div>
       </div>
 
       {/* Collapse Button */}
-      <button 
+      <button
         onClick={() => setIsCollapsed(!isCollapsed)}
         className="absolute -right-3 top-8 bg-white border border-slate-200 rounded-full p-1 text-slate-400 hover:text-slate-600 shadow-sm z-10"
       >
@@ -63,28 +65,32 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
       </nav>
 
       {/* Bottom Section */}
-      <div className="p-4 space-y-4">
-        {/* Advanced Mode Card */}
-        {!isCollapsed && (
-          <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-            <h4 className="text-sm font-semibold text-slate-800">Advanced mode</h4>
-            <p className="text-xs text-slate-500 mt-1 mb-3">Coming soon</p>
-            <div className="flex items-center justify-between">
-              <a href="#" className="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1">
-                Join Waitlist &rarr;
-              </a>
-              <div className="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-500">
-                <Zap size={16} fill="currentColor" />
-              </div>
+      <div className="p-4 space-y-3">
+        {/* User info */}
+        {userName && (
+          <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3 px-3'} py-2`}>
+            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+              <User size={16} />
             </div>
+            {!isCollapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-800 truncate">{userName}</p>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Help */}
-        <a href="#" title={isCollapsed ? "Help" : undefined} className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3 px-3'} py-2 text-sm font-medium text-slate-500 hover:text-slate-900`}>
-          <HelpCircle size={20} className="text-slate-400" />
-          {!isCollapsed && <span>Help</span>}
-        </a>
+        {/* Logout */}
+        {onLogout && (
+          <button
+            onClick={onLogout}
+            title={isCollapsed ? "Đăng xuất" : undefined}
+            className={`w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 transition-colors`}
+          >
+            <LogOut size={20} />
+            {!isCollapsed && <span>Đăng xuất</span>}
+          </button>
+        )}
       </div>
     </aside>
   );

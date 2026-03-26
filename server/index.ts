@@ -12,6 +12,7 @@ import { startScheduler, stopScheduler } from './services/scheduler';
 import { stopAllProxies } from './services/vnc-proxy';
 import { readCollection, writeCollection, generateId } from './store';
 
+import authRoutes, { authMiddleware } from './routes/auth';
 import dashboardRoutes from './routes/dashboard';
 import devicesRoutes from './routes/devices';
 import controlRoutes from './routes/control';
@@ -71,6 +72,10 @@ app.use((_req, res, next) => {
   if (_req.method === 'OPTIONS') return res.sendStatus(200);
   next();
 });
+
+// --- Auth ---
+app.use('/api/auth', authRoutes);
+app.use(authMiddleware);
 
 // --- API Routes ---
 app.use('/api/dashboard', dashboardRoutes);
