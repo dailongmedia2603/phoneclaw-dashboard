@@ -2,7 +2,7 @@ module.exports = {
   apps: [{
     name: 'phoneclaw-dashboard',
     script: 'node',
-    args: ['--loader', 'tsx', 'server/index.ts'],
+    args: ['--import', 'tsx', 'server/index.ts'],
     cwd: '/opt/phoneclaw-dashboard',
     env: {
       NODE_ENV: 'production',
