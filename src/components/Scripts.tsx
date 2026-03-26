@@ -78,6 +78,7 @@ function getTimeAgo(timestamp: string): string {
 }
 
 export default function Scripts() {
+  const [activeAppTab, setActiveAppTab] = useState('tiktok_vn');
   const [showEditor, setShowEditor] = useState(false);
   const [editingScript, setEditingScript] = useState<Script | null>(null);
   const [showRunModal, setShowRunModal] = useState<string | null>(null);
@@ -93,6 +94,22 @@ export default function Scripts() {
 
   const scriptsData = scriptsList || [];
   const devicesData = devicesList || [];
+
+  const APP_TABS = [
+    { id: 'tiktok_vn', label: 'TikTok Việt', icon: '♪', color: 'bg-black text-white', bundleId: 'com.zhiliaoapp.musically' },
+    { id: 'tiktok_us', label: 'TikTok US', icon: '♪', color: 'bg-blue-600 text-white', bundleId: 'com.ss.iphone.ugc.Trill' },
+    { id: 'facebook', label: 'Facebook', icon: 'f', color: 'bg-blue-500 text-white', bundleId: 'com.facebook.Facebook' },
+  ] as const;
+
+  // Scripts are categorized by name containing tab keyword or by a tag field
+  const filteredScripts = scriptsData.filter(s => {
+    const name = s.name.toLowerCase();
+    const desc = s.description.toLowerCase();
+    if (activeAppTab === 'tiktok_vn') return name.includes('tiktok vi') || name.includes('tiktok việt') || desc.includes('tiktok vi') || desc.includes('tiktok việt') || (!name.includes('tiktok us') && !name.includes('facebook') && (name.includes('tiktok') || desc.includes('tiktok')));
+    if (activeAppTab === 'tiktok_us') return name.includes('tiktok us') || desc.includes('tiktok us') || name.includes('trill');
+    if (activeAppTab === 'facebook') return name.includes('facebook') || name.includes('fb') || desc.includes('facebook');
+    return true;
+  });
 
   const handleCreateNew = () => {
     setEditingScript(null);
@@ -182,6 +199,37 @@ export default function Scripts() {
         </div>
       </div>
 
+      {/* App Tabs */}
+      <div className="px-6 border-b border-slate-100 flex gap-1 bg-slate-50/30 pt-2">
+        {APP_TABS.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveAppTab(tab.id)}
+            className={`flex items-center gap-2.5 px-5 py-3 text-sm font-medium rounded-t-xl transition-colors ${
+              activeAppTab === tab.id
+                ? 'bg-white text-slate-900 border border-slate-200 border-b-white -mb-px shadow-sm'
+                : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
+            }`}
+          >
+            <span className={`w-6 h-6 rounded-lg ${tab.color} flex items-center justify-center text-xs font-bold`}>
+              {tab.icon}
+            </span>
+            {tab.label}
+            <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+              activeAppTab === tab.id ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
+            }`}>
+              {scriptsData.filter(s => {
+                const n = s.name.toLowerCase(); const d = s.description.toLowerCase();
+                if (tab.id === 'tiktok_vn') return n.includes('tiktok vi') || n.includes('tiktok việt') || d.includes('tiktok vi') || d.includes('tiktok việt') || (!n.includes('tiktok us') && !n.includes('facebook') && (n.includes('tiktok') || d.includes('tiktok')));
+                if (tab.id === 'tiktok_us') return n.includes('tiktok us') || d.includes('tiktok us') || n.includes('trill');
+                if (tab.id === 'facebook') return n.includes('facebook') || n.includes('fb') || d.includes('facebook');
+                return false;
+              }).length}
+            </span>
+          </button>
+        ))}
+      </div>
+
       {/* Toolbar */}
       <div className="px-6 py-4 flex items-center justify-between border-b border-slate-100">
         <div className="relative">
@@ -213,7 +261,7 @@ export default function Scripts() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {scriptsData.map((script) => (
+            {filteredScripts.map((script) => (
               <tr key={script.id} className="hover:bg-slate-50 transition-colors group">
                 <td className="py-4 px-6">
                   <div className="flex items-center gap-3">
