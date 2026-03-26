@@ -96,8 +96,8 @@ export default function Scripts() {
   const devicesData = devicesList || [];
 
   const APP_TABS = [
-    { id: 'tiktok_vn', label: 'TikTok Việt', icon: '♪', color: 'bg-black text-white', bundleId: 'com.zhiliaoapp.musically' },
-    { id: 'tiktok_us', label: 'TikTok US', icon: '♪', color: 'bg-blue-600 text-white', bundleId: 'com.ss.iphone.ugc.Trill' },
+    { id: 'tiktok_vn', label: 'TikTok Việt', icon: '♪', color: 'bg-black text-white', bundleId: 'com.ss.iphone.ugc.Ame' },
+    { id: 'tiktok_us', label: 'TikTok US', icon: '♪', color: 'bg-blue-600 text-white', bundleId: 'com.zhiliaoapp.musically' },
     { id: 'facebook', label: 'Facebook', icon: 'f', color: 'bg-blue-500 text-white', bundleId: 'com.facebook.Facebook' },
   ] as const;
 
