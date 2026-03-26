@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LayoutDashboard, Cpu, Sliders, Wand2, CalendarDays, Camera, Settings, Zap, HelpCircle, ChevronLeft, ChevronRight, LogOut, User } from 'lucide-react';
+import { LayoutDashboard, Cpu, Wand2, CalendarDays, Camera, Settings, ChevronLeft, ChevronRight, LogOut, User } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
@@ -14,7 +14,6 @@ export default function Sidebar({ activeTab, setActiveTab, onLogout, userName }:
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard' },
     { icon: Cpu, label: 'Thiết bị' },
-    { icon: Sliders, label: 'Điều khiển' },
     { icon: Wand2, label: 'Kịch bản' },
     { icon: CalendarDays, label: 'Lịch trình' },
     { icon: Camera, label: 'Ảnh chụp & Nhật ký' },
