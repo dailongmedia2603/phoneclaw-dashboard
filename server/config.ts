@@ -14,4 +14,8 @@ export const config = {
 
   // Screenshots directory
   screenshotsDir: process.env.SCREENSHOTS_DIR || './server/data/screenshots',
+
+  // OpenCV template matching
+  templatesDir: process.env.TEMPLATES_DIR || './server/data/templates',
+  opencvMatchTimeout: parseInt(process.env.OPENCV_MATCH_TIMEOUT || '10000'),
 };
