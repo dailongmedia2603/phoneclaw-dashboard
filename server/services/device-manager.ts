@@ -20,13 +20,20 @@ export function createDevice(data: Omit<Device, 'id' | 'status' | 'uptime' | 'la
   const device: Device = {
     ...data,
     id: generateId(),
-    status: 'offline',
+    status: 'connecting',
     uptime: 0,
     lastSeen: new Date().toISOString(),
     createdAt: new Date().toISOString(),
   };
   devices.push(device);
   writeCollection('devices', devices);
+  // Trigger immediate health check for new device
+  checkDeviceHealth(device).then(newStatus => {
+    updateDevice(device.id, {
+      status: newStatus,
+      lastSeen: newStatus !== 'offline' ? new Date().toISOString() : device.lastSeen,
+    });
+  });
   return device;
 }
 

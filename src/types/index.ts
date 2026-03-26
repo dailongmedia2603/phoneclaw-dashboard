@@ -11,7 +11,7 @@ export interface Device {
   httpPort: number;
   iosVersion: string;
   model: string;
-  status: 'online' | 'offline' | 'running';
+  status: 'online' | 'offline' | 'running' | 'connecting';
   battery: number;
   uptime: number; // seconds
   group: string;

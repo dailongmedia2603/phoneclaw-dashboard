@@ -85,6 +85,8 @@ export default function Devices() {
       setAddForm({ name: '', tailscaleIp: '', group: '', vncPassword: '' });
       refreshDevices();
       showToast('success', 'Thêm thiết bị thành công');
+      // Auto-refresh after 5s to update connecting → online/offline
+      setTimeout(() => refreshDevices(), 5000);
     } catch {
       showToast('error', 'Thêm thiết bị thất bại');
     }
@@ -282,7 +284,11 @@ export default function Devices() {
                   <span className="text-sm text-slate-600">iOS {device.iosVersion}</span>
                 </td>
                 <td className="py-3 px-4">
-                  {device.status === 'online' ? (
+                  {device.status === 'connecting' ? (
+                    <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-50 text-blue-600 text-xs font-medium border border-blue-100">
+                      <Loader2 size={12} className="animate-spin" /> Đang kết nối
+                    </div>
+                  ) : device.status === 'online' ? (
                     <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 text-xs font-medium border border-emerald-100">
                       <Wifi size={12} /> Online
                     </div>
