@@ -78,12 +78,13 @@ jobs:
       - name: Health check
         run: |
           sleep 5
-          STATUS=\$(curl -s -o /dev/null -w '%{http_code}' --connect-timeout 10 http://$VPS_HOST/api/health || echo '000')
-          if [ "\$STATUS" = "200" ]; then
-            echo "✅ Dashboard live at http://$VPS_HOST"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 "http://$VPS_HOST/api/health" || echo "000")
+          echo "Health check status: $STATUS"
+          if [ "$STATUS" = "200" ]; then
+            echo "Dashboard live at http://$VPS_HOST"
           else
-            echo "⚠️ Health check: \$STATUS"
-            ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no $VPS_USER@$VPS_HOST 'pm2 logs phoneclaw-dashboard --lines 20 --nostream' || true
+            echo "Health check returned $STATUS - checking logs..."
+            ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "$VPS_USER@$VPS_HOST" "pm2 logs phoneclaw-dashboard --lines 20 --nostream" || true
           fi
 
       - name: Cleanup
