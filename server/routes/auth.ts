@@ -139,13 +139,17 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
     return next();
   }
 
+  // Support token via query param (for <img src> and iframe)
   const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) {
+  const queryToken = req.query.token as string | undefined;
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : queryToken;
+
+  if (!token) {
     return res.status(401).json({ success: false, error: 'Unauthorized' });
   }
 
   try {
-    const payload = jwt.verify(authHeader.slice(7), JWT_SECRET);
+    const payload = jwt.verify(token, JWT_SECRET);
     (req as any).user = payload;
     next();
   } catch {

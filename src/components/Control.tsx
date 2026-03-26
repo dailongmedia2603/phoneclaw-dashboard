@@ -210,7 +210,7 @@ export default function Control() {
                     {/* noVNC / Screenshot view */}
                     <div className="flex-1 relative bg-slate-900 flex items-center justify-center">
                       <img
-                        src={`/api/control/${deviceId}/screenshot?t=${refreshKey}`}
+                        src={`/api/control/${deviceId}/screenshot?t=${refreshKey}&token=${localStorage.getItem('phoneclaw_token') || ''}`}
                         alt="Device screen"
                         className="w-full h-full object-contain"
                         onError={(e) => { (e.target as HTMLImageElement).style.opacity = '0'; }}

@@ -218,7 +218,7 @@ export default function Dashboard() {
                   ) : (
                     <>
                       <img
-                        src={`/api/control/${device.id}/screenshot?t=${refreshKey}`}
+                        src={`/api/control/${device.id}/screenshot?t=${refreshKey}&token=${localStorage.getItem('phoneclaw_token') || ''}`}
                         alt={device.name}
                         className="w-full h-full object-cover"
                         onError={(e) => { (e.target as HTMLImageElement).src = ''; (e.target as HTMLImageElement).style.display = 'none'; }}
