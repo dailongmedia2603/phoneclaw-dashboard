@@ -8,14 +8,16 @@ import Logs from './components/Logs';
 import Settings from './components/Settings';
 import Login from './components/Login';
 import ToastContainer from './components/Toast';
+import ScriptEditorPage from './components/ScriptEditor/ScriptEditorPage';
 import { useAuth } from './hooks/useAuth';
 import { Loader2 } from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('Dashboard');
+  const [editingScriptId, setEditingScriptId] = useState<string | null>(null);
+  const [isNewScript, setIsNewScript] = useState(false);
   const { user, loading, login, logout } = useAuth();
 
-  // Loading state
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-900">
@@ -24,12 +26,23 @@ export default function App() {
     );
   }
 
-  // Not logged in → show login page
   if (!user) {
     return <Login onLogin={login} />;
   }
 
-  // Logged in → show dashboard
+  // Script editor full-screen page
+  if (editingScriptId !== null) {
+    return (
+      <>
+        <ScriptEditorPage
+          scriptId={isNewScript ? undefined : editingScriptId}
+          onBack={() => { setEditingScriptId(null); setIsNewScript(false); }}
+        />
+        <ToastContainer />
+      </>
+    );
+  }
+
   return (
     <div className="flex h-screen bg-[#F8FAFC] font-sans text-slate-800 overflow-hidden">
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} onLogout={logout} userName={user.name} />
@@ -37,7 +50,12 @@ export default function App() {
         <main className="flex-1 overflow-hidden p-6">
           {activeTab === 'Dashboard' && <Dashboard />}
           {activeTab === 'Thiết bị' && <Devices />}
-          {activeTab === 'Kịch bản' && <Scripts />}
+          {activeTab === 'Kịch bản' && (
+            <Scripts
+              onOpenEditor={(id) => { setEditingScriptId(id); setIsNewScript(false); }}
+              onCreateNew={() => { setEditingScriptId('new'); setIsNewScript(true); }}
+            />
+          )}
           {activeTab === 'Lịch trình' && <Schedules />}
           {activeTab === 'Ảnh chụp & Nhật ký' && <Logs />}
           {activeTab === 'Cài đặt' && <Settings />}

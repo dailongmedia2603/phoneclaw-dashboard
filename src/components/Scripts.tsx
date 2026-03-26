@@ -77,7 +77,12 @@ function getTimeAgo(timestamp: string): string {
   return `${days} ngày trước`;
 }
 
-export default function Scripts() {
+interface ScriptsProps {
+  onOpenEditor?: (scriptId: string) => void;
+  onCreateNew?: () => void;
+}
+
+export default function Scripts({ onOpenEditor, onCreateNew }: ScriptsProps = {}) {
   const [activeAppTab, setActiveAppTab] = useState('tiktok_vn');
   const [showEditor, setShowEditor] = useState(false);
   const [editingScript, setEditingScript] = useState<Script | null>(null);
@@ -114,6 +119,7 @@ export default function Scripts() {
   });
 
   const handleCreateNew = () => {
+    if (onCreateNew) { onCreateNew(); return; }
     setEditingScript(null);
     setEditorName('');
     setEditorDescription('');
@@ -121,6 +127,7 @@ export default function Scripts() {
   };
 
   const handleEdit = (script: Script) => {
+    if (onOpenEditor) { onOpenEditor(script.id); return; }
     setEditingScript(script);
     setEditorName(script.name);
     setEditorDescription(script.description);
