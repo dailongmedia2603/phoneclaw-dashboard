@@ -8,6 +8,7 @@ import Schedules from './components/Schedules';
 import Logs from './components/Logs';
 import Settings from './components/Settings';
 import Login from './components/Login';
+import ToastContainer from './components/Toast';
 import { useAuth } from './hooks/useAuth';
 import { Loader2 } from 'lucide-react';
 
@@ -52,6 +53,7 @@ export default function App() {
           )}
         </main>
       </div>
+      <ToastContainer />
     </div>
   );
 }

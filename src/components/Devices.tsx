@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import {
-  Search, Filter, Plus, Smartphone, Battery, BatteryMedium, BatteryLow,
-  Wifi, WifiOff, MoreVertical, CheckSquare, Square, Play, RefreshCw, Camera, FolderPlus, X, ChevronRight,
-  MonitorPlay, TerminalSquare, Loader2
+  Search, Plus, Smartphone, Battery, BatteryMedium, BatteryLow,
+  Wifi, WifiOff, CheckSquare, Square, Play, Camera, FolderPlus, X,
+  MonitorPlay, TerminalSquare, Loader2, Edit, Trash2
 } from 'lucide-react';
 import { devices as devicesApi, control } from '../services/api';
 import { useApi } from '../hooks/useApi';
 import { useWebSocket } from '../hooks/useWebSocket';
+import { showToast } from './Toast';
 import type { Device, DeviceGroup } from '../types';
 
 export default function Devices() {
@@ -17,6 +18,11 @@ export default function Devices() {
   const [showDetailModal, setShowDetailModal] = useState<string | null>(null);
   const [addForm, setAddForm] = useState({ name: '', tailscaleIp: '', group: '', vncPassword: '' });
   const [adding, setAdding] = useState(false);
+  const [showEditModal, setShowEditModal] = useState<Device | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', tailscaleIp: '', group: '', vncPassword: '' });
+  const [editing, setEditing] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<Device | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const { data: deviceList, refresh: refreshDevices } = useApi<Device[]>(() => devicesApi.getAll(), []);
   const { data: groupList } = useApi<DeviceGroup[]>(() => devicesApi.getGroups(), []);
@@ -66,24 +72,67 @@ export default function Devices() {
   const handleAddDevice = async () => {
     if (!addForm.name || !addForm.tailscaleIp) return;
     setAdding(true);
-    await devicesApi.create({
-      name: addForm.name,
-      tailscaleIp: addForm.tailscaleIp,
-      group: addForm.group || '',
-      vncPassword: addForm.vncPassword || '',
-      vncPort: 5901,
-      httpPort: 8080,
-    });
+    try {
+      await devicesApi.create({
+        name: addForm.name,
+        tailscaleIp: addForm.tailscaleIp,
+        group: addForm.group || '',
+        vncPassword: addForm.vncPassword || '',
+        vncPort: 5901,
+        httpPort: 8080,
+      });
+      setShowAddModal(false);
+      setAddForm({ name: '', tailscaleIp: '', group: '', vncPassword: '' });
+      refreshDevices();
+      showToast('success', 'Thêm thiết bị thành công');
+    } catch {
+      showToast('error', 'Thêm thiết bị thất bại');
+    }
     setAdding(false);
-    setShowAddModal(false);
-    setAddForm({ name: '', tailscaleIp: '', group: '', vncPassword: '' });
-    refreshDevices();
   };
 
-  const handleDeleteDevice = async (id: string) => {
-    await devicesApi.remove(id);
-    setShowDetailModal(null);
-    refreshDevices();
+  const handleOpenEdit = (device: Device) => {
+    setEditForm({
+      name: device.name,
+      tailscaleIp: device.tailscaleIp,
+      group: device.group,
+      vncPassword: device.vncPassword || '',
+    });
+    setShowEditModal(device);
+  };
+
+  const handleEditDevice = async () => {
+    if (!showEditModal || !editForm.name || !editForm.tailscaleIp) return;
+    setEditing(true);
+    try {
+      await devicesApi.update(showEditModal.id, {
+        name: editForm.name,
+        tailscaleIp: editForm.tailscaleIp,
+        group: editForm.group,
+        vncPassword: editForm.vncPassword,
+      });
+      setShowEditModal(null);
+      refreshDevices();
+      showToast('success', 'Cập nhật thiết bị thành công');
+    } catch {
+      showToast('error', 'Cập nhật thiết bị thất bại');
+    }
+    setEditing(false);
+  };
+
+  const handleDeleteDevice = async () => {
+    if (!showDeleteConfirm) return;
+    setDeleting(true);
+    try {
+      await devicesApi.remove(showDeleteConfirm.id);
+      setShowDeleteConfirm(null);
+      setShowDetailModal(null);
+      refreshDevices();
+      showToast('success', 'Xoá thiết bị thành công');
+    } catch {
+      showToast('error', 'Xoá thiết bị thất bại');
+    }
+    setDeleting(false);
   };
 
   const handleBulkScreenshot = async () => {
@@ -262,9 +311,22 @@ export default function Devices() {
                   <span className="text-sm text-slate-600">{formatUptime(device.uptime)}</span>
                 </td>
                 <td className="py-3 px-4 text-right pr-6">
-                  <button className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg opacity-0 group-hover:opacity-100 transition-all">
-                    <MoreVertical size={16} />
-                  </button>
+                  <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleOpenEdit(device); }}
+                      className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="Sửa"
+                    >
+                      <Edit size={15} />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(device); }}
+                      className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Xoá"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -446,15 +508,88 @@ export default function Devices() {
                   </button>
                 </div>
 
-                <div className="pt-4 border-t border-slate-100">
+                <div className="pt-4 border-t border-slate-100 flex gap-3">
                   <button
-                    onClick={() => handleDeleteDevice(detailDevice.id)}
-                    className="text-sm text-red-500 hover:text-red-700 font-medium"
+                    onClick={() => handleOpenEdit(detailDevice)}
+                    className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 font-medium"
                   >
-                    Xoá thiết bị khỏi hệ thống
+                    <Edit size={14} /> Sửa thông tin
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteConfirm(detailDevice)}
+                    className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-700 font-medium"
+                  >
+                    <Trash2 size={14} /> Xoá thiết bị
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Edit Device Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/30 backdrop-blur-sm p-6">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+              <h2 className="text-lg font-bold text-slate-900">Sửa thiết bị</h2>
+              <button onClick={() => setShowEditModal(null)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Tên thiết bị</label>
+                <input type="text" value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" autoFocus />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">IP Tailscale</label>
+                <input type="text" value={editForm.tailscaleIp} onChange={e => setEditForm(p => ({ ...p, tailscaleIp: e.target.value }))} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-mono" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Nhóm</label>
+                <input type="text" value={editForm.group} onChange={e => setEditForm(p => ({ ...p, group: e.target.value }))} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Mật khẩu VNC</label>
+                <input type="password" value={editForm.vncPassword} onChange={e => setEditForm(p => ({ ...p, vncPassword: e.target.value }))} placeholder="Để trống nếu không đổi" className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button onClick={() => setShowEditModal(null)} className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-700 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors">
+                  Huỷ
+                </button>
+                <button onClick={handleEditDevice} disabled={editing || !editForm.name || !editForm.tailscaleIp} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                  {editing && <Loader2 size={16} className="animate-spin" />}
+                  Lưu thay đổi
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirm Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/30 backdrop-blur-sm p-6">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
+            <div className="p-6 text-center">
+              <div className="w-14 h-14 rounded-full bg-red-50 text-red-500 flex items-center justify-center mx-auto mb-4">
+                <Trash2 size={24} />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 mb-2">Xoá thiết bị?</h3>
+              <p className="text-sm text-slate-500 mb-1">
+                Bạn có chắc muốn xoá <span className="font-semibold text-slate-700">{showDeleteConfirm.name}</span>?
+              </p>
+              <p className="text-xs text-slate-400">Hành động này không thể hoàn tác.</p>
+            </div>
+            <div className="px-6 pb-6 flex gap-3">
+              <button onClick={() => setShowDeleteConfirm(null)} className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-700 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors">
+                Huỷ
+              </button>
+              <button onClick={handleDeleteDevice} disabled={deleting} className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                {deleting && <Loader2 size={16} className="animate-spin" />}
+                Xoá
+              </button>
             </div>
           </div>
         </div>
