@@ -4,7 +4,7 @@ import type {
   AppSettings, VpsStatus, VncProxy, ApiResponse,
 } from '../types';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:9000';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 async function request<T>(path: string, options?: RequestInit): Promise<ApiResponse<T>> {
   try {
