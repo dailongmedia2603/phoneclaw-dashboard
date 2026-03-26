@@ -41,8 +41,8 @@ jobs:
         run: |
           SSH_CMD="ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no"
 
-          # Ensure remote dir exists
-          $SSH_CMD $VPS_USER@$VPS_HOST "mkdir -p $APP_DIR/server/data"
+          # Ensure remote dirs exist
+          $SSH_CMD $VPS_USER@$VPS_HOST "mkdir -p $APP_DIR/server/data $APP_DIR/src/types $APP_DIR/dist"
 
           # Sync entire project (exclude heavy/local files)
           rsync -avz --delete \
