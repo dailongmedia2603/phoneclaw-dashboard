@@ -386,7 +386,7 @@ export default function Devices() {
                 {detailDevice.status !== 'offline' ? (
                   <>
                     <iframe
-                      src={`/vnc/${detailDevice.id}/vnc_lite.html?autoconnect=true&resize=scale&reconnect=true`}
+                      src={`/vnc/${detailDevice.id}/vnc_lite.html?autoconnect=true&resize=scale&reconnect=true&path=vnc/${detailDevice.id}/websockify`}
                       className="flex-1 w-full border-0"
                       allow="clipboard-read; clipboard-write"
                     />
@@ -395,7 +395,7 @@ export default function Devices() {
                         <MonitorPlay size={12} className="text-emerald-400" /> Live VNC
                       </p>
                       <a
-                        href={`/vnc/${detailDevice.id}/vnc.html?autoconnect=true`}
+                        href={`/vnc/${detailDevice.id}/vnc.html?autoconnect=true&path=vnc/${detailDevice.id}/websockify`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-xs text-blue-400 hover:text-blue-300"
