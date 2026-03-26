@@ -439,7 +439,7 @@ export default function Devices() {
                 {detailDevice.status !== 'offline' ? (
                   <>
                     <iframe
-                      src={`/vnc/${detailDevice.id}/vnc_lite.html?autoconnect=true&resize=scale&reconnect=true&path=vnc/${detailDevice.id}/websockify${detailDevice.vncPassword ? '&password=' + encodeURIComponent(detailDevice.vncPassword) : ''}`}
+                      src={`/api/vnc-viewer/${detailDevice.id}?token=${localStorage.getItem('phoneclaw_token') || ''}`}
                       className="flex-1 w-full border-0"
                       allow="clipboard-read; clipboard-write"
                     />
@@ -448,7 +448,7 @@ export default function Devices() {
                         <MonitorPlay size={12} className="text-emerald-400" /> Live VNC
                       </p>
                       <a
-                        href={`/vnc/${detailDevice.id}/vnc.html?autoconnect=true&path=vnc/${detailDevice.id}/websockify${detailDevice.vncPassword ? '&password=' + encodeURIComponent(detailDevice.vncPassword) : ''}`}
+                        href={`/api/vnc-viewer/${detailDevice.id}?token=${localStorage.getItem('phoneclaw_token') || ''}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-xs text-blue-400 hover:text-blue-300"

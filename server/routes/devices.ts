@@ -17,7 +17,7 @@ router.get('/:id', (req, res) => {
 
 // POST /api/devices
 router.post('/', (req, res) => {
-  const { name, tailscaleIp, vncPort, httpPort, iosVersion, model, group, battery } = req.body;
+  const { name, tailscaleIp, vncPort, httpPort, iosVersion, model, group, battery, vncPassword } = req.body;
   if (!name || !tailscaleIp) {
     return res.status(400).json({ success: false, error: 'name and tailscaleIp are required' });
   }
@@ -30,6 +30,7 @@ router.post('/', (req, res) => {
     model: model || 'iPhone',
     group: group || '',
     battery: battery || 0,
+    vncPassword: vncPassword || '',
   });
   res.status(201).json({ success: true, data: device });
 });

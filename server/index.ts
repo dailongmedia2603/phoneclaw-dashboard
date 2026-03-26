@@ -20,6 +20,7 @@ import scriptsRoutes from './routes/scripts';
 import schedulesRoutes from './routes/schedules';
 import logsRoutes from './routes/logs';
 import settingsRoutes from './routes/settings';
+import vncViewerRoutes from './routes/vnc-viewer';
 
 import type { Notification, WsMessage } from '../src/types';
 
@@ -85,6 +86,7 @@ app.use('/api/scripts', scriptsRoutes);
 app.use('/api/schedules', schedulesRoutes);
 app.use('/api/logs', logsRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/vnc-viewer', vncViewerRoutes);
 
 // Health check endpoint
 app.get('/api/health', (_req, res) => {
