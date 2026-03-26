@@ -10,7 +10,7 @@ export const config = {
   healthCheckInterval: parseInt(process.env.HEALTH_CHECK_INTERVAL || '15000'),
 
   // Device HTTP API timeout (ms)
-  deviceApiTimeout: parseInt(process.env.DEVICE_API_TIMEOUT || '5000'),
+  deviceApiTimeout: parseInt(process.env.DEVICE_API_TIMEOUT || '10000'),
 
   // Screenshots directory
   screenshotsDir: process.env.SCREENSHOTS_DIR || './server/data/screenshots',

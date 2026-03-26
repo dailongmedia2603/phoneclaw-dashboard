@@ -164,7 +164,12 @@ async function executeSteps(
       execStep.status = 'error';
       execStep.error = err instanceof Error ? err.message : 'Unknown error';
       execStep.finishedAt = new Date().toISOString();
-      throw err;
+      // Only fatal for launch failures; tap/swipe/key errors continue
+      const fatalTypes = ['launch'];
+      if (fatalTypes.includes(step.type)) {
+        throw err;
+      }
+      // Non-fatal: log error but continue
     }
 
     saveExecution(execution);

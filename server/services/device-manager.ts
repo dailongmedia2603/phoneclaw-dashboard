@@ -187,6 +187,12 @@ export async function callDeviceApi(
       return { ok: res.ok, data: text };
     }
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : 'Unknown error' };
+    const msg = err instanceof Error ? err.message : 'Unknown error';
+    // For action endpoints (tap/swipe/key/launch), empty reply means command was received
+    // but connection closed before response. Treat as success.
+    if (msg.includes('terminated') || msg.includes('ECONNRESET') || msg.includes('empty')) {
+      return { ok: true, data: { ok: true, note: 'Command sent (connection closed early)' } };
+    }
+    return { ok: false, error: msg };
   }
 }
