@@ -162,7 +162,9 @@ export async function callDeviceApi(
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), config.deviceApiTimeout);
-    const url = `http://${device.tailscaleIp}:${device.httpPort}${endpoint}`;
+    // API runs on httpPort + 1 (default 8081)
+    const apiPort = device.httpPort + 1;
+    const url = `http://${device.tailscaleIp}:${apiPort}${endpoint}`;
 
     const res = await fetch(url, {
       method,
