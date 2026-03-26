@@ -37,20 +37,30 @@ router.delete('/:id', (req, res) => {
   res.json({ success: true });
 });
 
-// POST /api/scripts/:id/run — run script on a device
-router.post('/:id/run', async (req, res) => {
+// POST /api/scripts/:id/run — run script on a device (async, returns immediately)
+router.post('/:id/run', (req, res) => {
   const { deviceId } = req.body;
   if (!deviceId) return res.status(400).json({ success: false, error: 'deviceId is required' });
 
-  try {
-    const execution = await se.executeScript(req.params.id, deviceId, 'Manual run');
-    res.json({ success: true, data: execution });
-  } catch (err) {
-    res.status(500).json({
-      success: false,
-      error: err instanceof Error ? err.message : 'Execution failed',
-    });
-  }
+  const script = se.getScript(req.params.id);
+  if (!script) return res.status(404).json({ success: false, error: 'Script not found' });
+
+  // Generate execution ID and return immediately
+  const executionId = Date.now().toString(36) + Math.random().toString(36).substring(2, 8);
+
+  // Run in background (don't await)
+  se.executeScript(req.params.id, deviceId, 'Manual run').catch(err => {
+    console.error('Script execution error:', err);
+  });
+
+  res.json({ success: true, data: { executionId, status: 'started', scriptName: script.name } });
+});
+
+// GET /api/scripts/executions/latest — get latest execution status (for polling)
+router.get('/executions/latest', (_req, res) => {
+  const history = se.getExecutionHistory();
+  const latest = history.length > 0 ? history[history.length - 1] : null;
+  res.json({ success: true, data: latest });
 });
 
 // POST /api/scripts/:id/stop

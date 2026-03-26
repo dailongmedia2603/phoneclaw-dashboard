@@ -93,9 +93,10 @@ export const scripts = {
   create: (data: Partial<Script>) => post<Script>('/api/scripts', data),
   update: (id: string, data: Partial<Script>) => put<Script>(`/api/scripts/${id}`, data),
   remove: (id: string) => del<void>(`/api/scripts/${id}`),
-  run: (scriptId: string, deviceId: string) => post<ScheduleHistory>(`/api/scripts/${scriptId}/run`, { deviceId }),
+  run: (scriptId: string, deviceId: string) => post<{ executionId: string; status: string }>(`/api/scripts/${scriptId}/run`, { deviceId }),
   stop: (scriptId: string, executionId: string) => post(`/api/scripts/${scriptId}/stop`, { executionId }),
   getHistory: () => get<ScheduleHistory[]>('/api/scripts/history/all'),
+  getLatestExecution: () => get<ScheduleHistory>('/api/scripts/executions/latest'),
 };
 
 // ============================================================

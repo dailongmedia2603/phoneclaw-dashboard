@@ -88,6 +88,8 @@ export default function Scripts() {
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([]);
   const [runLoading, setRunLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
+  const [runningExecution, setRunningExecution] = useState<any>(null);
+  const [pollingTimer, setPollingTimer] = useState<ReturnType<typeof setInterval> | null>(null);
 
   const { data: scriptsList, loading, error, refresh } = useApi<Script[]>(() => scriptsApi.getAll(), []);
   const { data: devicesList } = useApi<Device[]>(() => devicesApi.getAll(), []);
@@ -146,19 +148,35 @@ export default function Scripts() {
     refresh();
   };
 
+  const stopPolling = () => {
+    if (pollingTimer) { clearInterval(pollingTimer); setPollingTimer(null); }
+  };
+
+  const startPolling = () => {
+    stopPolling();
+    const timer = setInterval(async () => {
+      const res = await scriptsApi.getLatestExecution();
+      if (res.success && res.data) {
+        setRunningExecution(res.data);
+        if (res.data.status !== 'running') {
+          stopPolling();
+          setRunLoading(false);
+          refresh();
+        }
+      }
+    }, 2000);
+    setPollingTimer(timer);
+  };
+
   const handleRun = async () => {
     if (!showRunModal || selectedDeviceIds.length === 0) return;
     setRunLoading(true);
-    try {
-      await Promise.all(
-        selectedDeviceIds.map(deviceId => scriptsApi.run(showRunModal, deviceId))
-      );
-      setShowRunModal(null);
-      setSelectedDeviceIds([]);
-      refresh();
-    } finally {
-      setRunLoading(false);
+    setRunningExecution(null);
+    for (const deviceId of selectedDeviceIds) {
+      await scriptsApi.run(showRunModal, deviceId);
     }
+    // Start polling for execution status
+    startPolling();
   };
 
   const handleOpenRunModal = (scriptId: string) => {
@@ -547,18 +565,18 @@ screenshot()`}
       {/* Run Script Modal */}
       {showRunModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
               <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                 <Play size={18} className="text-blue-600" fill="currentColor" /> Chạy kịch bản
               </h2>
-              <button onClick={() => { setShowRunModal(null); setSelectedDeviceIds([]); }} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full">
+              <button onClick={() => { stopPolling(); setShowRunModal(null); setSelectedDeviceIds([]); setRunningExecution(null); setRunLoading(false); }} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full">
                 <X size={20} />
               </button>
             </div>
             <div className="p-6">
-              <div className="mb-6">
-                <p className="text-sm font-medium text-slate-700 mb-1">Kịch bản đã chọn:</p>
+              {/* Script info */}
+              <div className="mb-4">
                 <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
                     <Wand2 size={16} />
@@ -570,37 +588,88 @@ screenshot()`}
                 </div>
               </div>
 
-              <div className="mb-6">
-                <p className="text-sm font-medium text-slate-700 mb-3">Chọn thiết bị để chạy:</p>
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-                  {devicesData.map((device) => (
-                    <label key={device.id} className="flex items-center gap-3 p-3 border border-slate-200 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors">
-                      <input
-                        type="checkbox"
-                        className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
-                        checked={selectedDeviceIds.includes(device.id)}
-                        onChange={() => toggleDeviceSelection(device.id)}
-                      />
-                      <div className="flex items-center gap-2">
-                        <Smartphone size={16} className="text-slate-400" />
+              {/* Device selection (hide when running) */}
+              {!runLoading && (
+                <div className="mb-4">
+                  <p className="text-sm font-medium text-slate-700 mb-2">Chọn thiết bị:</p>
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                    {devicesData.map((device) => (
+                      <label key={device.id} className="flex items-center gap-3 p-2.5 border border-slate-200 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors">
+                        <input type="checkbox" className="w-4 h-4 text-blue-600 rounded" checked={selectedDeviceIds.includes(device.id)} onChange={() => toggleDeviceSelection(device.id)} />
+                        <Smartphone size={14} className="text-slate-400" />
                         <span className="text-sm font-medium text-slate-700">{device.name}</span>
-                      </div>
-                    </label>
-                  ))}
+                      </label>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
+              {/* Execution Log (show when running) */}
+              {runLoading && runningExecution && (
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-semibold text-slate-700">Tiến trình thực thi</p>
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                      runningExecution.status === 'running' ? 'bg-blue-100 text-blue-700' :
+                      runningExecution.status === 'success' ? 'bg-emerald-100 text-emerald-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      {runningExecution.status === 'running' ? '⏳ Đang chạy' : runningExecution.status === 'success' ? '✅ Hoàn thành' : '❌ Lỗi'}
+                    </span>
+                  </div>
+                  <div className="bg-slate-900 rounded-xl p-4 max-h-60 overflow-y-auto font-mono text-xs space-y-1.5">
+                    {runningExecution.steps?.map((step: any, i: number) => (
+                      <div key={i} className={`flex items-start gap-2 ${
+                        step.status === 'success' ? 'text-emerald-400' :
+                        step.status === 'error' ? 'text-red-400' :
+                        step.status === 'running' ? 'text-blue-400' :
+                        'text-slate-500'
+                      }`}>
+                        <span className="shrink-0 w-4 text-right">
+                          {step.status === 'success' ? '✓' : step.status === 'error' ? '✗' : step.status === 'running' ? '►' : '·'}
+                        </span>
+                        <span>{step.description}</span>
+                        {step.error && <span className="text-red-400 ml-2">— {step.error}</span>}
+                      </div>
+                    ))}
+                    {runningExecution.steps?.length === 0 && (
+                      <div className="text-blue-400 flex items-center gap-2">
+                        <span className="animate-pulse">►</span> Đang khởi tạo...
+                      </div>
+                    )}
+                    {runningExecution.error && (
+                      <div className="text-red-400 mt-2 pt-2 border-t border-slate-700">
+                        Lỗi: {runningExecution.error}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Loading state before first poll */}
+              {runLoading && !runningExecution && (
+                <div className="mb-4 bg-slate-50 rounded-xl p-6 flex flex-col items-center gap-2">
+                  <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                  <p className="text-sm text-slate-600">Đang gửi lệnh đến thiết bị...</p>
+                </div>
+              )}
+
+              {/* Buttons */}
               <div className="flex gap-3">
-                <button className="flex-1 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-medium hover:bg-slate-50 transition-colors flex items-center justify-center gap-2">
-                  <Clock size={16} /> Lên lịch
-                </button>
-                <button
-                  onClick={handleRun}
-                  disabled={runLoading || selectedDeviceIds.length === 0}
-                  className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 shadow-sm shadow-blue-200 disabled:opacity-50"
-                >
-                  <Play size={16} fill="currentColor" /> {runLoading ? 'Đang chạy...' : 'Chạy ngay'}
-                </button>
+                {!runLoading ? (
+                  <>
+                    <button onClick={() => { stopPolling(); setShowRunModal(null); setSelectedDeviceIds([]); }} className="flex-1 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-medium hover:bg-slate-50 transition-colors">
+                      Huỷ
+                    </button>
+                    <button onClick={handleRun} disabled={selectedDeviceIds.length === 0} className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
+                      <Play size={16} fill="currentColor" /> Chạy ngay
+                    </button>
+                  </>
+                ) : (
+                  <button onClick={() => { stopPolling(); setShowRunModal(null); setRunLoading(false); setRunningExecution(null); }} className="flex-1 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-medium hover:bg-slate-50 transition-colors">
+                    {runningExecution?.status === 'running' ? 'Chạy nền' : 'Đóng'}
+                  </button>
+                )}
               </div>
             </div>
           </div>
