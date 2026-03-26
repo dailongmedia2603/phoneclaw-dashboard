@@ -515,7 +515,7 @@ export default function Devices() {
                     Trên xuống
                   </button>
                   <button
-                    onClick={() => control.swipe(detailDevice.id, 0.5, 1.0, 0.5, 0.3, 0.5)}
+                    onClick={() => control.swipe(detailDevice.id, 0.5, 0.999, 0.5, 0.2, 0.8)}
                     className="flex flex-col items-center gap-1 p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600 transition-colors"
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
