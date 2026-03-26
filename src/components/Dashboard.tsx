@@ -218,7 +218,7 @@ export default function Dashboard() {
                   ) : (
                     <>
                       <img
-                        src={`${import.meta.env.VITE_API_URL || 'http://localhost:9000'}/api/control/${device.id}/screenshot?t=${refreshKey}`}
+                        src={`/api/control/${device.id}/screenshot?t=${refreshKey}`}
                         alt={device.name}
                         className="w-full h-full object-cover"
                         onError={(e) => { (e.target as HTMLImageElement).src = ''; (e.target as HTMLImageElement).style.display = 'none'; }}
