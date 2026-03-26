@@ -15,6 +15,7 @@ export interface Device {
   battery: number;
   uptime: number; // seconds
   group: string;
+  vncPassword?: string;
   currentScript?: string;
   lastSeen: string; // ISO date
   createdAt: string;

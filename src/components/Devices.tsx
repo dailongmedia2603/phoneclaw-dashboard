@@ -15,7 +15,7 @@ export default function Devices() {
   const [search, setSearch] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState<string | null>(null);
-  const [addForm, setAddForm] = useState({ name: '', tailscaleIp: '', group: '' });
+  const [addForm, setAddForm] = useState({ name: '', tailscaleIp: '', group: '', vncPassword: '' });
   const [adding, setAdding] = useState(false);
 
   const { data: deviceList, refresh: refreshDevices } = useApi<Device[]>(() => devicesApi.getAll(), []);
@@ -70,12 +70,13 @@ export default function Devices() {
       name: addForm.name,
       tailscaleIp: addForm.tailscaleIp,
       group: addForm.group || '',
+      vncPassword: addForm.vncPassword || '',
       vncPort: 5901,
       httpPort: 8080,
     });
     setAdding(false);
     setShowAddModal(false);
-    setAddForm({ name: '', tailscaleIp: '', group: '' });
+    setAddForm({ name: '', tailscaleIp: '', group: '', vncPassword: '' });
     refreshDevices();
   };
 
@@ -274,80 +275,64 @@ export default function Devices() {
       {/* Add Device Modal */}
       {showAddModal && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-900/20 backdrop-blur-sm p-6">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl flex flex-col max-h-full overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md flex flex-col max-h-full overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
               <h2 className="text-lg font-bold text-slate-900">Thêm thiết bị mới</h2>
               <button onClick={() => setShowAddModal(false)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full">
                 <X size={20} />
               </button>
             </div>
-            <div className="p-6 overflow-y-auto">
-              <p className="text-sm text-slate-500 mb-6">Thực hiện theo các bước sau trên thiết bị iOS để kết nối.</p>
-
-              <div className="space-y-6">
-                <div className="flex gap-4">
-                  <div className="w-8 h-8 shrink-0 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">1</div>
-                  <div>
-                    <h3 className="font-semibold text-slate-800 mb-1">Cài đặt TrollStore</h3>
-                    <p className="text-sm text-slate-600">Thiết bị cần TrollStore để cài PhoneClaw VNC với quyền cao nhất.</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-4">
-                  <div className="w-8 h-8 shrink-0 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">2</div>
-                  <div>
-                    <h3 className="font-semibold text-slate-800 mb-1">Cài PhoneClaw VNC + Tailscale</h3>
-                    <p className="text-sm text-slate-600">Cài .tipa qua TrollStore, mở app bật Enabled. Cài Tailscale từ AppStore.</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-4">
-                  <div className="w-8 h-8 shrink-0 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">3</div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-slate-800 mb-3">Đăng ký vào hệ thống</h3>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-xs font-medium text-slate-600 mb-1">Tên thiết bị</label>
-                        <input
-                          type="text"
-                          placeholder="Ví dụ: iPhone 13 Pro - 01"
-                          value={addForm.name}
-                          onChange={e => setAddForm(p => ({ ...p, name: e.target.value }))}
-                          className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-slate-600 mb-1">IP Tailscale</label>
-                        <input
-                          type="text"
-                          placeholder="Ví dụ: 100.85.42.12"
-                          value={addForm.tailscaleIp}
-                          onChange={e => setAddForm(p => ({ ...p, tailscaleIp: e.target.value }))}
-                          className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-slate-600 mb-1">Nhóm (tuỳ chọn)</label>
-                        <input
-                          type="text"
-                          placeholder="Ví dụ: TikTok Farm"
-                          value={addForm.group}
-                          onChange={e => setAddForm(p => ({ ...p, group: e.target.value }))}
-                          className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                        />
-                      </div>
-                      <button
-                        onClick={handleAddDevice}
-                        disabled={adding || !addForm.name || !addForm.tailscaleIp}
-                        className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
-                      >
-                        {adding && <Loader2 size={16} className="animate-spin" />}
-                        Thêm thiết bị
-                      </button>
-                    </div>
-                  </div>
-                </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Tên thiết bị</label>
+                <input
+                  type="text"
+                  placeholder="Ví dụ: iPhone 13 Pro - 01"
+                  value={addForm.name}
+                  onChange={e => setAddForm(p => ({ ...p, name: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  autoFocus
+                />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">IP Tailscale</label>
+                <input
+                  type="text"
+                  placeholder="Ví dụ: 100.96.65.5"
+                  value={addForm.tailscaleIp}
+                  onChange={e => setAddForm(p => ({ ...p, tailscaleIp: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-mono"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Nhóm (tuỳ chọn)</label>
+                <input
+                  type="text"
+                  placeholder="Ví dụ: TikTok Farm"
+                  value={addForm.group}
+                  onChange={e => setAddForm(p => ({ ...p, group: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Mật khẩu VNC (tuỳ chọn)</label>
+                <input
+                  type="password"
+                  placeholder="Mật khẩu truy cập thiết bị"
+                  value={addForm.vncPassword}
+                  onChange={e => setAddForm(p => ({ ...p, vncPassword: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                />
+                <p className="text-xs text-slate-400 mt-1">Mật khẩu Full-access trong PhoneClaw VNC trên thiết bị</p>
+              </div>
+              <button
+                onClick={handleAddDevice}
+                disabled={adding || !addForm.name || !addForm.tailscaleIp}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white px-4 py-3 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2 mt-2"
+              >
+                {adding && <Loader2 size={16} className="animate-spin" />}
+                Thêm thiết bị
+              </button>
             </div>
           </div>
         </div>
@@ -386,7 +371,7 @@ export default function Devices() {
                 {detailDevice.status !== 'offline' ? (
                   <>
                     <iframe
-                      src={`/vnc/${detailDevice.id}/vnc_lite.html?autoconnect=true&resize=scale&reconnect=true&path=vnc/${detailDevice.id}/websockify`}
+                      src={`/vnc/${detailDevice.id}/vnc_lite.html?autoconnect=true&resize=scale&reconnect=true&path=vnc/${detailDevice.id}/websockify${detailDevice.vncPassword ? '&password=' + encodeURIComponent(detailDevice.vncPassword) : ''}`}
                       className="flex-1 w-full border-0"
                       allow="clipboard-read; clipboard-write"
                     />
@@ -395,7 +380,7 @@ export default function Devices() {
                         <MonitorPlay size={12} className="text-emerald-400" /> Live VNC
                       </p>
                       <a
-                        href={`/vnc/${detailDevice.id}/vnc.html?autoconnect=true&path=vnc/${detailDevice.id}/websockify`}
+                        href={`/vnc/${detailDevice.id}/vnc.html?autoconnect=true&path=vnc/${detailDevice.id}/websockify${detailDevice.vncPassword ? '&password=' + encodeURIComponent(detailDevice.vncPassword) : ''}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-xs text-blue-400 hover:text-blue-300"
