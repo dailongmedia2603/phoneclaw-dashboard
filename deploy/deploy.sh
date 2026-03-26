@@ -23,7 +23,7 @@ if pm2 describe phoneclaw-dashboard > /dev/null 2>&1; then
     pm2 restart phoneclaw-dashboard
 else
     echo "Starting new PM2 process..."
-    pm2 start ecosystem.config.cjs
+    pm2 start deploy/ecosystem.config.cjs
 fi
 
 pm2 save
