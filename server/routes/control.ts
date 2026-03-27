@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { callDeviceApi } from '../services/device-manager';
+import { captureVncScreenshot } from '../services/template-matcher';
 
 const router = Router();
 
@@ -41,11 +42,21 @@ router.post('/:deviceId/launch', async (req, res) => {
 });
 
 // GET /api/control/:deviceId/screenshot
+// Uses VNC capture (vncdotool) for live screenshot, falls back to HTTP API
 router.get('/:deviceId/screenshot', async (req, res) => {
-  const result = await callDeviceApi(req.params.deviceId, 'GET', '/api/screenshot');
-  // Prevent caching - always return fresh screenshot
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
   res.set('Pragma', 'no-cache');
+
+  // Try VNC capture first (connects to device, always returns current screen)
+  try {
+    const base64 = captureVncScreenshot(req.params.deviceId);
+    if (base64) {
+      return res.json({ success: true, data: base64 });
+    }
+  } catch { /* fall through to HTTP API */ }
+
+  // Fallback: HTTP API (may return stale buffer if no VNC client connected)
+  const result = await callDeviceApi(req.params.deviceId, 'GET', '/api/screenshot');
   if (result.ok && result.data) {
     res.json({ success: true, data: result.data });
   } else {
