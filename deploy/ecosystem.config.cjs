@@ -2,7 +2,7 @@ module.exports = {
   apps: [{
     name: 'phoneclaw-dashboard',
     script: 'node',
-    args: ['--import', 'tsx', 'server/index.ts'],
+    args: ['--openssl-legacy-provider', '--import', 'tsx', 'server/index.ts'],
     cwd: '/opt/phoneclaw-dashboard',
     env: {
       NODE_ENV: 'production',

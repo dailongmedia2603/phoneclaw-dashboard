@@ -7,18 +7,23 @@ const router = Router();
 
 // POST /api/control/:deviceId/tap
 // Uses VNC protocol for accurate tapping (same path as Live VNC viewer)
+// Falls back to HTTP API if VNC fails
 router.post('/:deviceId/tap', async (req, res) => {
   const { x, y } = req.body;
   const device = getDevice(req.params.deviceId);
   if (!device) return res.json({ success: false, error: 'Device not found' });
 
+  // Try VNC tap first (accurate, same path as Live VNC viewer)
   try {
     await vncTap(device.tailscaleIp, device.vncPort, x, y, device.vncPassword);
-    res.json({ success: true, data: { ok: true, method: 'vnc', x, y } });
+    return res.json({ success: true, data: { ok: true, method: 'vnc', x, y } });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'VNC tap failed';
-    res.json({ success: false, error: msg });
+    console.log(`[TAP] VNC tap failed, falling back to HTTP API:`, err instanceof Error ? err.message : err);
   }
+
+  // Fallback: HTTP API (may have coordinate offset on some devices)
+  const result = await callDeviceApi(req.params.deviceId, 'POST', '/api/tap', { x, y });
+  res.json({ success: result.ok, data: { ...(result.data as any), method: 'http-fallback' }, error: result.error });
 });
 
 // POST /api/control/:deviceId/swipe
