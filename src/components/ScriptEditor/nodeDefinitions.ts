@@ -63,7 +63,7 @@ export const NODE_DEFS: Record<string, NodeDef> = {
     nodeType: 'swipe_down', label: 'Lướt xuống', category: 'device',
     color: '#6366f1', bgColor: '#eef2ff', icon: 'arrow_down',
     stepType: 'swipe',
-    defaultParams: { fromX: 0.5, fromY: 0.2, toX: 0.5, toY: 0.8, duration: 0.3 },
+    defaultParams: { fromX: 0.5, fromY: 0.35, toX: 0.5, toY: 0.85, duration: 0.4 },
     fields: [],
   },
   swipe_left: {
