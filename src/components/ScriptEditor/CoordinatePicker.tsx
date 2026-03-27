@@ -21,6 +21,8 @@ export default function CoordinatePicker({ deviceId, mode = 'xy', onPick, onClos
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null);
   const [picked, setPicked] = useState<{ x: number; y: number } | null>(null);
   const [imgSize, setImgSize] = useState<{ w: number; h: number } | null>(null);
+  const [deviceInfo, setDeviceInfo] = useState<any>(null);
+  const [testResult, setTestResult] = useState<string | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
 
   const fetchScreenshot = useCallback(async () => {
@@ -42,10 +44,13 @@ export default function CoordinatePicker({ deviceId, mode = 'xy', onPick, onClos
     setLoading(false);
   }, [deviceId]);
 
-  // Load screenshot once on mount
+  // Load screenshot + device info on mount
   useEffect(() => {
     fetchScreenshot();
-  }, [fetchScreenshot]);
+    control.getStatus(deviceId).then(res => {
+      if (res.success && res.data) setDeviceInfo(res.data);
+    });
+  }, [fetchScreenshot, deviceId]);
 
   /** When image loads, compute explicit display dimensions (no object-fit guessing) */
   const handleImageLoad = useCallback(() => {
@@ -99,22 +104,19 @@ export default function CoordinatePicker({ deviceId, mode = 'xy', onPick, onClos
     }
   };
 
-  /** Send a real tap to the device at picked coordinates to verify accuracy */
+  /** Send a real tap to the device and show response */
   const handleTestTap = async () => {
     if (!picked) return;
-    console.log('[CoordinatePicker] Test tap:', {
-      picked,
-      imgNatural: imgRef.current ? { w: imgRef.current.naturalWidth, h: imgRef.current.naturalHeight } : null,
-      imgSize,
-      imgRect: imgRef.current?.getBoundingClientRect(),
-    });
-    await control.tap(deviceId, picked.x, picked.y);
+    setTestResult('Đang tap...');
+    const res = await control.tap(deviceId, picked.x, picked.y);
+    setTestResult(`Tap ${picked.x},${picked.y} → ${JSON.stringify(res.data)}`);
   };
 
-  /** Test with known-good hardcoded coordinates (verified comment icon position) */
+  /** Test with known-good hardcoded coordinates */
   const handleTestKnownCoords = async () => {
-    console.log('[CoordinatePicker] Test known coords: x=0.923, y=0.607');
-    await control.tap(deviceId, 0.923, 0.607);
+    setTestResult('Đang tap 0.923,0.607...');
+    const res = await control.tap(deviceId, 0.923, 0.607);
+    setTestResult(`Tap 0.923,0.607 → ${JSON.stringify(res.data)}`);
   };
 
   const modeLabels: Record<string, string> = {
@@ -213,13 +215,24 @@ export default function CoordinatePicker({ deviceId, mode = 'xy', onPick, onClos
         </div>
 
         {/* Debug info */}
-        {imgSize && imgRef.current && (
-          <div className="px-4 py-1.5 border-t border-slate-100 bg-slate-50 text-[10px] font-mono text-slate-400 flex gap-4">
-            <span>Ảnh gốc: {imgRef.current.naturalWidth}x{imgRef.current.naturalHeight}</span>
-            <span>Hiển thị: {imgSize.w}x{imgSize.h}</span>
-            <span>Tỉ lệ: {(imgSize.w / imgRef.current.naturalWidth).toFixed(4)}</span>
-          </div>
-        )}
+        <div className="px-4 py-1.5 border-t border-slate-100 bg-slate-50 text-[10px] font-mono text-slate-400 space-y-0.5">
+          {imgSize && imgRef.current && (
+            <div className="flex gap-4">
+              <span>VNC: {imgRef.current.naturalWidth}x{imgRef.current.naturalHeight}</span>
+              <span>View: {imgSize.w}x{imgSize.h}</span>
+            </div>
+          )}
+          {deviceInfo && (
+            <div className="flex gap-4">
+              <span>Device screen: {(deviceInfo as any).screenWidth}x{(deviceInfo as any).screenHeight}</span>
+              <span>Model: {(deviceInfo as any).model}</span>
+              <span>iOS: {(deviceInfo as any).systemVersion}</span>
+            </div>
+          )}
+          {testResult && (
+            <div className="text-orange-500">{testResult}</div>
+          )}
+        </div>
 
         {/* Footer: coordinates + confirm */}
         <div className="px-4 py-3 border-t border-slate-200 flex items-center justify-between bg-slate-50">

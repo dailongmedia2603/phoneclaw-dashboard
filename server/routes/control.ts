@@ -8,7 +8,9 @@ const router = Router();
 // POST /api/control/:deviceId/tap
 router.post('/:deviceId/tap', async (req, res) => {
   const { x, y } = req.body;
+  console.log(`[TAP] device=${req.params.deviceId} x=${x} y=${y}`);
   const result = await callDeviceApi(req.params.deviceId, 'POST', '/api/tap', { x, y });
+  console.log(`[TAP] result:`, JSON.stringify(result));
   res.json({ success: result.ok, data: result.data, error: result.error });
 });
 
