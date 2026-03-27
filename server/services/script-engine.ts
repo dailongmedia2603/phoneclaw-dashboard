@@ -1,6 +1,7 @@
 import { readCollection, writeCollection, generateId } from '../store';
 import { callDeviceApi, updateDevice, getDevice } from './device-manager';
 import { matchTemplate, captureVncScreenshot } from './template-matcher';
+import { vncTap } from './vnc-tap';
 import type { Script, ScriptStep, ScheduleHistory, ExecutionStep } from '../../src/types';
 
 // --- Script CRUD ---
@@ -189,15 +190,17 @@ async function executeStep(
 
   switch (step.type) {
     case 'tap': {
-      const res = await callDeviceApi(deviceId, 'POST', '/api/tap', { x: p.x, y: p.y });
-      if (!res.ok) throw new Error(`Tap failed: ${res.error}`);
+      // Use VNC protocol for accurate tap (same path as Live VNC viewer)
+      await vncTap(deviceId, Number(p.x), Number(p.y));
       break;
     }
     case 'double_tap': {
       const x = Number(p.x) || 0.5;
       const y = Number(p.y) || 0.4;
-      const res = await callDeviceApi(deviceId, 'POST', '/api/doubletap', { x, y });
-      if (!res.ok) throw new Error(`Double-tap failed: ${res.error}`);
+      // Double tap = 2 VNC taps with short delay
+      await vncTap(deviceId, x, y);
+      await new Promise(r => setTimeout(r, 100));
+      await vncTap(deviceId, x, y);
       break;
     }
     case 'tap_image': {
@@ -216,7 +219,7 @@ async function executeStep(
         const result = await matchTemplate(base64, templateName, threshold);
 
         if (result.found) {
-          await callDeviceApi(deviceId, 'POST', '/api/tap', { x: result.x, y: result.y });
+          await vncTap(deviceId, result.x, result.y);
           matched = true;
           break;
         }
@@ -226,7 +229,7 @@ async function executeStep(
 
       if (!matched) {
         if (p.fallbackX !== undefined && p.fallbackY !== undefined) {
-          await callDeviceApi(deviceId, 'POST', '/api/tap', { x: Number(p.fallbackX), y: Number(p.fallbackY) });
+          await vncTap(deviceId, Number(p.fallbackX), Number(p.fallbackY));
         } else {
           throw new Error(`Template "${templateName}" not found on screen`);
         }
