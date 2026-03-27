@@ -18,9 +18,9 @@ export default function DeleteEdge(props: EdgeProps) {
         >
           <button
             onClick={() => deleteElements({ edges: [{ id }] })}
-            className="w-5 h-5 bg-white border border-slate-300 rounded-full flex items-center justify-center text-slate-400 hover:bg-red-500 hover:text-white hover:border-red-500 opacity-0 group-hover:opacity-100 transition-all shadow-sm"
+            className="w-3.5 h-3.5 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-300 hover:bg-red-500 hover:text-white hover:border-red-500 opacity-0 group-hover:opacity-100 transition-all"
           >
-            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+            <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
               <line x1="4" y1="4" x2="20" y2="20"/><line x1="20" y1="4" x2="4" y2="20"/>
             </svg>
           </button>
