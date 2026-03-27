@@ -194,13 +194,10 @@ async function executeStep(
       break;
     }
     case 'double_tap': {
-      // Double-tap at center (TikTok like)
       const x = Number(p.x) || 0.5;
       const y = Number(p.y) || 0.4;
-      const delay = Number(p.delay) || 0.1;
-      await callDeviceApi(deviceId, 'POST', '/api/tap', { x, y });
-      await sleep(delay * 1000);
-      await callDeviceApi(deviceId, 'POST', '/api/tap', { x, y });
+      const res = await callDeviceApi(deviceId, 'POST', '/api/doubletap', { x, y });
+      if (!res.ok) throw new Error(`Double-tap failed: ${res.error}`);
       break;
     }
     case 'tap_image': {
