@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, RefreshCw, Crosshair } from 'lucide-react';
+import { X, RefreshCw, Crosshair, MousePointerClick } from 'lucide-react';
 import { control } from '../../services/api';
 
 interface CoordinatePickerProps {
@@ -97,6 +97,12 @@ export default function CoordinatePicker({ deviceId, mode = 'xy', onPick, onClos
       onPick(picked.x, picked.y);
       onClose();
     }
+  };
+
+  /** Send a real tap to the device at picked coordinates to verify accuracy */
+  const handleTestTap = async () => {
+    if (!picked) return;
+    await control.tap(deviceId, picked.x, picked.y);
   };
 
   const modeLabels: Record<string, string> = {
@@ -208,6 +214,14 @@ export default function CoordinatePicker({ deviceId, mode = 'xy', onPick, onClos
             )}
           </div>
           <div className="flex gap-2">
+            <button
+              onClick={handleTestTap}
+              disabled={!picked}
+              className="px-3 py-1.5 text-sm font-medium text-orange-600 bg-orange-50 hover:bg-orange-100 disabled:bg-slate-100 disabled:text-slate-400 rounded-lg transition-colors flex items-center gap-1"
+              title="Gửi tap thử tới thiết bị"
+            >
+              <MousePointerClick size={14} /> Test
+            </button>
             <button
               onClick={onClose}
               className="px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
