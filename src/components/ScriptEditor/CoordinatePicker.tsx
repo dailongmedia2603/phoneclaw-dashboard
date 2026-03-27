@@ -27,7 +27,7 @@ export default function CoordinatePicker({ deviceId, mode = 'xy', onPick, onClos
     setLoading(true);
     setError(null);
     try {
-      const res = await control.screenshot(deviceId);
+      const res = await control.screenshotLive(deviceId);
       if (res.success && res.data) {
         const base64 = typeof res.data === 'string' ? res.data : (res.data as any).data || res.data;
         setScreenshotSrc(typeof base64 === 'string' && !base64.startsWith('data:')

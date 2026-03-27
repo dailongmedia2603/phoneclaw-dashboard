@@ -168,7 +168,8 @@ function triggerVncCapture(ip: string, port: number, password?: string): Promise
 }
 
 // GET /api/control/:deviceId/screenshot
-// Triggers VNC capture to refresh screen buffer, then gets screenshot via HTTP API
+// Normal mode: HTTP API only (fast, no VNC connection)
+// Live mode (?live=true): VNC handshake first to refresh screen buffer (for Coordinate Picker)
 router.get('/:deviceId/screenshot', async (req, res) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
   res.set('Pragma', 'no-cache');
@@ -178,10 +179,11 @@ router.get('/:deviceId/screenshot', async (req, res) => {
     return res.json({ success: false, error: 'Device not found' });
   }
 
-  // Trigger VNC connection to refresh screen buffer on device
-  await triggerVncCapture(device.tailscaleIp, device.vncPort, device.vncPassword);
+  // Only trigger VNC when explicitly requested (Coordinate Picker)
+  if (req.query.live === 'true') {
+    await triggerVncCapture(device.tailscaleIp, device.vncPort, device.vncPassword);
+  }
 
-  // Now get the fresh screenshot via HTTP API
   const result = await callDeviceApi(req.params.deviceId, 'GET', '/api/screenshot');
   if (result.ok && result.data) {
     res.json({ success: true, data: result.data });

@@ -76,6 +76,9 @@ export const control = {
     post(`/api/control/${deviceId}/launch`, { bundleId }),
   screenshot: (deviceId: string) =>
     get<string>(`/api/control/${deviceId}/screenshot?t=${Date.now()}`),
+  /** Live screenshot: triggers VNC connection to get fresh screen capture */
+  screenshotLive: (deviceId: string) =>
+    get<string>(`/api/control/${deviceId}/screenshot?live=true&t=${Date.now()}`),
   getClipboard: (deviceId: string) =>
     get<string>(`/api/control/${deviceId}/clipboard`),
   setClipboard: (deviceId: string, text: string) =>
