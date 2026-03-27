@@ -88,31 +88,19 @@ export function deleteGroup(id: string): boolean {
 // --- Health Check ---
 
 async function checkDeviceHealth(device: Device): Promise<'online' | 'offline'> {
-  // Try HTTP port first (works if HTTP server enabled)
+  // Check PhoneClawAPI (httpPort + 1) via /api/status — no VNC connection needed
+  const apiPort = device.httpPort + 1;
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), config.deviceApiTimeout);
-    const res = await fetch(`http://${device.tailscaleIp}:${device.httpPort}/`, {
+    const res = await fetch(`http://${device.tailscaleIp}:${apiPort}/api/status`, {
       signal: controller.signal,
     });
     clearTimeout(timeout);
     if (res.ok || res.status > 0) return 'online';
-  } catch { /* fall through to VNC check */ }
+  } catch { /* device unreachable */ }
 
-  // Fallback: check VNC port via TCP connect
-  try {
-    return await new Promise<'online' | 'offline'>((resolve) => {
-      const net = require('net');
-      const socket = new net.Socket();
-      socket.setTimeout(config.deviceApiTimeout);
-      socket.on('connect', () => { socket.destroy(); resolve('online'); });
-      socket.on('timeout', () => { socket.destroy(); resolve('offline'); });
-      socket.on('error', () => { socket.destroy(); resolve('offline'); });
-      socket.connect(device.vncPort, device.tailscaleIp);
-    });
-  } catch {
-    return 'offline';
-  }
+  return 'offline';
 }
 
 async function runHealthChecks() {
