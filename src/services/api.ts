@@ -75,7 +75,7 @@ export const control = {
   launch: (deviceId: string, bundleId: string) =>
     post(`/api/control/${deviceId}/launch`, { bundleId }),
   screenshot: (deviceId: string) =>
-    get<string>(`/api/control/${deviceId}/screenshot`),
+    get<string>(`/api/control/${deviceId}/screenshot?t=${Date.now()}`),
   getClipboard: (deviceId: string) =>
     get<string>(`/api/control/${deviceId}/clipboard`),
   setClipboard: (deviceId: string, text: string) =>

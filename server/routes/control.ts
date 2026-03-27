@@ -43,8 +43,10 @@ router.post('/:deviceId/launch', async (req, res) => {
 // GET /api/control/:deviceId/screenshot
 router.get('/:deviceId/screenshot', async (req, res) => {
   const result = await callDeviceApi(req.params.deviceId, 'GET', '/api/screenshot');
+  // Prevent caching - always return fresh screenshot
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.set('Pragma', 'no-cache');
   if (result.ok && result.data) {
-    // Return base64 image
     res.json({ success: true, data: result.data });
   } else {
     res.json({ success: false, error: result.error });
