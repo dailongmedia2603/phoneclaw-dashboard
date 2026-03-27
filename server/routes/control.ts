@@ -6,12 +6,19 @@ import { callDeviceApi, getDevice } from '../services/device-manager';
 const router = Router();
 
 // POST /api/control/:deviceId/tap
+// Uses VNC protocol for accurate tapping (same path as Live VNC viewer)
 router.post('/:deviceId/tap', async (req, res) => {
   const { x, y } = req.body;
-  console.log(`[TAP] device=${req.params.deviceId} x=${x} y=${y}`);
-  const result = await callDeviceApi(req.params.deviceId, 'POST', '/api/tap', { x, y });
-  console.log(`[TAP] result:`, JSON.stringify(result));
-  res.json({ success: result.ok, data: result.data, error: result.error });
+  const device = getDevice(req.params.deviceId);
+  if (!device) return res.json({ success: false, error: 'Device not found' });
+
+  try {
+    await vncTap(device.tailscaleIp, device.vncPort, x, y, device.vncPassword);
+    res.json({ success: true, data: { ok: true, method: 'vnc', x, y } });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'VNC tap failed';
+    res.json({ success: false, error: msg });
+  }
 });
 
 // POST /api/control/:deviceId/swipe
@@ -166,6 +173,110 @@ function triggerVncCapture(ip: string, port: number, password?: string): Promise
 
     // Hard timeout safety net
     setTimeout(done, 5000);
+  });
+}
+
+/**
+ * Send a tap via VNC protocol (RFB PointerEvent).
+ * Same path as Live VNC viewer: ptrAddEvent → vncPointToDevicePoint → STHIDEventGenerator.
+ * This ensures coordinates map correctly regardless of screen scaling/rotation.
+ *
+ * @param x Normalized 0-1 coordinate
+ * @param y Normalized 0-1 coordinate
+ */
+function vncTap(ip: string, port: number, x: number, y: number, password?: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const socket = new net.Socket();
+    let phase = 0;
+    let resolved = false;
+    let fbWidth = 0;
+    let fbHeight = 0;
+
+    const finish = (err?: Error) => {
+      if (resolved) return;
+      resolved = true;
+      socket.destroy();
+      err ? reject(err) : resolve();
+    };
+
+    socket.setTimeout(5000);
+    socket.on('timeout', () => finish(new Error('VNC timeout')));
+    socket.on('error', (e) => finish(e));
+    socket.on('close', () => { if (!resolved) { resolved = true; resolve(); } });
+
+    socket.on('data', (data: Buffer) => {
+      try {
+        if (phase === 0 && data.length >= 12 && data.toString('ascii', 0, 3) === 'RFB') {
+          socket.write(Buffer.from('RFB 003.008\n'));
+          phase = 1;
+
+        } else if (phase === 1) {
+          const numTypes = data[0];
+          if (numTypes === 0) { finish(new Error('VNC connection refused')); return; }
+          const types = Array.from(data.subarray(1, 1 + numTypes));
+
+          if (types.includes(1)) {
+            socket.write(Buffer.from([1])); // None auth
+            phase = 3;
+          } else if (types.includes(2) && password) {
+            socket.write(Buffer.from([2])); // VNC auth
+            phase = 2;
+          } else {
+            finish(new Error('No supported VNC auth'));
+          }
+
+        } else if (phase === 2 && data.length >= 16) {
+          socket.write(vncAuthResponse(data.subarray(0, 16), password || ''));
+          phase = 3;
+
+        } else if (phase === 3) {
+          if (data.length >= 4 && data.readUInt32BE(0) === 0) {
+            socket.write(Buffer.from([1])); // ClientInit shared=1
+            phase = 4;
+          } else {
+            finish(new Error('VNC auth failed'));
+          }
+
+        } else if (phase === 4 && data.length >= 24) {
+          // ServerInit: get framebuffer dimensions
+          fbWidth = data.readUInt16BE(0);
+          fbHeight = data.readUInt16BE(2);
+
+          // Convert normalized (0-1) to VNC pixel coordinates
+          const px = Math.round(x * fbWidth);
+          const py = Math.round(y * fbHeight);
+
+          // RFB PointerEvent (message type 5):
+          // [type:1] [button-mask:1] [x:2] [y:2]
+          const pointerDown = Buffer.alloc(6);
+          pointerDown[0] = 5;  // PointerEvent
+          pointerDown[1] = 1;  // button-mask: left button pressed
+          pointerDown.writeUInt16BE(px, 2);
+          pointerDown.writeUInt16BE(py, 4);
+
+          const pointerUp = Buffer.alloc(6);
+          pointerUp[0] = 5;    // PointerEvent
+          pointerUp[1] = 0;    // button-mask: released
+          pointerUp.writeUInt16BE(px, 2);
+          pointerUp.writeUInt16BE(py, 4);
+
+          // Send press, wait briefly, send release
+          socket.write(pointerDown);
+          setTimeout(() => {
+            socket.write(pointerUp);
+            // Wait for event to be processed, then disconnect
+            setTimeout(() => finish(), 200);
+          }, 80);
+
+          phase = 5;
+        }
+      } catch (e) {
+        finish(e instanceof Error ? e : new Error('VNC protocol error'));
+      }
+    });
+
+    socket.connect(port, ip);
+    setTimeout(() => finish(new Error('VNC tap timeout')), 6000);
   });
 }
 
