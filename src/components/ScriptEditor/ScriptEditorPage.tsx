@@ -252,7 +252,15 @@ export default function ScriptEditorPage({ scriptId, appTab, onBack }: ScriptEdi
         </div>
 
         {/* Right: Property Panel */}
-        <PropertyPanel selectedNode={selectedNode} onUpdateNode={onUpdateNodeParams} />
+        <PropertyPanel
+          selectedNode={selectedNode}
+          onUpdateNode={onUpdateNodeParams}
+          onDeleteNode={(nodeId) => {
+            setNodes(nds => nds.filter(n => n.id !== nodeId));
+            setEdges(eds => eds.filter(e => e.source !== nodeId && e.target !== nodeId));
+            setSelectedNode(null);
+          }}
+        />
       </div>
     </div>
   );
