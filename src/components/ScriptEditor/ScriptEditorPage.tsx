@@ -52,7 +52,11 @@ export default function ScriptEditorPage({ scriptId, appTab, onBack }: ScriptEdi
           setScriptName(script.name);
           setScriptDesc(script.description);
           if (script.channel) setScriptChannel(script.channel);
-          if (script.steps?.length > 0) {
+          // Prefer saved graphData (preserves positions + edges)
+          if (script.graphData?.nodes?.length) {
+            setNodes(script.graphData.nodes as Node[]);
+            setEdges((script.graphData.edges || []) as any[]);
+          } else if (script.steps?.length > 0) {
             const { nodes: gNodes, edges: gEdges } = scriptStepsToGraph(script.steps);
             setNodes(gNodes);
             setEdges(gEdges);
@@ -120,12 +124,15 @@ export default function ScriptEditorPage({ scriptId, appTab, onBack }: ScriptEdi
     const steps = graphToScriptSteps(nodes, edges);
 
     try {
+      const graphData = { nodes: nodes.map(n => ({ ...n })), edges: edges.map(e => ({ ...e })) };
+
       if (scriptId) {
         await scriptsApi.update(scriptId, {
           name: scriptName,
           description: scriptDesc,
           channel: scriptChannel,
           steps,
+          graphData,
         });
         showToast('success', 'Đã lưu kịch bản');
       } else {
@@ -134,6 +141,7 @@ export default function ScriptEditorPage({ scriptId, appTab, onBack }: ScriptEdi
           description: scriptDesc,
           channel: scriptChannel,
           steps,
+          graphData,
         });
         showToast('success', 'Đã tạo kịch bản');
         onBack();

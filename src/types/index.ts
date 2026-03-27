@@ -47,6 +47,7 @@ export interface Script {
   name: string;
   description: string;
   channel?: string; // 'tiktok_vn' | 'tiktok_us' | 'facebook'
+  graphData?: { nodes: unknown[]; edges: unknown[] };
   steps: ScriptStep[];
   status: 'active' | 'idle' | 'draft';
   lastRun?: string;

@@ -59,8 +59,9 @@ function collectChain(
 
     steps.push(step);
 
-    // Follow "next" edge
-    const nextEdge = (adj.get(node.id) || []).find(e => !e.handle || e.handle === 'next');
+    // Follow "next" edge (default handle or explicit "next" for loop)
+    const outEdges = adj.get(node.id) || [];
+    const nextEdge = outEdges.find(e => !e.handle || e.handle === 'next' || e.handle === null);
     currentId = nextEdge?.target || null;
   }
 
@@ -99,7 +100,6 @@ export function scriptStepsToGraph(steps: ScriptStep[]): { nodes: Node[]; edges:
       id: `e-${prevId}-${nodeId}`,
       source: prevId,
       target: nodeId,
-      sourceHandle: prevId === startId ? undefined : 'next',
     });
 
     // Handle loop children
