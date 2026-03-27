@@ -102,7 +102,19 @@ export default function CoordinatePicker({ deviceId, mode = 'xy', onPick, onClos
   /** Send a real tap to the device at picked coordinates to verify accuracy */
   const handleTestTap = async () => {
     if (!picked) return;
+    console.log('[CoordinatePicker] Test tap:', {
+      picked,
+      imgNatural: imgRef.current ? { w: imgRef.current.naturalWidth, h: imgRef.current.naturalHeight } : null,
+      imgSize,
+      imgRect: imgRef.current?.getBoundingClientRect(),
+    });
     await control.tap(deviceId, picked.x, picked.y);
+  };
+
+  /** Test with known-good hardcoded coordinates (verified comment icon position) */
+  const handleTestKnownCoords = async () => {
+    console.log('[CoordinatePicker] Test known coords: x=0.923, y=0.607');
+    await control.tap(deviceId, 0.923, 0.607);
   };
 
   const modeLabels: Record<string, string> = {
@@ -200,6 +212,15 @@ export default function CoordinatePicker({ deviceId, mode = 'xy', onPick, onClos
           )}
         </div>
 
+        {/* Debug info */}
+        {imgSize && imgRef.current && (
+          <div className="px-4 py-1.5 border-t border-slate-100 bg-slate-50 text-[10px] font-mono text-slate-400 flex gap-4">
+            <span>Ảnh gốc: {imgRef.current.naturalWidth}x{imgRef.current.naturalHeight}</span>
+            <span>Hiển thị: {imgSize.w}x{imgSize.h}</span>
+            <span>Tỉ lệ: {(imgSize.w / imgRef.current.naturalWidth).toFixed(4)}</span>
+          </div>
+        )}
+
         {/* Footer: coordinates + confirm */}
         <div className="px-4 py-3 border-t border-slate-200 flex items-center justify-between bg-slate-50">
           <div className="text-xs text-slate-500 space-y-0.5">
@@ -213,7 +234,14 @@ export default function CoordinatePicker({ deviceId, mode = 'xy', onPick, onClos
               <div>Click vào screenshot để chọn toạ độ</div>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap justify-end">
+            <button
+              onClick={handleTestKnownCoords}
+              className="px-2 py-1.5 text-[11px] font-medium text-green-600 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
+              title="Test toạ độ comment đã xác minh: 0.923, 0.607"
+            >
+              Test (0.923, 0.607)
+            </button>
             <button
               onClick={handleTestTap}
               disabled={!picked}
