@@ -1,4 +1,5 @@
 import { NODE_CATEGORIES, getNodesByCategory } from './nodeDefinitions';
+import NodeIcon from './nodeIcons';
 
 export default function NodePalette() {
   const onDragStart = (event: React.DragEvent, nodeType: string) => {
@@ -29,7 +30,7 @@ export default function NodePalette() {
                     onDragStart={e => onDragStart(e, node.nodeType)}
                     className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 cursor-grab active:cursor-grabbing transition-colors text-sm"
                   >
-                    <span className="text-base">{node.icon}</span>
+                    <NodeIcon name={node.icon} size={18} className="text-slate-500" />
                     <span className="font-medium text-slate-700">{node.label}</span>
                   </div>
                 ))}

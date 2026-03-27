@@ -1,5 +1,6 @@
 import { Handle, Position } from '@xyflow/react';
 import { NODE_DEFS } from '../nodeDefinitions';
+import NodeIcon from '../nodeIcons';
 
 interface ActionNodeProps {
   data: { nodeType: string; params: Record<string, unknown> };
@@ -20,7 +21,7 @@ export default function ActionNode({ data, selected }: ActionNodeProps) {
       style={{ borderColor: def.color, backgroundColor: def.bgColor }}
     >
       <div className="px-3 py-2 flex items-center gap-2">
-        <span className="text-lg">{def.icon}</span>
+        <NodeIcon name={def.icon} size={18} />
         <span className="text-sm font-semibold" style={{ color: def.color }}>{def.label}</span>
       </div>
       {summary && (

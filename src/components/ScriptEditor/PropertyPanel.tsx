@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import type { Node } from '@xyflow/react';
 import { NODE_DEFS } from './nodeDefinitions';
+import NodeIcon from './nodeIcons';
 
 interface PropertyPanelProps {
   selectedNode: Node | null;
@@ -22,7 +23,7 @@ export default function PropertyPanel({ selectedNode, onUpdateNode }: PropertyPa
     return (
       <div className="w-64 bg-white border-l border-slate-200 p-4">
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-lg">{def?.icon}</span>
+          <NodeIcon name={def?.icon || ''} size={18} />
           <span className="font-semibold text-sm text-slate-800">{def?.label || 'Node'}</span>
         </div>
         <p className="text-xs text-slate-400">Node này không có thuộc tính cần cấu hình.</p>
@@ -39,7 +40,7 @@ export default function PropertyPanel({ selectedNode, onUpdateNode }: PropertyPa
   return (
     <div className="w-64 bg-white border-l border-slate-200 p-4 space-y-4">
       <div className="flex items-center gap-2">
-        <span className="text-lg">{def.icon}</span>
+        <NodeIcon name={def.icon} size={18} />
         <span className="font-semibold text-sm text-slate-800">{def.label}</span>
       </div>
 

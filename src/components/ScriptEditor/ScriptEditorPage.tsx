@@ -13,7 +13,7 @@ import PropertyPanel from './PropertyPanel';
 import { graphToScriptSteps, scriptStepsToGraph } from './graphConverter';
 import { scripts as scriptsApi } from '../../services/api';
 import { showToast } from '../Toast';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, ChevronDown, Music, Globe, Facebook } from 'lucide-react';
 import type { Script } from '../../types';
 
 interface ScriptEditorPageProps {
@@ -39,6 +39,7 @@ export default function ScriptEditorPage({ scriptId, appTab, onBack }: ScriptEdi
   const [scriptChannel, setScriptChannel] = useState(appTab || 'tiktok_vn');
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [showChannelDropdown, setShowChannelDropdown] = useState(false);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
 
@@ -158,15 +159,38 @@ export default function ScriptEditorPage({ scriptId, appTab, onBack }: ScriptEdi
             placeholder="Tên kịch bản..."
             className="text-lg font-bold text-slate-900 bg-transparent border-none focus:outline-none focus:ring-0 w-64"
           />
-          <select
-            value={scriptChannel}
-            onChange={e => setScriptChannel(e.target.value)}
-            className="text-sm font-medium bg-slate-100 border border-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-          >
-            <option value="tiktok_vn">TikTok Việt</option>
-            <option value="tiktok_us">TikTok US</option>
-            <option value="facebook">Facebook</option>
-          </select>
+          <div className="relative">
+            <button
+              onClick={() => setShowChannelDropdown(!showChannelDropdown)}
+              className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-200 transition-colors"
+            >
+              {scriptChannel === 'tiktok_vn' && <><Music size={14} className="text-slate-900" /> TikTok Việt</>}
+              {scriptChannel === 'tiktok_us' && <><Globe size={14} className="text-blue-600" /> TikTok US</>}
+              {scriptChannel === 'facebook' && <><Facebook size={14} className="text-blue-500" /> Facebook</>}
+              <ChevronDown size={14} className="text-slate-400" />
+            </button>
+            {showChannelDropdown && (
+              <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg py-1 z-50 w-44">
+                {[
+                  { id: 'tiktok_vn', label: 'TikTok Việt', icon: Music, iconColor: 'text-slate-900' },
+                  { id: 'tiktok_us', label: 'TikTok US', icon: Globe, iconColor: 'text-blue-600' },
+                  { id: 'facebook', label: 'Facebook', icon: Facebook, iconColor: 'text-blue-500' },
+                ].map(ch => (
+                  <button
+                    key={ch.id}
+                    onClick={() => { setScriptChannel(ch.id); setShowChannelDropdown(false); }}
+                    className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50 transition-colors ${
+                      scriptChannel === ch.id ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-700'
+                    }`}
+                  >
+                    <ch.icon size={16} className={ch.iconColor} />
+                    {ch.label}
+                    {scriptChannel === ch.id && <span className="ml-auto text-blue-600 text-xs">✓</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <input
             type="text"
             value={scriptDesc}
