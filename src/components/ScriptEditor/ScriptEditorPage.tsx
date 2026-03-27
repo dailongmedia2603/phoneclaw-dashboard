@@ -13,11 +13,12 @@ import { NODE_DEFS } from './nodeDefinitions';
 const edgeTypes = { default: DeleteEdge };
 import NodePalette from './NodePalette';
 import PropertyPanel from './PropertyPanel';
+import CoordinatePicker from './CoordinatePicker';
 import { graphToScriptSteps, scriptStepsToGraph } from './graphConverter';
-import { scripts as scriptsApi } from '../../services/api';
+import { scripts as scriptsApi, devices as devicesApi } from '../../services/api';
 import { showToast } from '../Toast';
-import { ArrowLeft, Save, Loader2, ChevronDown, Music, Globe, Facebook } from 'lucide-react';
-import type { Script } from '../../types';
+import { ArrowLeft, Save, Loader2, ChevronDown, Music, Globe, Facebook, Smartphone } from 'lucide-react';
+import type { Script, Device } from '../../types';
 
 interface ScriptEditorPageProps {
   scriptId?: string;
@@ -45,6 +46,25 @@ export default function ScriptEditorPage({ scriptId, appTab, onBack }: ScriptEdi
   const [showChannelDropdown, setShowChannelDropdown] = useState(false);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
+
+  // --- Coordinate Picker state ---
+  const [pickerTarget, setPickerTarget] = useState<{ nodeId: string; fieldPrefix: string } | null>(null);
+  const [pickerDeviceId, setPickerDeviceId] = useState<string>('');
+  const [onlineDevices, setOnlineDevices] = useState<Device[]>([]);
+  const [showDeviceDropdown, setShowDeviceDropdown] = useState(false);
+
+  // Load devices for coordinate picker
+  useEffect(() => {
+    devicesApi.getAll().then(res => {
+      if (res.success && res.data) {
+        const online = (res.data as Device[]).filter(d => d.status === 'online' || d.status === 'running');
+        setOnlineDevices(online);
+        if (online.length > 0 && !pickerDeviceId) {
+          setPickerDeviceId(online[0].id);
+        }
+      }
+    });
+  }, []);
 
   // Load existing script
   useEffect(() => {
@@ -155,6 +175,53 @@ export default function ScriptEditorPage({ scriptId, appTab, onBack }: ScriptEdi
     setSaving(false);
   }, [scriptId, scriptName, scriptDesc, nodes, edges, onBack]);
 
+  // --- Coordinate Picker handlers ---
+  const handlePickCoordinate = useCallback((fieldPrefix: string) => {
+    if (!selectedNode) return;
+    if (!pickerDeviceId) {
+      showToast('error', 'Chưa có thiết bị online để chọn toạ độ');
+      return;
+    }
+    setPickerTarget({ nodeId: selectedNode.id, fieldPrefix });
+  }, [selectedNode, pickerDeviceId]);
+
+  const handleCoordinatePicked = useCallback((x: number, y: number) => {
+    if (!pickerTarget) return;
+    const { nodeId, fieldPrefix } = pickerTarget;
+
+    setNodes(nds => nds.map(n => {
+      if (n.id !== nodeId) return n;
+      const data = n.data as { nodeType: string; params: Record<string, unknown> };
+      const updatedParams = { ...data.params };
+
+      if (fieldPrefix === 'xy') {
+        updatedParams.x = x;
+        updatedParams.y = y;
+      } else if (fieldPrefix === 'from') {
+        updatedParams.fromX = x;
+        updatedParams.fromY = y;
+      } else if (fieldPrefix === 'to') {
+        updatedParams.toX = x;
+        updatedParams.toY = y;
+      }
+
+      return { ...n, data: { ...data, params: updatedParams } };
+    }));
+
+    // Update selectedNode to reflect new params in PropertyPanel
+    setSelectedNode(prev => {
+      if (!prev || prev.id !== nodeId) return prev;
+      const data = prev.data as { nodeType: string; params: Record<string, unknown> };
+      const updatedParams = { ...data.params };
+      if (fieldPrefix === 'xy') { updatedParams.x = x; updatedParams.y = y; }
+      else if (fieldPrefix === 'from') { updatedParams.fromX = x; updatedParams.fromY = y; }
+      else if (fieldPrefix === 'to') { updatedParams.toX = x; updatedParams.toY = y; }
+      return { ...prev, data: { ...data, params: updatedParams } };
+    });
+
+    setPickerTarget(null);
+  }, [pickerTarget, setNodes]);
+
   return (
     <div className="h-screen flex flex-col bg-slate-100">
       {/* Header */}
@@ -210,6 +277,38 @@ export default function ScriptEditorPage({ scriptId, appTab, onBack }: ScriptEdi
             className="text-sm text-slate-500 bg-transparent border-none focus:outline-none focus:ring-0 flex-1"
           />
         </div>
+
+        {/* Device selector for coordinate picker */}
+        {onlineDevices.length > 0 && (
+          <div className="relative">
+            <button
+              onClick={() => setShowDeviceDropdown(!showDeviceDropdown)}
+              className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg text-sm font-medium text-green-700 hover:bg-green-100 transition-colors"
+            >
+              <Smartphone size={14} />
+              {onlineDevices.find(d => d.id === pickerDeviceId)?.name || 'Chọn thiết bị'}
+              <ChevronDown size={14} className="text-green-400" />
+            </button>
+            {showDeviceDropdown && (
+              <div className="absolute top-full right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg py-1 z-50 w-52">
+                {onlineDevices.map(dev => (
+                  <button
+                    key={dev.id}
+                    onClick={() => { setPickerDeviceId(dev.id); setShowDeviceDropdown(false); }}
+                    className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50 transition-colors ${
+                      pickerDeviceId === dev.id ? 'bg-green-50 text-green-700 font-medium' : 'text-slate-700'
+                    }`}
+                  >
+                    <Smartphone size={14} className="text-green-500" />
+                    <span className="truncate">{dev.name}</span>
+                    {pickerDeviceId === dev.id && <span className="ml-auto text-green-600 text-xs">✓</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         <button
           onClick={handleSave}
           disabled={saving}
@@ -265,8 +364,19 @@ export default function ScriptEditorPage({ scriptId, appTab, onBack }: ScriptEdi
             setEdges(eds => eds.filter(e => e.source !== nodeId && e.target !== nodeId));
             setSelectedNode(null);
           }}
+          onPickCoordinate={handlePickCoordinate}
         />
       </div>
+
+      {/* Coordinate Picker Modal */}
+      {pickerTarget && pickerDeviceId && (
+        <CoordinatePicker
+          deviceId={pickerDeviceId}
+          mode={pickerTarget.fieldPrefix as 'xy' | 'from' | 'to'}
+          onPick={handleCoordinatePicked}
+          onClose={() => setPickerTarget(null)}
+        />
+      )}
     </div>
   );
 }

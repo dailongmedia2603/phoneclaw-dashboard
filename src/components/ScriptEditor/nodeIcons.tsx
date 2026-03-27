@@ -1,7 +1,7 @@
 import {
   Play, Clock, Shuffle, Repeat, Camera, Home, ArrowUp, ArrowDown, ArrowLeft, ArrowRight,
   Keyboard, Music, Heart, MessageCircle, Share2, UserPlus, Bookmark, Search, User,
-  Globe, Facebook, ThumbsUp
+  Globe, Facebook, ThumbsUp, Crosshair, Target, Move,
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, typeof Play> = {
@@ -27,6 +27,9 @@ const ICON_MAP: Record<string, typeof Play> = {
   globe: Globe,
   facebook: Facebook,
   thumbs_up: ThumbsUp,
+  crosshair: Crosshair,
+  target: Target,
+  move: Move,
 };
 
 interface NodeIconProps {

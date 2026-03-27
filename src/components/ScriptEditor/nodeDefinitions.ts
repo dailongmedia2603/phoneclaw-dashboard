@@ -80,6 +80,28 @@ export const NODE_DEFS: Record<string, NodeDef> = {
     defaultParams: { fromX: 0.05, fromY: 0.5, toX: 0.95, toY: 0.5, duration: 0.3 },
     fields: [],
   },
+  tap_custom: {
+    nodeType: 'tap_custom', label: 'Tap toạ độ', category: 'device',
+    color: '#6366f1', bgColor: '#eef2ff', icon: 'crosshair',
+    stepType: 'tap', defaultParams: { x: 0.5, y: 0.5 },
+    fields: [
+      { key: 'x', label: 'X (0-1)', type: 'number' },
+      { key: 'y', label: 'Y (0-1)', type: 'number' },
+    ],
+  },
+  swipe_custom: {
+    nodeType: 'swipe_custom', label: 'Vuốt toạ độ', category: 'device',
+    color: '#6366f1', bgColor: '#eef2ff', icon: 'move',
+    stepType: 'swipe',
+    defaultParams: { fromX: 0.5, fromY: 0.7, toX: 0.5, toY: 0.3, duration: 0.3 },
+    fields: [
+      { key: 'fromX', label: 'Từ X', type: 'number' },
+      { key: 'fromY', label: 'Từ Y', type: 'number' },
+      { key: 'toX', label: 'Đến X', type: 'number' },
+      { key: 'toY', label: 'Đến Y', type: 'number' },
+      { key: 'duration', label: 'Thời gian (s)', type: 'number' },
+    ],
+  },
   type_text: {
     nodeType: 'type_text', label: 'Gõ text', category: 'device',
     color: '#6366f1', bgColor: '#eef2ff', icon: 'keyboard',

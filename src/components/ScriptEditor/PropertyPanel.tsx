@@ -1,15 +1,40 @@
 import type { Node } from '@xyflow/react';
 import { NODE_DEFS } from './nodeDefinitions';
 import NodeIcon from './nodeIcons';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Crosshair } from 'lucide-react';
 
 interface PropertyPanelProps {
   selectedNode: Node | null;
   onUpdateNode: (nodeId: string, params: Record<string, unknown>) => void;
   onDeleteNode?: (nodeId: string) => void;
+  onPickCoordinate?: (fieldPrefix: string) => void;
 }
 
-export default function PropertyPanel({ selectedNode, onUpdateNode, onDeleteNode }: PropertyPanelProps) {
+/** Check if the node has pickable coordinate fields */
+function getPickableFields(nodeType: string): { prefix: string; label: string }[] {
+  const def = NODE_DEFS[nodeType];
+  if (!def) return [];
+
+  const keys = def.fields.map(f => f.key);
+  const result: { prefix: string; label: string }[] = [];
+
+  // Tap-style: x, y
+  if (keys.includes('x') && keys.includes('y')) {
+    result.push({ prefix: 'xy', label: 'Chọn vị trí tap' });
+  }
+
+  // Swipe-style: fromX/fromY + toX/toY
+  if (keys.includes('fromX') && keys.includes('fromY')) {
+    result.push({ prefix: 'from', label: 'Chọn điểm bắt đầu' });
+  }
+  if (keys.includes('toX') && keys.includes('toY')) {
+    result.push({ prefix: 'to', label: 'Chọn điểm kết thúc' });
+  }
+
+  return result;
+}
+
+export default function PropertyPanel({ selectedNode, onUpdateNode, onDeleteNode, onPickCoordinate }: PropertyPanelProps) {
   if (!selectedNode) {
     return (
       <div className="w-64 bg-white border-l border-slate-200 flex items-center justify-center p-4">
@@ -21,6 +46,7 @@ export default function PropertyPanel({ selectedNode, onUpdateNode, onDeleteNode
   const nodeData = selectedNode.data as { nodeType: string; params: Record<string, unknown> };
   const def = NODE_DEFS[nodeData?.nodeType];
   const isStart = selectedNode.type === 'start';
+  const pickableFields = nodeData?.nodeType ? getPickableFields(nodeData.nodeType) : [];
 
   const handleChange = (key: string, value: string) => {
     const field = def?.fields.find(f => f.key === key);
@@ -49,7 +75,23 @@ export default function PropertyPanel({ selectedNode, onUpdateNode, onDeleteNode
         </div>
       ))}
 
-      {def && def.fields.length === 0 && !isStart && (
+      {/* Coordinate Picker buttons */}
+      {pickableFields.length > 0 && onPickCoordinate && (
+        <div className="space-y-2 pt-2 border-t border-slate-100">
+          <p className="text-xs font-medium text-slate-500">Chọn toạ độ từ màn hình</p>
+          {pickableFields.map(pf => (
+            <button
+              key={pf.prefix}
+              onClick={() => onPickCoordinate(pf.prefix)}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+            >
+              <Crosshair size={14} /> {pf.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {def && def.fields.length === 0 && !isStart && pickableFields.length === 0 && (
         <p className="text-xs text-slate-400">Không có thuộc tính cần cấu hình.</p>
       )}
 
