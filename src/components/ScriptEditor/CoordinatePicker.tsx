@@ -4,8 +4,8 @@ import { control } from '../../services/api';
 
 interface CoordinatePickerProps {
   deviceId: string;
-  /** Which coordinate fields to pick: 'xy' for tap, 'from' or 'to' for swipe */
-  mode?: 'xy' | 'from' | 'to';
+  /** Which coordinate fields to pick: 'xy' for tap, 'from'/'to' for swipe, 'fallback' for tap_image */
+  mode?: 'xy' | 'from' | 'to' | 'fallback';
   onPick: (x: number, y: number) => void;
   onClose: () => void;
 }
@@ -100,7 +100,13 @@ export default function CoordinatePicker({ deviceId, mode = 'xy', onPick, onClos
     }
   };
 
-  const modeLabel = mode === 'from' ? 'Chọn điểm BẮT ĐẦU' : mode === 'to' ? 'Chọn điểm KẾT THÚC' : 'Chọn vị trí tap';
+  const modeLabels: Record<string, string> = {
+    xy: 'Chọn vị trí tap',
+    from: 'Chọn điểm BẮT ĐẦU',
+    to: 'Chọn điểm KẾT THÚC',
+    fallback: 'Chọn vị trí fallback',
+  };
+  const modeLabel = modeLabels[mode] || 'Chọn vị trí tap';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">

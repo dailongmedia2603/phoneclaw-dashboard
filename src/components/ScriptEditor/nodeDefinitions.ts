@@ -120,49 +120,75 @@ export const NODE_DEFS: Record<string, NodeDef> = {
     color: '#ef4444', bgColor: '#fef2f2', icon: 'heart',
     stepType: 'double_tap',
     defaultParams: { x: 0.5, y: 0.4, delay: 0.1 },
-    fields: [],
+    fields: [
+      { key: 'x', label: 'X (0-1)', type: 'number' },
+      { key: 'y', label: 'Y (0-1)', type: 'number' },
+    ],
   },
   tiktok_vn_comment: {
     nodeType: 'tiktok_vn_comment', label: 'Bình luận', category: 'tiktok_vn',
     color: '#3b82f6', bgColor: '#eff6ff', icon: 'message',
     stepType: 'tap',
     defaultParams: { x: 0.923, y: 0.607 },
-    fields: [],
+    fields: [
+      { key: 'x', label: 'X (0-1)', type: 'number' },
+      { key: 'y', label: 'Y (0-1)', type: 'number' },
+    ],
   },
   tiktok_vn_share: {
     nodeType: 'tiktok_vn_share', label: 'Chia sẻ', category: 'tiktok_vn',
     color: '#3b82f6', bgColor: '#eff6ff', icon: 'share',
     stepType: 'tap_image',
     defaultParams: { templateName: 'tiktok_share', threshold: 0.6, retries: 2, retryDelay: 2, fallbackX: 0.93, fallbackY: 0.65 },
-    fields: [{ key: 'threshold', label: 'Ngưỡng', type: 'number' }],
+    fields: [
+      { key: 'threshold', label: 'Ngưỡng', type: 'number' },
+      { key: 'fallbackX', label: 'Fallback X', type: 'number' },
+      { key: 'fallbackY', label: 'Fallback Y', type: 'number' },
+    ],
   },
   tiktok_vn_follow: {
     nodeType: 'tiktok_vn_follow', label: 'Theo dõi', category: 'tiktok_vn',
     color: '#ef4444', bgColor: '#fef2f2', icon: 'user_plus',
     stepType: 'tap_image',
     defaultParams: { templateName: 'tiktok_follow', threshold: 0.6, retries: 2, retryDelay: 2, fallbackX: 0.93, fallbackY: 0.35 },
-    fields: [{ key: 'threshold', label: 'Ngưỡng', type: 'number' }],
+    fields: [
+      { key: 'threshold', label: 'Ngưỡng', type: 'number' },
+      { key: 'fallbackX', label: 'Fallback X', type: 'number' },
+      { key: 'fallbackY', label: 'Fallback Y', type: 'number' },
+    ],
   },
   tiktok_vn_bookmark: {
     nodeType: 'tiktok_vn_bookmark', label: 'Lưu video', category: 'tiktok_vn',
     color: '#f59e0b', bgColor: '#fffbeb', icon: 'bookmark',
     stepType: 'tap_image',
     defaultParams: { templateName: 'tiktok_bookmark', threshold: 0.6, retries: 2, retryDelay: 2, fallbackX: 0.93, fallbackY: 0.6 },
-    fields: [{ key: 'threshold', label: 'Ngưỡng', type: 'number' }],
+    fields: [
+      { key: 'threshold', label: 'Ngưỡng', type: 'number' },
+      { key: 'fallbackX', label: 'Fallback X', type: 'number' },
+      { key: 'fallbackY', label: 'Fallback Y', type: 'number' },
+    ],
   },
   tiktok_vn_foryou: {
     nodeType: 'tiktok_vn_foryou', label: 'Tab For You', category: 'tiktok_vn',
     color: '#000000', bgColor: '#f8fafc', icon: 'home',
     stepType: 'tap_image',
     defaultParams: { templateName: 'tiktok_foryou', threshold: 0.5, retries: 2, retryDelay: 2, fallbackX: 0.5, fallbackY: 0.04 },
-    fields: [],
+    fields: [
+      { key: 'threshold', label: 'Ngưỡng', type: 'number' },
+      { key: 'fallbackX', label: 'Fallback X', type: 'number' },
+      { key: 'fallbackY', label: 'Fallback Y', type: 'number' },
+    ],
   },
   tiktok_vn_search: {
     nodeType: 'tiktok_vn_search', label: 'Tìm kiếm', category: 'tiktok_vn',
     color: '#000000', bgColor: '#f8fafc', icon: 'search',
     stepType: 'tap_image',
     defaultParams: { templateName: 'tiktok_search', threshold: 0.5, retries: 2, retryDelay: 2, fallbackX: 0.93, fallbackY: 0.04 },
-    fields: [],
+    fields: [
+      { key: 'threshold', label: 'Ngưỡng', type: 'number' },
+      { key: 'fallbackX', label: 'Fallback X', type: 'number' },
+      { key: 'fallbackY', label: 'Fallback Y', type: 'number' },
+    ],
   },
 
   // --- TikTok US ---
@@ -176,7 +202,10 @@ export const NODE_DEFS: Record<string, NodeDef> = {
     color: '#ef4444', bgColor: '#fef2f2', icon: 'heart',
     stepType: 'double_tap',
     defaultParams: { x: 0.5, y: 0.4, delay: 0.1 },
-    fields: [],
+    fields: [
+      { key: 'x', label: 'X (0-1)', type: 'number' },
+      { key: 'y', label: 'Y (0-1)', type: 'number' },
+    ],
   },
 
   // --- Facebook ---
@@ -189,22 +218,34 @@ export const NODE_DEFS: Record<string, NodeDef> = {
     nodeType: 'fb_like', label: 'Like (FB)', category: 'facebook',
     color: '#1877f2', bgColor: '#eff6ff', icon: 'thumbs_up',
     stepType: 'tap_image',
-    defaultParams: { templateName: 'fb_like', threshold: 0.6, retries: 2, retryDelay: 2 },
-    fields: [{ key: 'threshold', label: 'Ngưỡng', type: 'number' }],
+    defaultParams: { templateName: 'fb_like', threshold: 0.6, retries: 2, retryDelay: 2, fallbackX: 0.5, fallbackY: 0.5 },
+    fields: [
+      { key: 'threshold', label: 'Ngưỡng', type: 'number' },
+      { key: 'fallbackX', label: 'Fallback X', type: 'number' },
+      { key: 'fallbackY', label: 'Fallback Y', type: 'number' },
+    ],
   },
   fb_comment: {
     nodeType: 'fb_comment', label: 'Comment (FB)', category: 'facebook',
     color: '#1877f2', bgColor: '#eff6ff', icon: 'message',
     stepType: 'tap_image',
-    defaultParams: { templateName: 'fb_comment', threshold: 0.6, retries: 2, retryDelay: 2 },
-    fields: [{ key: 'threshold', label: 'Ngưỡng', type: 'number' }],
+    defaultParams: { templateName: 'fb_comment', threshold: 0.6, retries: 2, retryDelay: 2, fallbackX: 0.5, fallbackY: 0.5 },
+    fields: [
+      { key: 'threshold', label: 'Ngưỡng', type: 'number' },
+      { key: 'fallbackX', label: 'Fallback X', type: 'number' },
+      { key: 'fallbackY', label: 'Fallback Y', type: 'number' },
+    ],
   },
   fb_share: {
     nodeType: 'fb_share', label: 'Share (FB)', category: 'facebook',
     color: '#1877f2', bgColor: '#eff6ff', icon: 'share',
     stepType: 'tap_image',
-    defaultParams: { templateName: 'fb_share', threshold: 0.6, retries: 2, retryDelay: 2 },
-    fields: [{ key: 'threshold', label: 'Ngưỡng', type: 'number' }],
+    defaultParams: { templateName: 'fb_share', threshold: 0.6, retries: 2, retryDelay: 2, fallbackX: 0.5, fallbackY: 0.5 },
+    fields: [
+      { key: 'threshold', label: 'Ngưỡng', type: 'number' },
+      { key: 'fallbackX', label: 'Fallback X', type: 'number' },
+      { key: 'fallbackY', label: 'Fallback Y', type: 'number' },
+    ],
   },
 };
 

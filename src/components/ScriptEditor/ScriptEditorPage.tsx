@@ -203,6 +203,9 @@ export default function ScriptEditorPage({ scriptId, appTab, onBack }: ScriptEdi
       } else if (fieldPrefix === 'to') {
         updatedParams.toX = x;
         updatedParams.toY = y;
+      } else if (fieldPrefix === 'fallback') {
+        updatedParams.fallbackX = x;
+        updatedParams.fallbackY = y;
       }
 
       return { ...n, data: { ...data, params: updatedParams } };
@@ -216,6 +219,7 @@ export default function ScriptEditorPage({ scriptId, appTab, onBack }: ScriptEdi
       if (fieldPrefix === 'xy') { updatedParams.x = x; updatedParams.y = y; }
       else if (fieldPrefix === 'from') { updatedParams.fromX = x; updatedParams.fromY = y; }
       else if (fieldPrefix === 'to') { updatedParams.toX = x; updatedParams.toY = y; }
+      else if (fieldPrefix === 'fallback') { updatedParams.fallbackX = x; updatedParams.fallbackY = y; }
       return { ...prev, data: { ...data, params: updatedParams } };
     });
 
