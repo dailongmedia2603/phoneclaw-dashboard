@@ -96,9 +96,9 @@ export const NODE_DEFS: Record<string, NodeDef> = {
   tiktok_vn_heart: {
     nodeType: 'tiktok_vn_heart', label: 'Thả tim', category: 'tiktok_vn',
     color: '#ef4444', bgColor: '#fef2f2', icon: 'heart',
-    stepType: 'tap_image',
-    defaultParams: { templateName: 'tiktok_heart', threshold: 0.6, retries: 2, retryDelay: 2, fallbackX: 0.93, fallbackY: 0.45 },
-    fields: [{ key: 'threshold', label: 'Ngưỡng', type: 'number' }],
+    stepType: 'double_tap',
+    defaultParams: { x: 0.5, y: 0.4, delay: 0.1 },
+    fields: [],
   },
   tiktok_vn_comment: {
     nodeType: 'tiktok_vn_comment', label: 'Bình luận', category: 'tiktok_vn',
@@ -152,9 +152,9 @@ export const NODE_DEFS: Record<string, NodeDef> = {
   tiktok_us_heart: {
     nodeType: 'tiktok_us_heart', label: 'Thả tim (US)', category: 'tiktok_us',
     color: '#ef4444', bgColor: '#fef2f2', icon: 'heart',
-    stepType: 'tap_image',
-    defaultParams: { templateName: 'tiktok_heart_us', threshold: 0.6, retries: 2, retryDelay: 2, fallbackX: 0.93, fallbackY: 0.45 },
-    fields: [{ key: 'threshold', label: 'Ngưỡng', type: 'number' }],
+    stepType: 'double_tap',
+    defaultParams: { x: 0.5, y: 0.4, delay: 0.1 },
+    fields: [],
   },
 
   // --- Facebook ---

@@ -147,6 +147,7 @@ function findNodeType(step: ScriptStep): string {
       if (step.type === 'launch' && step.params.bundleId === def.defaultParams.bundleId) return key;
       if (step.type === 'key' && step.params.key === def.defaultParams.key) return key;
       if (step.type === 'tap_image' && step.params.templateName === def.defaultParams.templateName) return key;
+      if (step.type === 'double_tap') return key;
       if (step.type === 'swipe') {
         if (JSON.stringify(step.params) === JSON.stringify(def.defaultParams)) return key;
       }
@@ -159,6 +160,7 @@ function findNodeType(step: ScriptStep): string {
   if (step.type === 'screenshot') return 'screenshot';
   if (step.type === 'type') return 'type_text';
   if (step.type === 'swipe') return 'swipe_up';
+  if (step.type === 'double_tap') return 'tiktok_vn_heart';
   if (step.type === 'tap_image') return 'tiktok_vn_heart';
   if (step.type === 'launch') return 'tiktok_vn_open';
   return 'wait';

@@ -30,7 +30,7 @@ export interface DeviceGroup {
 
 // --- Script ---
 export type ScriptStepType =
-  | 'tap' | 'tap_image' | 'swipe' | 'type' | 'key' | 'launch' | 'screenshot' | 'clipboard'
+  | 'tap' | 'double_tap' | 'tap_image' | 'swipe' | 'type' | 'key' | 'launch' | 'screenshot' | 'clipboard'
   | 'wait' | 'wait_random'
   | 'repeat' | 'repeat_forever' | 'if_screen_match' | 'if_elapsed'
   | 'set' | 'random_text' | 'random_int' | 'counter';

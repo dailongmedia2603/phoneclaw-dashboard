@@ -193,6 +193,16 @@ async function executeStep(
       if (!res.ok) throw new Error(`Tap failed: ${res.error}`);
       break;
     }
+    case 'double_tap': {
+      // Double-tap at center (TikTok like)
+      const x = Number(p.x) || 0.5;
+      const y = Number(p.y) || 0.4;
+      const delay = Number(p.delay) || 0.1;
+      await callDeviceApi(deviceId, 'POST', '/api/tap', { x, y });
+      await sleep(delay * 1000);
+      await callDeviceApi(deviceId, 'POST', '/api/tap', { x, y });
+      break;
+    }
     case 'tap_image': {
       const templateName = String(p.templateName);
       const threshold = Number(p.threshold) || 0.7;
@@ -309,6 +319,7 @@ function describeStep(step: ScriptStep): string {
   const p = step.params;
   switch (step.type) {
     case 'tap': return `Tap at (${p.x}, ${p.y})`;
+    case 'double_tap': return `Double-tap at (${p.x}, ${p.y})`;
     case 'tap_image': return `Tap on image: ${p.templateName}`;
     case 'swipe': return `Swipe from (${p.fromX},${p.fromY}) to (${p.toX},${p.toY})`;
     case 'type': return `Type "${p.text}"`;
