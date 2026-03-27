@@ -36,6 +36,7 @@ export default function ScriptEditorPage({ scriptId, appTab, onBack }: ScriptEdi
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [scriptName, setScriptName] = useState('');
   const [scriptDesc, setScriptDesc] = useState('');
+  const [scriptChannel, setScriptChannel] = useState(appTab || 'tiktok_vn');
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
@@ -49,6 +50,7 @@ export default function ScriptEditorPage({ scriptId, appTab, onBack }: ScriptEdi
           const script = res.data;
           setScriptName(script.name);
           setScriptDesc(script.description);
+          if (script.channel) setScriptChannel(script.channel);
           if (script.steps?.length > 0) {
             const { nodes: gNodes, edges: gEdges } = scriptStepsToGraph(script.steps);
             setNodes(gNodes);
@@ -121,6 +123,7 @@ export default function ScriptEditorPage({ scriptId, appTab, onBack }: ScriptEdi
         await scriptsApi.update(scriptId, {
           name: scriptName,
           description: scriptDesc,
+          channel: scriptChannel,
           steps,
         });
         showToast('success', 'Đã lưu kịch bản');
@@ -128,6 +131,7 @@ export default function ScriptEditorPage({ scriptId, appTab, onBack }: ScriptEdi
         await scriptsApi.create({
           name: scriptName,
           description: scriptDesc,
+          channel: scriptChannel,
           steps,
         });
         showToast('success', 'Đã tạo kịch bản');
@@ -154,6 +158,15 @@ export default function ScriptEditorPage({ scriptId, appTab, onBack }: ScriptEdi
             placeholder="Tên kịch bản..."
             className="text-lg font-bold text-slate-900 bg-transparent border-none focus:outline-none focus:ring-0 w-64"
           />
+          <select
+            value={scriptChannel}
+            onChange={e => setScriptChannel(e.target.value)}
+            className="text-sm font-medium bg-slate-100 border border-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          >
+            <option value="tiktok_vn">TikTok Việt</option>
+            <option value="tiktok_us">TikTok US</option>
+            <option value="facebook">Facebook</option>
+          </select>
           <input
             type="text"
             value={scriptDesc}

@@ -108,14 +108,9 @@ export default function Scripts({ onOpenEditor, onCreateNew }: ScriptsProps = {}
     { id: 'facebook', label: 'Facebook', icon: 'f', color: 'bg-blue-500 text-white', bundleId: 'com.facebook.Facebook' },
   ] as const;
 
-  // Scripts are categorized by name containing tab keyword or by a tag field
+  // Filter by channel field (user-assigned)
   const filteredScripts = scriptsData.filter(s => {
-    const name = s.name.toLowerCase();
-    const desc = s.description.toLowerCase();
-    if (activeAppTab === 'tiktok_vn') return name.includes('tiktok vi') || name.includes('tiktok việt') || desc.includes('tiktok vi') || desc.includes('tiktok việt') || (!name.includes('tiktok us') && !name.includes('facebook') && (name.includes('tiktok') || desc.includes('tiktok')));
-    if (activeAppTab === 'tiktok_us') return name.includes('tiktok us') || desc.includes('tiktok us') || name.includes('trill');
-    if (activeAppTab === 'facebook') return name.includes('facebook') || name.includes('fb') || desc.includes('facebook');
-    return true;
+    return (s.channel || 'tiktok_vn') === activeAppTab;
   });
 
   const handleCreateNew = () => {
@@ -243,13 +238,7 @@ export default function Scripts({ onOpenEditor, onCreateNew }: ScriptsProps = {}
             <span className={`text-xs px-1.5 py-0.5 rounded-full ${
               activeAppTab === tab.id ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
             }`}>
-              {scriptsData.filter(s => {
-                const n = s.name.toLowerCase(); const d = s.description.toLowerCase();
-                if (tab.id === 'tiktok_vn') return n.includes('tiktok vi') || n.includes('tiktok việt') || d.includes('tiktok vi') || d.includes('tiktok việt') || (!n.includes('tiktok us') && !n.includes('facebook') && (n.includes('tiktok') || d.includes('tiktok')));
-                if (tab.id === 'tiktok_us') return n.includes('tiktok us') || d.includes('tiktok us') || n.includes('trill');
-                if (tab.id === 'facebook') return n.includes('facebook') || n.includes('fb') || d.includes('facebook');
-                return false;
-              }).length}
+              {scriptsData.filter(s => (s.channel || 'tiktok_vn') === tab.id).length}
             </span>
           </button>
         ))}

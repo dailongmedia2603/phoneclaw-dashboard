@@ -46,6 +46,7 @@ export interface Script {
   id: string;
   name: string;
   description: string;
+  channel?: string; // 'tiktok_vn' | 'tiktok_us' | 'facebook'
   steps: ScriptStep[];
   status: 'active' | 'idle' | 'draft';
   lastRun?: string;
