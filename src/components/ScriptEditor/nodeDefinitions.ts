@@ -103,9 +103,9 @@ export const NODE_DEFS: Record<string, NodeDef> = {
   tiktok_vn_comment: {
     nodeType: 'tiktok_vn_comment', label: 'Bình luận', category: 'tiktok_vn',
     color: '#3b82f6', bgColor: '#eff6ff', icon: 'message',
-    stepType: 'tap_image',
-    defaultParams: { templateName: 'tiktok_comment', threshold: 0.6, retries: 2, retryDelay: 2, fallbackX: 0.93, fallbackY: 0.55 },
-    fields: [{ key: 'threshold', label: 'Ngưỡng', type: 'number' }],
+    stepType: 'tap',
+    defaultParams: { x: 0.923, y: 0.607 },
+    fields: [],
   },
   tiktok_vn_share: {
     nodeType: 'tiktok_vn_share', label: 'Chia sẻ', category: 'tiktok_vn',
