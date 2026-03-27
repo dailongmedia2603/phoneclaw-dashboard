@@ -7,7 +7,10 @@ import {
 import '@xyflow/react/dist/style.css';
 
 import { nodeTypes } from './nodes';
+import DeleteEdge from './nodes/DeleteEdge';
 import { NODE_DEFS } from './nodeDefinitions';
+
+const edgeTypes = { default: DeleteEdge };
 import NodePalette from './NodePalette';
 import PropertyPanel from './PropertyPanel';
 import { graphToScriptSteps, scriptStepsToGraph } from './graphConverter';
@@ -235,6 +238,8 @@ export default function ScriptEditorPage({ scriptId, appTab, onBack }: ScriptEdi
             onDrop={onDrop}
             onDragOver={onDragOver}
             nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
+            defaultEdgeOptions={{ type: 'default' }}
             fitView
             deleteKeyCode="Delete"
             className="bg-slate-50"
