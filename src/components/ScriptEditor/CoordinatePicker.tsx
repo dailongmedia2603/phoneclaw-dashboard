@@ -16,7 +16,6 @@ export default function CoordinatePicker({ deviceId, mode = 'xy', onPick, onClos
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null);
   const [picked, setPicked] = useState<{ x: number; y: number } | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval>>(undefined);
 
   const fetchScreenshot = useCallback(async () => {
     setLoading(true);
@@ -33,11 +32,9 @@ export default function CoordinatePicker({ deviceId, mode = 'xy', onPick, onClos
     setLoading(false);
   }, [deviceId]);
 
-  // Initial load + auto-refresh every 3s
+  // Load screenshot once on mount
   useEffect(() => {
     fetchScreenshot();
-    intervalRef.current = setInterval(fetchScreenshot, 3000);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [fetchScreenshot]);
 
   /** Calculate normalized coords from click/hover, accounting for letterboxing */
