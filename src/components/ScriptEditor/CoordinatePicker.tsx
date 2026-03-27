@@ -10,12 +10,17 @@ interface CoordinatePickerProps {
   onClose: () => void;
 }
 
+/** Max display constraints for the screenshot image */
+const MAX_IMG_WIDTH = 440;
+const MAX_IMG_HEIGHT_VH = 0.65; // 65% of viewport height
+
 export default function CoordinatePicker({ deviceId, mode = 'xy', onPick, onClose }: CoordinatePickerProps) {
-  const [screenshot, setScreenshot] = useState<string | null>(null);
+  const [screenshotSrc, setScreenshotSrc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null);
   const [picked, setPicked] = useState<{ x: number; y: number } | null>(null);
+  const [imgSize, setImgSize] = useState<{ w: number; h: number } | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
 
   const fetchScreenshot = useCallback(async () => {
@@ -25,7 +30,7 @@ export default function CoordinatePicker({ deviceId, mode = 'xy', onPick, onClos
       const res = await control.screenshot(deviceId);
       if (res.success && res.data) {
         const base64 = typeof res.data === 'string' ? res.data : (res.data as any).data || res.data;
-        setScreenshot(typeof base64 === 'string' && !base64.startsWith('data:')
+        setScreenshotSrc(typeof base64 === 'string' && !base64.startsWith('data:')
           ? `data:image/jpeg;base64,${base64}`
           : base64);
       } else {
@@ -42,49 +47,41 @@ export default function CoordinatePicker({ deviceId, mode = 'xy', onPick, onClos
     fetchScreenshot();
   }, [fetchScreenshot]);
 
-  /** Calculate normalized coords from click/hover, accounting for letterboxing */
-  const calcNormalized = useCallback((e: React.MouseEvent) => {
+  /** When image loads, compute explicit display dimensions (no object-fit guessing) */
+  const handleImageLoad = useCallback(() => {
     const img = imgRef.current;
-    if (!img) return null;
+    if (!img) return;
 
-    // Get the actual rendered image area within the element (handles object-fit: contain letterboxing)
-    const rect = img.getBoundingClientRect();
     const naturalW = img.naturalWidth;
     const naturalH = img.naturalHeight;
+    if (!naturalW || !naturalH) return;
 
-    if (!naturalW || !naturalH) return null;
+    const maxH = window.innerHeight * MAX_IMG_HEIGHT_VH;
+    const scale = Math.min(MAX_IMG_WIDTH / naturalW, maxH / naturalH, 1);
 
-    // Calculate actual image render area (object-fit: contain)
-    const containerRatio = rect.width / rect.height;
-    const imageRatio = naturalW / naturalH;
+    setImgSize({
+      w: Math.round(naturalW * scale),
+      h: Math.round(naturalH * scale),
+    });
+  }, []);
 
-    let renderW: number, renderH: number, offsetX: number, offsetY: number;
+  /** Simple coordinate calculation: click position / image display size */
+  const calcNormalized = useCallback((e: React.MouseEvent) => {
+    const img = imgRef.current;
+    if (!img || !imgSize) return null;
 
-    if (imageRatio > containerRatio) {
-      // Image wider than container → letterbox top/bottom
-      renderW = rect.width;
-      renderH = rect.width / imageRatio;
-      offsetX = 0;
-      offsetY = (rect.height - renderH) / 2;
-    } else {
-      // Image taller than container → letterbox left/right
-      renderH = rect.height;
-      renderW = rect.height * imageRatio;
-      offsetX = (rect.width - renderW) / 2;
-      offsetY = 0;
-    }
+    const rect = img.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
 
-    const localX = e.clientX - rect.left - offsetX;
-    const localY = e.clientY - rect.top - offsetY;
-
-    // Out of image bounds
-    if (localX < 0 || localX > renderW || localY < 0 || localY > renderH) return null;
+    // Clamp to 0-1
+    if (x < 0 || x > 1 || y < 0 || y > 1) return null;
 
     return {
-      x: parseFloat((localX / renderW).toFixed(3)),
-      y: parseFloat((localY / renderH).toFixed(3)),
+      x: parseFloat(x.toFixed(3)),
+      y: parseFloat(y.toFixed(3)),
     };
-  }, []);
+  }, [imgSize]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     setHover(calcNormalized(e));
@@ -112,7 +109,7 @@ export default function CoordinatePicker({ deviceId, mode = 'xy', onPick, onClos
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="bg-white rounded-2xl shadow-2xl w-[480px] max-h-[90vh] flex flex-col overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-[500px] max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
           <div className="flex items-center gap-2">
@@ -135,51 +132,48 @@ export default function CoordinatePicker({ deviceId, mode = 'xy', onPick, onClos
         </div>
 
         {/* Screenshot area */}
-        <div className="flex-1 relative bg-slate-900 flex items-center justify-center min-h-[400px]">
-          {screenshot ? (
-            <div className="relative w-full h-full flex items-center justify-center">
+        <div className="relative bg-slate-900 flex items-center justify-center p-2"
+             style={{ minHeight: 300 }}>
+          {screenshotSrc ? (
+            <div className="relative" style={imgSize ? { width: imgSize.w, height: imgSize.h } : undefined}>
               <img
                 ref={imgRef}
-                src={screenshot}
+                src={screenshotSrc}
                 alt="Device screen"
-                className="max-w-full max-h-[60vh] object-contain cursor-crosshair select-none"
+                onLoad={handleImageLoad}
                 draggable={false}
+                className="cursor-crosshair select-none block"
+                style={imgSize ? { width: imgSize.w, height: imgSize.h } : { maxWidth: MAX_IMG_WIDTH, maxHeight: '65vh' }}
                 onMouseMove={handleMouseMove}
                 onMouseLeave={() => setHover(null)}
                 onClick={handleClick}
               />
 
-              {/* Hover crosshair indicator */}
-              {hover && imgRef.current && (
-                <div
-                  className="absolute pointer-events-none z-10"
-                  style={getOverlayStyle(hover, imgRef.current)}
-                >
+              {/* Hover crosshair */}
+              {hover && imgSize && (
+                <>
                   {/* Vertical line */}
-                  <div className="absolute left-1/2 top-0 bottom-0 w-px bg-blue-400/60 -translate-x-1/2" />
+                  <div className="absolute top-0 bottom-0 w-px bg-cyan-400/50 pointer-events-none"
+                       style={{ left: hover.x * imgSize.w }} />
                   {/* Horizontal line */}
-                  <div className="absolute top-1/2 left-0 right-0 h-px bg-blue-400/60 -translate-y-1/2" />
+                  <div className="absolute left-0 right-0 h-px bg-cyan-400/50 pointer-events-none"
+                       style={{ top: hover.y * imgSize.h }} />
                   {/* Center dot */}
-                  <div className="absolute left-1/2 top-1/2 w-2 h-2 rounded-full bg-blue-500 border border-white -translate-x-1/2 -translate-y-1/2" />
-                </div>
+                  <div className="absolute w-3 h-3 rounded-full bg-cyan-400 border-2 border-white pointer-events-none -translate-x-1/2 -translate-y-1/2"
+                       style={{ left: hover.x * imgSize.w, top: hover.y * imgSize.h }} />
+                </>
               )}
 
               {/* Picked point marker */}
-              {picked && imgRef.current && (
-                <div
-                  className="absolute pointer-events-none z-20"
-                  style={getOverlayStyle(picked, imgRef.current)}
-                >
-                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-                    <div className="w-6 h-6 rounded-full border-2 border-red-500 bg-red-500/20 flex items-center justify-center">
-                      <div className="w-2 h-2 rounded-full bg-red-500" />
-                    </div>
-                  </div>
+              {picked && imgSize && (
+                <div className="absolute w-7 h-7 rounded-full border-2 border-red-500 bg-red-500/20 pointer-events-none -translate-x-1/2 -translate-y-1/2 flex items-center justify-center"
+                     style={{ left: picked.x * imgSize.w, top: picked.y * imgSize.h }}>
+                  <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
                 </div>
               )}
             </div>
           ) : (
-            <div className="text-slate-400 text-sm text-center px-8">
+            <div className="text-slate-400 text-sm text-center px-8 py-16">
               {loading ? (
                 <div className="space-y-2">
                   <RefreshCw size={24} className="animate-spin mx-auto text-blue-400" />
@@ -232,39 +226,4 @@ export default function CoordinatePicker({ deviceId, mode = 'xy', onPick, onClos
       </div>
     </div>
   );
-}
-
-/** Calculate CSS position for the overlay indicator on top of the <img> */
-function getOverlayStyle(
-  point: { x: number; y: number },
-  img: HTMLImageElement,
-): React.CSSProperties {
-  const rect = img.getBoundingClientRect();
-  const parent = img.parentElement!.getBoundingClientRect();
-  const naturalW = img.naturalWidth;
-  const naturalH = img.naturalHeight;
-
-  const containerRatio = rect.width / rect.height;
-  const imageRatio = naturalW / naturalH;
-
-  let renderW: number, renderH: number, offsetX: number, offsetY: number;
-
-  if (imageRatio > containerRatio) {
-    renderW = rect.width;
-    renderH = rect.width / imageRatio;
-    offsetX = 0;
-    offsetY = (rect.height - renderH) / 2;
-  } else {
-    renderH = rect.height;
-    renderW = rect.height * imageRatio;
-    offsetX = (rect.width - renderW) / 2;
-    offsetY = 0;
-  }
-
-  return {
-    left: rect.left - parent.left + offsetX + point.x * renderW,
-    top: rect.top - parent.top + offsetY + point.y * renderH,
-    width: 0,
-    height: 0,
-  };
 }
