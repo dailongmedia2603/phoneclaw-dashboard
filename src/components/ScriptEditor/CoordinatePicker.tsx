@@ -13,22 +13,27 @@ interface CoordinatePickerProps {
 export default function CoordinatePicker({ deviceId, mode = 'xy', onPick, onClose }: CoordinatePickerProps) {
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null);
   const [picked, setPicked] = useState<{ x: number; y: number } | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
 
   const fetchScreenshot = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await control.screenshot(deviceId);
       if (res.success && res.data) {
-        // data could be base64 string or {data: base64}
         const base64 = typeof res.data === 'string' ? res.data : (res.data as any).data || res.data;
         setScreenshot(typeof base64 === 'string' && !base64.startsWith('data:')
           ? `data:image/jpeg;base64,${base64}`
           : base64);
+      } else {
+        setError(res.error || 'Không thể chụp screenshot');
       }
-    } catch { /* ignore */ }
+    } catch {
+      setError('Lỗi kết nối server');
+    }
     setLoading(false);
   }, [deviceId]);
 
@@ -174,8 +179,23 @@ export default function CoordinatePicker({ deviceId, mode = 'xy', onPick, onClos
               )}
             </div>
           ) : (
-            <div className="text-slate-400 text-sm">
-              {loading ? 'Đang tải screenshot...' : 'Không thể tải screenshot'}
+            <div className="text-slate-400 text-sm text-center px-8">
+              {loading ? (
+                <div className="space-y-2">
+                  <RefreshCw size={24} className="animate-spin mx-auto text-blue-400" />
+                  <div>Đang kết nối VNC và chụp màn hình...</div>
+                  <div className="text-xs text-slate-500">Có thể mất 2-3 giây</div>
+                </div>
+              ) : error ? (
+                <div className="space-y-2">
+                  <div className="text-red-400">{error}</div>
+                  <button onClick={fetchScreenshot} className="text-blue-400 hover:text-blue-300 underline text-xs">
+                    Thử lại
+                  </button>
+                </div>
+              ) : (
+                'Không thể tải screenshot'
+              )}
             </div>
           )}
         </div>
