@@ -16,10 +16,10 @@ export default function Devices() {
   const [search, setSearch] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState<string | null>(null);
-  const [addForm, setAddForm] = useState({ name: '', tailscaleIp: '', group: '', vncPassword: '' });
+  const [addForm, setAddForm] = useState({ name: '', tailscaleIp: '', group: '', vncPassword: '', account: '' });
   const [adding, setAdding] = useState(false);
   const [showEditModal, setShowEditModal] = useState<Device | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', tailscaleIp: '', group: '', vncPassword: '' });
+  const [editForm, setEditForm] = useState({ name: '', tailscaleIp: '', group: '', vncPassword: '', account: '' });
   const [editing, setEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<Device | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -78,11 +78,12 @@ export default function Devices() {
         tailscaleIp: addForm.tailscaleIp,
         group: addForm.group || '',
         vncPassword: addForm.vncPassword || '',
+        account: addForm.account || '',
         vncPort: 5901,
         httpPort: 8080,
       });
       setShowAddModal(false);
-      setAddForm({ name: '', tailscaleIp: '', group: '', vncPassword: '' });
+      setAddForm({ name: '', tailscaleIp: '', group: '', vncPassword: '', account: '' });
       refreshDevices();
       showToast('success', 'Thêm thiết bị thành công');
       // Auto-refresh after 5s to update connecting → online/offline
@@ -99,6 +100,7 @@ export default function Devices() {
       tailscaleIp: device.tailscaleIp,
       group: device.group,
       vncPassword: device.vncPassword || '',
+      account: device.account || '',
     });
     setShowEditModal(device);
   };
@@ -112,6 +114,7 @@ export default function Devices() {
         tailscaleIp: editForm.tailscaleIp,
         group: editForm.group,
         vncPassword: editForm.vncPassword,
+        account: editForm.account,
       });
       setShowEditModal(null);
       refreshDevices();
@@ -237,16 +240,15 @@ export default function Devices() {
               <th className="py-3 px-4">Tên thiết bị</th>
               <th className="py-3 px-4">IP Tailscale</th>
               <th className="py-3 px-4">iOS Version</th>
+              <th className="py-3 px-4">Tài khoản</th>
               <th className="py-3 px-4">Trạng thái</th>
-              <th className="py-3 px-4">Pin</th>
-              <th className="py-3 px-4">Uptime</th>
               <th className="py-3 px-4 text-right pr-6">Thao tác</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={8} className="text-center py-12 text-slate-400">
+                <td colSpan={7} className="text-center py-12 text-slate-400">
                   <Smartphone size={32} className="mx-auto mb-2" />
                   <p className="text-sm">{allDevices.length === 0 ? 'Chưa có thiết bị nào' : 'Không tìm thấy thiết bị phù hợp'}</p>
                 </td>
@@ -284,6 +286,9 @@ export default function Devices() {
                   <span className="text-sm text-slate-600">iOS {device.iosVersion}</span>
                 </td>
                 <td className="py-3 px-4">
+                  <span className="text-sm text-slate-600">{device.account || '-'}</span>
+                </td>
+                <td className="py-3 px-4">
                   {device.status === 'connecting' ? (
                     <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-50 text-blue-600 text-xs font-medium border border-blue-100">
                       <Loader2 size={12} className="animate-spin" /> Đang kết nối
@@ -307,17 +312,8 @@ export default function Devices() {
                     </div>
                   )}
                 </td>
-                <td className="py-3 px-4">
-                  <div className="flex items-center gap-1.5 text-sm text-slate-600">
-                    {getBatteryIcon(device.battery, device.status)}
-                    {device.status !== 'offline' ? `${device.battery}%` : '-'}
-                  </div>
-                </td>
-                <td className="py-3 px-4">
-                  <span className="text-sm text-slate-600">{formatUptime(device.uptime)}</span>
-                </td>
                 <td className="py-3 px-4 text-right pr-6">
-                  <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                  <div className="flex items-center justify-end gap-1">
                     <button
                       onClick={(e) => { e.stopPropagation(); handleOpenEdit(device); }}
                       className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -370,6 +366,16 @@ export default function Devices() {
                   value={addForm.tailscaleIp}
                   onChange={e => setAddForm(p => ({ ...p, tailscaleIp: e.target.value }))}
                   className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-mono"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Tài khoản (tuỳ chọn)</label>
+                <input
+                  type="text"
+                  placeholder="Ví dụ: @tiktok_user_01"
+                  value={addForm.account || ''}
+                  onChange={e => setAddForm(p => ({ ...p, account: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 />
               </div>
               <div>
@@ -478,17 +484,6 @@ export default function Devices() {
                     <p className="text-sm font-medium text-slate-900">{detailDevice.iosVersion}</p>
                   </div>
                   <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                    <p className="text-xs text-slate-500 mb-1">Pin</p>
-                    <p className="text-sm font-medium text-slate-900 flex items-center gap-1.5">
-                      {getBatteryIcon(detailDevice.battery, detailDevice.status)}
-                      {detailDevice.battery}%
-                    </p>
-                  </div>
-                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                    <p className="text-xs text-slate-500 mb-1">Uptime</p>
-                    <p className="text-sm font-medium text-slate-900">{formatUptime(detailDevice.uptime)}</p>
-                  </div>
-                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
                     <p className="text-xs text-slate-500 mb-1">Model</p>
                     <p className="text-sm font-medium text-slate-900">{detailDevice.model}</p>
                   </div>
@@ -581,6 +576,10 @@ export default function Devices() {
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">IP Tailscale</label>
                 <input type="text" value={editForm.tailscaleIp} onChange={e => setEditForm(p => ({ ...p, tailscaleIp: e.target.value }))} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-mono" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Tài khoản</label>
+                <input type="text" value={editForm.account} onChange={e => setEditForm(p => ({ ...p, account: e.target.value }))} placeholder="VD: @tiktok_user_01" className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Nhóm</label>
