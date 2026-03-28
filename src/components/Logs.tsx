@@ -17,30 +17,18 @@ export default function Logs() {
   const [expandedLog, setExpandedLog] = useState<string | null>(null);
   const [cleaningUp, setCleaningUp] = useState(false);
 
-  const screenshotDaysRef = useRef<HTMLInputElement>(null);
-  const activityDaysRef = useRef<HTMLInputElement>(null);
   const scriptDaysRef = useRef<HTMLInputElement>(null);
-
-  // Real API calls
-  const { data: screenshots, loading: screenshotsLoading, error: screenshotsError } = useApi<ScreenshotLog[]>(
-    () => logsApi.getScreenshots({ limit: 50 }), []
-  );
-  const { data: activityLogs, loading: activityLoading, error: activityError } = useApi<ActivityLog[]>(
-    () => logsApi.getActivity({ limit: 50 }), []
-  );
-  const { data: scriptLogs, loading: scriptLogsLoading, error: scriptLogsError } = useApi<ScheduleHistory[]>(
+  const { data: scriptLogs, loading: scriptLogsLoading, error: scriptLogsError, refresh } = useApi<ScheduleHistory[]>(
     () => logsApi.getExecutions(), []
   );
 
   const handleCleanup = async () => {
-    const days = Math.min(
-      Number(screenshotDaysRef.current?.value || 7),
-      Number(activityDaysRef.current?.value || 30),
-      Number(scriptDaysRef.current?.value || 14),
-    );
+    const days = Number(scriptDaysRef.current?.value || 14);
     setCleaningUp(true);
     try {
       await logsApi.cleanup(days);
+      refresh();
+      setShowSettings(false);
     } finally {
       setCleaningUp(false);
     }
@@ -174,85 +162,8 @@ export default function Logs() {
       {/* Content Area */}
       <div className="flex-1 overflow-auto bg-slate-50/30">
 
-        {/* TAB: GALLERY */}
-        {activeTab === 'gallery' && (
-          <div className="p-6">
-            {screenshotsLoading ? (
-              <LoadingState />
-            ) : screenshotsError ? (
-              <ErrorState message={screenshotsError} />
-            ) : !screenshots || screenshots.length === 0 ? (
-              <EmptyState icon={ImageOff} message="Chưa có ảnh chụp màn hình nào" />
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {screenshots.map((img) => (
-                  <div
-                    key={img.id}
-                    onClick={() => setLightboxImage({ url: img.url, device: img.deviceName, timestamp: img.timestamp, script: img.scriptName })}
-                    className="group relative aspect-[9/16] bg-slate-200 rounded-xl overflow-hidden cursor-pointer border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all"
-                  >
-                    <img src={img.url} alt="Screenshot" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
-                      <p className="text-white text-xs font-medium truncate">{img.deviceName}</p>
-                      <p className="text-slate-300 text-[10px] font-mono mt-0.5">{formatTime(img.timestamp)}</p>
-                      {img.scriptName && (
-                        <span className="mt-1.5 inline-block bg-blue-500/80 text-white text-[9px] px-1.5 py-0.5 rounded truncate">
-                          {img.scriptName}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TAB: ACTIVITY LOG */}
-        {activeTab === 'activity' && (
-          <>
-            {activityLoading ? (
-              <LoadingState />
-            ) : activityError ? (
-              <ErrorState message={activityError} />
-            ) : !activityLogs || activityLogs.length === 0 ? (
-              <EmptyState icon={Activity} message="Chưa có nhật ký hoạt động nào" />
-            ) : (
-              <table className="w-full text-left border-collapse bg-white">
-                <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50/50 text-sm font-medium text-slate-500 sticky top-0 z-10">
-                    <th className="py-3 px-6">Thời gian</th>
-                    <th className="py-3 px-4">Người dùng/Hệ thống</th>
-                    <th className="py-3 px-4">Thiết bị</th>
-                    <th className="py-3 px-6">Hành động</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {activityLogs.map((log) => (
-                    <tr key={log.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="py-3 px-6 text-sm font-mono text-slate-600">{formatTimestamp(log.timestamp)}</td>
-                      <td className="py-3 px-4">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${
-                          log.type === 'system' || log.type === 'script' || log.type === 'schedule'
-                            ? 'bg-purple-50 text-purple-700'
-                            : 'bg-blue-50 text-blue-700'
-                        }`}>
-                          {log.type === 'user' ? 'Admin' : 'System'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-sm font-medium text-slate-700">{log.deviceName || '-'}</td>
-                      <td className="py-3 px-6 text-sm text-slate-600">{log.action}{log.details ? `: ${log.details}` : ''}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </>
-        )}
-
-        {/* TAB: SCRIPT LOGS */}
         {activeTab === 'scripts' && (
-          <div className="p-6 max-w-5xl mx-auto space-y-4">
+          <div className="p-6 space-y-4">
             {scriptLogsLoading ? (
               <LoadingState />
             ) : scriptLogsError ? (
@@ -410,30 +321,8 @@ export default function Logs() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-slate-800">Ảnh chụp màn hình</p>
-                    <p className="text-xs text-slate-500">Xóa ảnh cũ hơn số ngày chỉ định</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input ref={screenshotDaysRef} type="number" defaultValue="7" className="w-16 px-2 py-1.5 border border-slate-200 rounded-lg text-center text-sm focus:outline-none focus:border-blue-500" />
-                    <span className="text-sm text-slate-600">ngày</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-slate-800">Nhật ký hoạt động</p>
-                    <p className="text-xs text-slate-500">Xóa log cũ hơn số ngày chỉ định</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input ref={activityDaysRef} type="number" defaultValue="30" className="w-16 px-2 py-1.5 border border-slate-200 rounded-lg text-center text-sm focus:outline-none focus:border-blue-500" />
-                    <span className="text-sm text-slate-600">ngày</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
                     <p className="font-medium text-slate-800">Nhật ký kịch bản</p>
-                    <p className="text-xs text-slate-500">Bao gồm cả ảnh chụp trong các bước</p>
+                    <p className="text-xs text-slate-500">Xóa nhật ký cũ hơn số ngày chỉ định</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <input ref={scriptDaysRef} type="number" defaultValue="14" className="w-16 px-2 py-1.5 border border-slate-200 rounded-lg text-center text-sm focus:outline-none focus:border-blue-500" />
@@ -455,7 +344,10 @@ export default function Logs() {
                 <button onClick={() => setShowSettings(false)} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-xl transition-colors">
                   Hủy
                 </button>
-                <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors shadow-sm shadow-blue-200">
+                <button
+                  onClick={() => setShowSettings(false)}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors shadow-sm shadow-blue-200"
+                >
                   Lưu cấu hình
                 </button>
               </div>
