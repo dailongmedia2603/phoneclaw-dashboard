@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Wand2, Plus, Play, Download, Upload, Edit, Trash2,
-  Clock, Smartphone, FileJson, Search, MoreVertical,
+  Clock, Smartphone, FileJson, Search,
   X, Save, Code, List, ChevronRight, GripVertical,
   MousePointer2, Timer, Repeat, Variable, CheckSquare,
   Copy
@@ -81,6 +81,7 @@ function getTimeAgo(timestamp: string): string {
 export default function Scripts() {
   const navigate = useNavigate();
   const [activeAppTab, setActiveAppTab] = useState('tiktok_vn');
+  const [searchQuery, setSearchQuery] = useState('');
   const [showEditor, setShowEditor] = useState(false);
   const [editingScript, setEditingScript] = useState<Script | null>(null);
   const [showRunModal, setShowRunModal] = useState<string | null>(null);
@@ -99,15 +100,19 @@ export default function Scripts() {
   const scriptsData = scriptsList || [];
   const devicesData = devicesList || [];
 
-  const APP_TABS = [
-    { id: 'tiktok_vn', label: 'TikTok Việt', icon: '♪', color: 'bg-black text-white', bundleId: 'com.ss.iphone.ugc.Ame' },
-    { id: 'tiktok_us', label: 'TikTok US', icon: '♪', color: 'bg-blue-600 text-white', bundleId: 'com.zhiliaoapp.musically' },
-    { id: 'facebook', label: 'Facebook', icon: 'f', color: 'bg-blue-500 text-white', bundleId: 'com.facebook.Facebook' },
-  ] as const;
+  const tiktokSvg = <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3.15 15.2 6.34 6.34 0 0 0 9.49 21.5a6.34 6.34 0 0 0 6.34-6.34V8.71a8.16 8.16 0 0 0 4.76 1.52v-3.4a4.85 4.85 0 0 1-1-.14z"/></svg>;
 
-  // Filter by channel field (user-assigned)
+  const APP_TABS = [
+    { id: 'tiktok_vn', label: 'TikTok Việt', icon: tiktokSvg, color: 'bg-black text-white', bundleId: 'com.ss.iphone.ugc.Ame' },
+    { id: 'tiktok_us', label: 'TikTok US', icon: tiktokSvg, color: 'bg-blue-600 text-white', bundleId: 'com.zhiliaoapp.musically' },
+    { id: 'facebook', label: 'Facebook', icon: <span className="text-xs font-bold">f</span>, color: 'bg-blue-500 text-white', bundleId: 'com.facebook.Facebook' },
+  ];
+
+  // Filter by channel + search query
   const filteredScripts = scriptsData.filter(s => {
-    return (s.channel || 'tiktok_vn') === activeAppTab;
+    if ((s.channel || 'tiktok_vn') !== activeAppTab) return false;
+    if (searchQuery && !s.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    return true;
   });
 
   const handleCreateNew = () => {
@@ -220,7 +225,7 @@ export default function Scripts() {
                 : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
             }`}
           >
-            <span className={`w-6 h-6 rounded-lg ${tab.color} flex items-center justify-center text-xs font-bold`}>
+            <span className={`w-6 h-6 rounded-lg ${tab.color} flex items-center justify-center`}>
               {tab.icon}
             </span>
             {tab.label}
@@ -239,6 +244,8 @@ export default function Scripts() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
           <input
             type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
             placeholder="Tìm kiếm kịch bản..."
             className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-72 transition-all"
           />
@@ -288,21 +295,9 @@ export default function Scripts() {
                   </div>
                 </td>
                 <td className="py-4 px-4">
-                  {script.status === 'active' && (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 text-xs font-medium border border-emerald-100">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Đang chạy
-                    </span>
-                  )}
-                  {script.status === 'idle' && (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-medium border border-slate-200">
-                      Sẵn sàng
-                    </span>
-                  )}
-                  {script.status === 'draft' && (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50 text-amber-700 text-xs font-medium border border-amber-100">
-                      Bản nháp
-                    </span>
-                  )}
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 text-xs font-medium border border-emerald-100">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Sẵn sàng
+                  </span>
                 </td>
                 <td className="py-4 px-6 text-right">
                   <div className="flex items-center justify-end gap-2">
@@ -325,9 +320,6 @@ export default function Scripts() {
                       title="Xóa"
                     >
                       <Trash2 size={16} />
-                    </button>
-                    <button className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
-                      <MoreVertical size={16} />
                     </button>
                   </div>
                 </td>
