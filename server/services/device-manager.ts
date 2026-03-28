@@ -125,15 +125,12 @@ async function runHealthChecks() {
       lastSeen: newStatus !== 'offline' ? new Date().toISOString() : device.lastSeen,
     };
 
-    // Update device info from /api/status response
-    if (healthResult?.info) {
+    // Update device info only if not yet known
+    const needsInfo = !device.iosVersion || device.iosVersion === 'Unknown' || !device.model || device.model === 'iPhone';
+    if (needsInfo && healthResult?.info) {
       const info = healthResult.info;
-      if (info.systemVersion && info.systemVersion !== device.iosVersion) {
-        updateData.iosVersion = String(info.systemVersion);
-      }
-      if (info.model && info.model !== device.model) {
-        updateData.model = String(info.model);
-      }
+      if (info.systemVersion) updateData.iosVersion = String(info.systemVersion);
+      if (info.model) updateData.model = String(info.model);
     }
 
     if (newStatus !== device.status || updateData.iosVersion || updateData.model) {
