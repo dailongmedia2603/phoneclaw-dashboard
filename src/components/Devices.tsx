@@ -331,6 +331,11 @@ export default function Devices() {
                       <Play size={10} /> {device.currentScript}
                     </div>
                   )}
+                  {device.proxyStatus === 'running' && (
+                    <div className="mt-1 text-[10px] text-emerald-600 font-medium flex items-center gap-1">
+                      <Wifi size={10} /> Proxy US
+                    </div>
+                  )}
                 </td>
                 <td className="py-3 px-4 text-right pr-6">
                   <div className="flex items-center justify-end gap-1">

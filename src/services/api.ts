@@ -175,6 +175,28 @@ export const videos = {
 };
 
 // ============================================================
+// Proxy Management
+// ============================================================
+export const proxy = {
+  getStatus: (deviceId: string) =>
+    get(`/api/proxy/${deviceId}/status`),
+  setConfig: (deviceId: string, config: { ip: string; port: number; username: string; password: string; mode: string }) =>
+    post(`/api/proxy/${deviceId}/config`, config),
+  start: (deviceId: string) =>
+    post(`/api/proxy/${deviceId}/start`),
+  stop: (deviceId: string) =>
+    post(`/api/proxy/${deviceId}/stop`),
+  setSpoof: (deviceId: string, spoof: { mode: string; timezone?: string; locale?: string; latitude?: number; longitude?: number }) =>
+    post(`/api/proxy/${deviceId}/spoof`, spoof),
+  batchConfig: (deviceIds: string[], config: { ip: string; port: number; username: string; password: string; mode: string }) =>
+    post('/api/proxy/batch/config', { deviceIds, ...config }),
+  batchStart: (deviceIds: string[]) =>
+    post('/api/proxy/batch/start', { deviceIds }),
+  batchStop: (deviceIds: string[]) =>
+    post('/api/proxy/batch/stop', { deviceIds }),
+};
+
+// ============================================================
 // Custom Nodes
 // ============================================================
 export const customNodes = {

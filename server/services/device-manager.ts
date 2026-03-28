@@ -133,10 +133,25 @@ async function runHealthChecks() {
       if (info.model) updateData.model = String(info.model);
     }
 
-    if (newStatus !== device.status || updateData.iosVersion || updateData.model) {
+    // Update proxy status from device response
+    if (healthResult?.info?.proxyStatus) {
+      const ps = String(healthResult.info.proxyStatus);
+      if (ps === 'running' || ps === 'stopped') {
+        updateData.proxyStatus = ps;
+      }
+    }
+
+    if (newStatus !== device.status || updateData.iosVersion || updateData.model || updateData.proxyStatus !== device.proxyStatus) {
       const updated = updateDevice(device.id, updateData);
       if (updated && statusChangeCallback && newStatus !== device.status) {
         statusChangeCallback(updated);
+      }
+
+      // Auto-apply proxy when device comes online with enabled proxy config
+      if (device.status === 'offline' && newStatus === 'online' && device.proxyConfig?.enabled) {
+        autoApplyProxy(device).catch(err => {
+          console.log(`[HealthCheck] Auto-apply proxy failed for ${device.name}:`, err);
+        });
       }
     } else if (newStatus !== 'offline') {
       updateDevice(device.id, { lastSeen: new Date().toISOString() });
@@ -157,6 +172,52 @@ export function stopHealthChecks() {
     clearInterval(healthCheckTimer);
     healthCheckTimer = null;
   }
+}
+
+// --- Proxy Auto-Apply ---
+
+async function autoApplyProxy(device: Device) {
+  if (!device.proxyConfig) return;
+  const { ip, port, username, password, mode, timezone, locale, latitude, longitude } = device.proxyConfig;
+
+  // Skip if mode is "none"
+  if (!mode || mode === 'none') return;
+
+  console.log(`[HealthCheck] Auto-applying proxy for ${device.name} (mode=${mode})`);
+
+  // Step 1: Push proxy config (include mode)
+  const configResult = await callDeviceApi(device.id, 'POST', '/api/proxy/config', {
+    ip, port, username, password, mode,
+  });
+  if (!configResult.ok) {
+    console.log(`[HealthCheck] Failed to push proxy config to ${device.name}: ${configResult.error}`);
+    return;
+  }
+
+  // Step 2: Start proxy tunnel
+  const startResult = await callDeviceApi(device.id, 'POST', '/api/proxy/start');
+  if (startResult.ok) {
+    updateDevice(device.id, { proxyStatus: 'running' });
+    console.log(`[HealthCheck] Proxy auto-started on ${device.name}`);
+  } else {
+    console.log(`[HealthCheck] Failed to start proxy on ${device.name}: ${startResult.error}`);
+    return;
+  }
+
+  // Step 3: Apply spoof based on mode
+  const spoofParams: Record<string, unknown> = { mode };
+  if (mode === 'us') {
+    // US mode: apply full spoofing
+    if (timezone) spoofParams.timezone = timezone;
+    if (locale) spoofParams.locale = locale;
+    if (latitude !== undefined && longitude !== undefined) {
+      spoofParams.latitude = latitude;
+      spoofParams.longitude = longitude;
+    }
+  }
+  // For "vn" mode: spoofParams only has mode="vn" → device will disable all spoofing
+  await callDeviceApi(device.id, 'POST', '/api/proxy/spoof', spoofParams);
+  console.log(`[HealthCheck] Spoof settings applied to ${device.name} (mode=${mode})`);
 }
 
 // --- Device HTTP API Proxy ---

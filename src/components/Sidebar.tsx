@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Cpu, Wand2, CalendarDays, ScrollText, Film, Settings, ChevronLeft, ChevronRight, LogOut, User } from 'lucide-react';
+import { LayoutDashboard, Cpu, Wand2, CalendarDays, ScrollText, Film, Settings, Shield, ChevronLeft, ChevronRight, LogOut, User } from 'lucide-react';
 
 interface SidebarProps {
   onLogout?: () => void;
@@ -10,6 +10,7 @@ interface SidebarProps {
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', to: '/' },
   { icon: Cpu, label: 'Thiết bị', to: '/thiet-bi' },
+  { icon: Shield, label: 'Proxy', to: '/proxy' },
   { icon: Wand2, label: 'Kịch bản', to: '/kich-ban' },
   { icon: CalendarDays, label: 'Lịch trình', to: '/lich-trinh' },
   { icon: ScrollText, label: 'Nhật ký', to: '/nhat-ky' },

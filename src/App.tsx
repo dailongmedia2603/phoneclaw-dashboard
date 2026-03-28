@@ -7,6 +7,7 @@ import Schedules from './components/Schedules';
 import Logs from './components/Logs';
 import Settings from './components/Settings';
 import VideoLibrary from './components/VideoLibrary';
+import ProxyManager from './components/ProxyManager';
 import Login from './components/Login';
 import ToastContainer from './components/Toast';
 import ScriptEditorPage from './components/ScriptEditor/ScriptEditorPage';
@@ -22,6 +23,7 @@ function Layout({ onLogout, userName }: { onLogout: () => void; userName: string
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/thiet-bi" element={<Devices />} />
+            <Route path="/proxy" element={<ProxyManager />} />
             <Route path="/kich-ban" element={<Scripts />} />
             <Route path="/lich-trinh" element={<Schedules />} />
             <Route path="/nhat-ky" element={<Logs />} />

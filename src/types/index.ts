@@ -2,6 +2,22 @@
 // PhoneClaw VNC Dashboard - Shared Types
 // ============================================================
 
+// --- Proxy ---
+export type ProxyMode = 'none' | 'vn' | 'us';
+
+export interface ProxyConfig {
+  ip: string;
+  port: number;
+  username: string;
+  password: string;
+  enabled: boolean;
+  mode: ProxyMode;         // "none" = no proxy, "vn" = VN proxy (no spoof), "us" = US proxy (full spoof)
+  timezone?: string;       // e.g., "America/New_York" (only used when mode=us)
+  locale?: string;         // e.g., "en_US" (only used when mode=us)
+  latitude?: number;       // GPS spoof (only used when mode=us)
+  longitude?: number;      // GPS spoof (only used when mode=us)
+}
+
 // --- Device ---
 export interface Device {
   id: string;
@@ -20,6 +36,8 @@ export interface Device {
   currentScript?: string;
   lastSeen: string; // ISO date
   createdAt: string;
+  proxyConfig?: ProxyConfig;
+  proxyStatus?: 'running' | 'stopped' | 'error';
 }
 
 export interface DeviceGroup {
