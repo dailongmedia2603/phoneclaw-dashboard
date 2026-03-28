@@ -91,9 +91,11 @@ router.post('/:id/send-to-device', async (req, res) => {
   const apiPort = device.httpPort + 1;
   const apiUrl = `http://${device.tailscaleIp}:${apiPort}/api/save-to-photos`;
 
+  console.log(`[SEND-VIDEO] Sending to ${apiUrl} video=${video.url}`);
+
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 120000); // 120 seconds for download + save
+    const timeout = setTimeout(() => controller.abort(), 120000);
 
     const apiRes = await fetch(apiUrl, {
       method: 'POST',
@@ -103,16 +105,21 @@ router.post('/:id/send-to-device', async (req, res) => {
     });
     clearTimeout(timeout);
 
-    const data = await apiRes.json().catch(() => null);
+    const text = await apiRes.text();
+    console.log(`[SEND-VIDEO] Response: ${apiRes.status} ${text}`);
+
+    let data: any = null;
+    try { data = JSON.parse(text); } catch {}
 
     if (data?.ok) {
       return res.json({ success: true, data: { message: 'Đã lưu video vào Photos trên thiết bị!' } });
     }
 
-    return res.json({ success: false, error: data?.error || 'Thiết bị không thể lưu video' });
+    return res.json({ success: false, error: data?.error || `Thiết bị trả về: ${text.substring(0, 200)}` });
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Lỗi kết nối thiết bị';
-    return res.json({ success: false, error: msg });
+    console.error(`[SEND-VIDEO] Error: ${msg}`);
+    return res.json({ success: false, error: `Không kết nối được thiết bị (${device.tailscaleIp}:${apiPort}): ${msg}` });
   }
 });
 
