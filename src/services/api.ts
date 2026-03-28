@@ -133,6 +133,7 @@ export const logs = {
   },
   getExecutions: () => get<ScheduleHistory[]>('/api/logs/executions'),
   cleanup: (days: number) => post('/api/logs/cleanup', { days }),
+  cleanupAll: () => post('/api/logs/cleanup-all'),
 };
 
 // ============================================================

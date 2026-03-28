@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { readCollection, writeCollection, generateId } from '../store';
 import { getExecutionHistory } from '../services/script-engine';
-import type { ActivityLog, ScreenshotLog } from '../../src/types';
+import type { ActivityLog, ScreenshotLog, ScheduleHistory } from '../../src/types';
 
 const router = Router();
 
@@ -96,6 +96,12 @@ router.post('/cleanup', (req, res) => {
   const { days } = req.body;
   const cutoff = new Date(Date.now() - (days || 30) * 86400000).toISOString();
 
+  // Clean execution history (nhật ký kịch bản)
+  const executions = readCollection<ScheduleHistory>('execution-history');
+  const filteredExecs = executions.filter(e => e.startedAt > cutoff);
+  writeCollection('execution-history', filteredExecs);
+
+  // Also clean activity logs and screenshots
   const logs = readCollection<ActivityLog>('activity-logs');
   const filteredLogs = logs.filter(l => l.timestamp > cutoff);
   writeCollection('activity-logs', filteredLogs);
@@ -107,10 +113,19 @@ router.post('/cleanup', (req, res) => {
   res.json({
     success: true,
     data: {
+      executionsRemoved: executions.length - filteredExecs.length,
       logsRemoved: logs.length - filteredLogs.length,
       screenshotsRemoved: screenshots.length - filteredScreenshots.length,
     },
   });
+});
+
+// POST /api/logs/cleanup-all — xoá toàn bộ nhật ký
+router.post('/cleanup-all', (_req, res) => {
+  writeCollection('execution-history', []);
+  writeCollection('activity-logs', []);
+  writeCollection('screenshots', []);
+  res.json({ success: true, data: { message: 'All logs cleared' } });
 });
 
 export default router;

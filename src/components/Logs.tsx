@@ -17,21 +17,32 @@ export default function Logs() {
   const [expandedLog, setExpandedLog] = useState<string | null>(null);
   const [cleaningUp, setCleaningUp] = useState(false);
 
+  const [cleanupDays, setCleanupDays] = useState(() => {
+    return Number(localStorage.getItem('phoneclaw_cleanup_days') || '14');
+  });
   const scriptDaysRef = useRef<HTMLInputElement>(null);
   const { data: scriptLogs, loading: scriptLogsLoading, error: scriptLogsError, refresh } = useApi<ScheduleHistory[]>(
     () => logsApi.getExecutions(), []
   );
 
-  const handleCleanup = async () => {
-    const days = Number(scriptDaysRef.current?.value || 14);
+  /** Dọn dẹp ngay = xoá toàn bộ nhật ký */
+  const handleCleanupNow = async () => {
     setCleaningUp(true);
     try {
-      await logsApi.cleanup(days);
+      await logsApi.cleanupAll();
       refresh();
       setShowSettings(false);
     } finally {
       setCleaningUp(false);
     }
+  };
+
+  /** Lưu cấu hình số ngày */
+  const handleSaveConfig = () => {
+    const days = Number(scriptDaysRef.current?.value || 14);
+    setCleanupDays(days);
+    localStorage.setItem('phoneclaw_cleanup_days', String(days));
+    setShowSettings(false);
   };
 
   // Helper to format duration from two ISO timestamps
@@ -325,7 +336,7 @@ export default function Logs() {
                     <p className="text-xs text-slate-500">Xóa nhật ký cũ hơn số ngày chỉ định</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <input ref={scriptDaysRef} type="number" defaultValue="14" className="w-16 px-2 py-1.5 border border-slate-200 rounded-lg text-center text-sm focus:outline-none focus:border-blue-500" />
+                    <input ref={scriptDaysRef} type="number" defaultValue={cleanupDays} className="w-16 px-2 py-1.5 border border-slate-200 rounded-lg text-center text-sm focus:outline-none focus:border-blue-500" />
                     <span className="text-sm text-slate-600">ngày</span>
                   </div>
                 </div>
@@ -334,7 +345,7 @@ export default function Logs() {
 
             <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
               <button
-                onClick={handleCleanup}
+                onClick={handleCleanupNow}
                 disabled={cleaningUp}
                 className="text-sm font-medium text-red-600 hover:text-red-700 flex items-center gap-1.5 disabled:opacity-50"
               >
@@ -345,7 +356,7 @@ export default function Logs() {
                   Hủy
                 </button>
                 <button
-                  onClick={() => setShowSettings(false)}
+                  onClick={handleSaveConfig}
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors shadow-sm shadow-blue-200"
                 >
                   Lưu cấu hình
