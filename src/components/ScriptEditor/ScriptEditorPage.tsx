@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   ReactFlow, Background, Controls, MiniMap,
   addEdge, useNodesState, useEdgesState,
@@ -21,9 +22,7 @@ import { ArrowLeft, Save, Loader2, ChevronDown, Music, Globe, Facebook, Smartpho
 import type { Script, Device } from '../../types';
 
 interface ScriptEditorPageProps {
-  scriptId?: string;
   appTab?: string;
-  onBack: () => void;
 }
 
 const DEFAULT_START_NODE: Node = {
@@ -34,7 +33,11 @@ const DEFAULT_START_NODE: Node = {
   deletable: false,
 };
 
-export default function ScriptEditorPage({ scriptId, appTab, onBack }: ScriptEditorPageProps) {
+export default function ScriptEditorPage({ appTab }: ScriptEditorPageProps = {}) {
+  const params = useParams<{ scriptId: string }>();
+  const navigate = useNavigate();
+  const scriptId = params.scriptId; // undefined for new scripts (/kich-ban/tao-moi)
+  const onBack = () => navigate('/kich-ban');
   const [nodes, setNodes, onNodesChange] = useNodesState([DEFAULT_START_NODE]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);

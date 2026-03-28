@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Wand2, Plus, Play, Download, Upload, Edit, Trash2,
   Clock, Smartphone, FileJson, Search, MoreVertical,
@@ -77,12 +78,8 @@ function getTimeAgo(timestamp: string): string {
   return `${days} ngày trước`;
 }
 
-interface ScriptsProps {
-  onOpenEditor?: (scriptId: string) => void;
-  onCreateNew?: () => void;
-}
-
-export default function Scripts({ onOpenEditor, onCreateNew }: ScriptsProps = {}) {
+export default function Scripts() {
+  const navigate = useNavigate();
   const [activeAppTab, setActiveAppTab] = useState('tiktok_vn');
   const [showEditor, setShowEditor] = useState(false);
   const [editingScript, setEditingScript] = useState<Script | null>(null);
@@ -114,19 +111,11 @@ export default function Scripts({ onOpenEditor, onCreateNew }: ScriptsProps = {}
   });
 
   const handleCreateNew = () => {
-    if (onCreateNew) { onCreateNew(); return; }
-    setEditingScript(null);
-    setEditorName('');
-    setEditorDescription('');
-    setShowEditor(true);
+    navigate('/kich-ban/tao-moi');
   };
 
   const handleEdit = (script: Script) => {
-    if (onOpenEditor) { onOpenEditor(script.id); return; }
-    setEditingScript(script);
-    setEditorName(script.name);
-    setEditorDescription(script.description);
-    setShowEditor(true);
+    navigate(`/kich-ban/${script.id}`);
   };
 
   const handleSave = async () => {
