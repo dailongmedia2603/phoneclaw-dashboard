@@ -31,11 +31,6 @@ function getPickableFields(nodeType: string): { prefix: string; label: string }[
     result.push({ prefix: 'to', label: 'Chọn điểm kết thúc' });
   }
 
-  // tap_image fallback: fallbackX, fallbackY
-  if (keys.includes('fallbackX') && keys.includes('fallbackY')) {
-    result.push({ prefix: 'fallback', label: 'Chọn vị trí fallback' });
-  }
-
   return result;
 }
 

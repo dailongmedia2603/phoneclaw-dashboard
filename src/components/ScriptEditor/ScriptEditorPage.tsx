@@ -125,7 +125,6 @@ export default function ScriptEditorPage({ scriptId, appTab, onBack }: ScriptEdi
 
     let rfType = 'action';
     if (nodeType === 'repeat') rfType = 'loop';
-    else if (def.stepType === 'tap_image') rfType = 'tapImage';
 
     const newNode: Node = {
       id: `${nodeType}-${Date.now()}`,

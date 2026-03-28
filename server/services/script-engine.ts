@@ -1,6 +1,5 @@
 import { readCollection, writeCollection, generateId } from '../store';
 import { callDeviceApi, updateDevice, getDevice } from './device-manager';
-import { matchTemplate, captureVncScreenshot } from './template-matcher';
 import { vncTap } from './vnc-tap';
 import type { Script, ScriptStep, ScheduleHistory, ExecutionStep } from '../../src/types';
 
@@ -204,36 +203,10 @@ async function executeStep(
       break;
     }
     case 'tap_image': {
-      const templateName = String(p.templateName);
-      const threshold = Number(p.threshold) || 0.7;
-      const retries = Number(p.retries) || 2;
-      const retryDelay = Number(p.retryDelay) || 2;
-
-      let matched = false;
-      for (let attempt = 0; attempt < retries; attempt++) {
-        // Capture screenshot via VNC (more reliable than HTTP API)
-        const base64 = captureVncScreenshot(deviceId);
-        if (!base64) throw new Error('VNC screenshot failed');
-
-        // OpenCV template match
-        const result = await matchTemplate(base64, templateName, threshold);
-
-        if (result.found) {
-          await vncTap(deviceId, result.x, result.y);
-          matched = true;
-          break;
-        }
-
-        if (attempt < retries - 1) await sleep(retryDelay * 1000);
-      }
-
-      if (!matched) {
-        if (p.fallbackX !== undefined && p.fallbackY !== undefined) {
-          await vncTap(deviceId, Number(p.fallbackX), Number(p.fallbackY));
-        } else {
-          throw new Error(`Template "${templateName}" not found on screen`);
-        }
-      }
+      // Legacy backward compat: treat as tap using fallback coordinates
+      const x = Number(p.fallbackX ?? p.x) || 0.5;
+      const y = Number(p.fallbackY ?? p.y) || 0.5;
+      await vncTap(deviceId, x, y);
       break;
     }
     case 'swipe': {
