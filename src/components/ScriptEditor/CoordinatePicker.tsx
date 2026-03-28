@@ -17,7 +17,6 @@ export default function CoordinatePicker({ deviceId, mode = 'xy', onPick, onClos
   const [picked, setPicked] = useState<{ x: number; y: number } | null>(null);
   const [testResult, setTestResult] = useState<string | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const overlayRef = useRef<HTMLDivElement>(null);
 
   // Start VNC proxy on mount
   useEffect(() => {
@@ -36,31 +35,32 @@ export default function CoordinatePicker({ deviceId, mode = 'xy', onPick, onClos
     });
   }, [deviceId]);
 
-  /** Calculate normalized coords from click on the overlay */
-  const calcNormalized = useCallback((e: React.MouseEvent) => {
-    const overlay = overlayRef.current;
-    if (!overlay) return null;
+  // Enable pick mode in iframe once loaded, listen for coordinate messages
+  useEffect(() => {
+    if (!vncReady) return;
 
-    const rect = overlay.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width;
-    const y = (e.clientY - rect.top) / rect.height;
-
-    if (x < 0 || x > 1 || y < 0 || y > 1) return null;
-
-    return {
-      x: parseFloat(x.toFixed(3)),
-      y: parseFloat(y.toFixed(3)),
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data?.type === 'pickerHover') {
+        setHover({ x: e.data.x, y: e.data.y });
+      } else if (e.data?.type === 'pickerClick') {
+        setPicked({ x: e.data.x, y: e.data.y });
+        setHover(null);
+      }
     };
-  }, []);
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    setHover(calcNormalized(e));
-  }, [calcNormalized]);
+    window.addEventListener('message', handleMessage);
 
-  const handleClick = useCallback((e: React.MouseEvent) => {
-    const coords = calcNormalized(e);
-    if (coords) setPicked(coords);
-  }, [calcNormalized]);
+    // Enable pick mode after iframe loads (small delay for VNC to connect)
+    const timer = setTimeout(() => {
+      iframeRef.current?.contentWindow?.postMessage({ type: 'enablePickMode' }, '*');
+    }, 2000);
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      clearTimeout(timer);
+      iframeRef.current?.contentWindow?.postMessage({ type: 'disablePickMode' }, '*');
+    };
+  }, [vncReady]);
 
   const handleConfirm = () => {
     if (picked) {
@@ -114,44 +114,12 @@ export default function CoordinatePicker({ deviceId, mode = 'xy', onPick, onClos
               <div>{error}</div>
             </div>
           ) : vncReady ? (
-            <>
-              {/* noVNC iframe - same as device detail page */}
-              <iframe
-                ref={iframeRef}
-                src={vncUrl}
-                className="w-full h-full border-0"
-                allow="clipboard-read; clipboard-write"
-              />
-
-              {/* Transparent overlay to intercept clicks for coordinate picking */}
-              <div
-                ref={overlayRef}
-                className="absolute inset-0 cursor-crosshair z-10"
-                onMouseMove={handleMouseMove}
-                onMouseLeave={() => setHover(null)}
-                onClick={handleClick}
-              >
-                {/* Hover crosshair */}
-                {hover && (
-                  <>
-                    <div className="absolute top-0 bottom-0 w-px bg-cyan-400/50 pointer-events-none"
-                         style={{ left: `${hover.x * 100}%` }} />
-                    <div className="absolute left-0 right-0 h-px bg-cyan-400/50 pointer-events-none"
-                         style={{ top: `${hover.y * 100}%` }} />
-                    <div className="absolute w-3 h-3 rounded-full bg-cyan-400 border-2 border-white pointer-events-none -translate-x-1/2 -translate-y-1/2"
-                         style={{ left: `${hover.x * 100}%`, top: `${hover.y * 100}%` }} />
-                  </>
-                )}
-
-                {/* Picked point marker */}
-                {picked && (
-                  <div className="absolute w-7 h-7 rounded-full border-2 border-red-500 bg-red-500/20 pointer-events-none -translate-x-1/2 -translate-y-1/2 flex items-center justify-center"
-                       style={{ left: `${picked.x * 100}%`, top: `${picked.y * 100}%` }}>
-                    <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
-                  </div>
-                )}
-              </div>
-            </>
+            <iframe
+              ref={iframeRef}
+              src={vncUrl}
+              className="w-full h-full border-0"
+              allow="clipboard-read; clipboard-write"
+            />
           ) : null}
         </div>
 

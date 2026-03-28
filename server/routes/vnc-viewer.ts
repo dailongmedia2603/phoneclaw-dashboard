@@ -53,6 +53,44 @@ rfb.addEventListener('disconnect', (e) => {
 // Re-scale on container resize
 const ro = new ResizeObserver(() => { rfb.scaleViewport = true; });
 ro.observe(document.getElementById('screen'));
+
+// --- Pick Mode (for Coordinate Picker) ---
+let pickMode = false;
+let pickOverlay = null;
+
+window.addEventListener('message', (e) => {
+  if (e.data?.type === 'enablePickMode') {
+    pickMode = true;
+    if (!pickOverlay) {
+      pickOverlay = document.createElement('div');
+      pickOverlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;cursor:crosshair;';
+      document.body.appendChild(pickOverlay);
+
+      pickOverlay.addEventListener('mousemove', (ev) => {
+        const coords = canvasCoords(ev);
+        if (coords) window.parent.postMessage({ type: 'pickerHover', ...coords }, '*');
+      });
+
+      pickOverlay.addEventListener('click', (ev) => {
+        const coords = canvasCoords(ev);
+        if (coords) window.parent.postMessage({ type: 'pickerClick', ...coords }, '*');
+      });
+    }
+  } else if (e.data?.type === 'disablePickMode') {
+    pickMode = false;
+    if (pickOverlay) { pickOverlay.remove(); pickOverlay = null; }
+  }
+});
+
+function canvasCoords(ev) {
+  const canvas = document.querySelector('#screen canvas');
+  if (!canvas) return null;
+  const rect = canvas.getBoundingClientRect();
+  const x = (ev.clientX - rect.left) / rect.width;
+  const y = (ev.clientY - rect.top) / rect.height;
+  if (x < 0 || x > 1 || y < 0 || y > 1) return null;
+  return { x: parseFloat(x.toFixed(3)), y: parseFloat(y.toFixed(3)) };
+}
 </script>
 </body></html>`;
 
