@@ -263,11 +263,11 @@ export default function Scripts() {
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50/50 text-sm font-medium text-slate-500 sticky top-0 z-10">
               <th className="py-3 px-6">Tên kịch bản</th>
-              <th className="py-3 px-4">Mô tả</th>
-              <th className="py-3 px-4">Số bước</th>
-              <th className="py-3 px-4">Lần chạy gần nhất</th>
-              <th className="py-3 px-4">Trạng thái</th>
-              <th className="py-3 px-6 text-right">Thao tác</th>
+              <th className="py-3 px-4 max-w-[200px]">Mô tả</th>
+              <th className="py-3 px-4 whitespace-nowrap">Số bước</th>
+              <th className="py-3 px-4 whitespace-nowrap">Chạy gần nhất</th>
+              <th className="py-3 px-4 whitespace-nowrap">Trạng thái</th>
+              <th className="py-3 px-4 text-right">Thao tác</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -281,26 +281,26 @@ export default function Scripts() {
                     <span className="font-semibold text-slate-900">{script.name}</span>
                   </div>
                 </td>
-                <td className="py-4 px-4">
+                <td className="py-4 px-4 max-w-[200px]">
                   <span className="text-sm text-slate-600 line-clamp-1">{script.description}</span>
                 </td>
-                <td className="py-4 px-4">
+                <td className="py-4 px-4 whitespace-nowrap">
                   <div className="flex items-center gap-1.5 text-sm text-slate-600">
                     <List size={14} className="text-slate-400" /> {script.steps.length} bước
                   </div>
                 </td>
-                <td className="py-4 px-4">
+                <td className="py-4 px-4 whitespace-nowrap">
                   <div className="flex items-center gap-1.5 text-sm text-slate-600">
                     <Clock size={14} className="text-slate-400" /> {script.lastRun ? getTimeAgo(script.lastRun) : 'Chưa chạy'}
                   </div>
                 </td>
                 <td className="py-4 px-4">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 text-xs font-medium border border-emerald-100">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 text-xs font-medium border border-emerald-100 whitespace-nowrap">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Sẵn sàng
                   </span>
                 </td>
-                <td className="py-4 px-6 text-right">
-                  <div className="flex items-center justify-end gap-2">
+                <td className="py-4 px-4 text-right">
+                  <div className="flex items-center justify-end gap-1">
                     <button
                       onClick={() => handleOpenRunModal(script.id)}
                       className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-sm font-medium transition-colors"
