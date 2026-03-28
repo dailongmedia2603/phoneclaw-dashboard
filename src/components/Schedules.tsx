@@ -60,6 +60,7 @@ export default function Schedules() {
   const [formFrequency, setFormFrequency] = useState('daily');
   const [formTime, setFormTime] = useState('08:00');
   const [formCron, setFormCron] = useState('0 8 * * *');
+  const [formCustomDate, setFormCustomDate] = useState('');
   const [saving, setSaving] = useState(false);
 
   // Calendar state
@@ -95,32 +96,49 @@ export default function Schedules() {
     setFormFrequency('daily');
     setFormTime('08:00');
     setFormCron('0 8 * * *');
+    setFormCustomDate('');
     setShowCreateModal(true);
   };
 
-  const handleFrequencyChange = (freq: string) => {
-    setFormFrequency(freq);
-    const [hh, mm] = formTime.split(':');
+  const updateCron = (freq: string, time: string, date?: string) => {
+    const [hh, mm] = time.split(':');
     switch (freq) {
       case 'once': setFormCron(`${mm} ${hh} * * *`); break;
       case 'hourly': setFormCron(`${mm} * * * *`); break;
       case 'daily': setFormCron(`${mm} ${hh} * * *`); break;
       case 'weekly': setFormCron(`${mm} ${hh} * * 1`); break;
-      case 'custom': break; // user edits cron directly
+      case 'custom_date': {
+        if (date) {
+          const d = new Date(date);
+          setFormCron(`${mm} ${hh} ${d.getDate()} ${d.getMonth() + 1} *`);
+        }
+        break;
+      }
+    }
+  };
+
+  const handleFrequencyChange = (freq: string) => {
+    setFormFrequency(freq);
+    if (freq === 'custom_date' && !formCustomDate) {
+      // Default to tomorrow
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const dateStr = tomorrow.toISOString().split('T')[0];
+      setFormCustomDate(dateStr);
+      updateCron(freq, formTime, dateStr);
+    } else {
+      updateCron(freq, formTime, formCustomDate);
     }
   };
 
   const handleTimeChange = (time: string) => {
     setFormTime(time);
-    if (formFrequency !== 'custom') {
-      const [hh, mm] = time.split(':');
-      switch (formFrequency) {
-        case 'once':
-        case 'daily': setFormCron(`${mm} ${hh} * * *`); break;
-        case 'hourly': setFormCron(`${mm} * * * *`); break;
-        case 'weekly': setFormCron(`${mm} ${hh} * * 1`); break;
-      }
-    }
+    updateCron(formFrequency, time, formCustomDate);
+  };
+
+  const handleCustomDateChange = (date: string) => {
+    setFormCustomDate(date);
+    updateCron('custom_date', formTime, date);
   };
 
   const handleCreateSchedule = async () => {
@@ -528,7 +546,7 @@ export default function Schedules() {
                       { value: 'hourly', label: 'Hàng giờ' },
                       { value: 'daily', label: 'Hàng ngày' },
                       { value: 'weekly', label: 'Hàng tuần' },
-                      { value: 'custom', label: 'Tuỳ chỉnh (Cron)' },
+                      { value: 'custom_date', label: 'Ngày tuỳ chỉnh' },
                     ]}
                   />
                 </div>
@@ -538,16 +556,28 @@ export default function Schedules() {
                 </div>
               </div>
 
-              {/* Advanced Cron Input */}
+              {/* Custom Date Picker */}
+              {formFrequency === 'custom_date' && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Chọn ngày chạy</label>
+                  <input
+                    type="date"
+                    value={formCustomDate}
+                    onChange={e => handleCustomDateChange(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
+                  />
+                </div>
+              )}
+
+              {/* Cron Preview */}
               <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                <label className="block text-xs font-medium text-slate-500 mb-1.5">Bi&#7875;u th&#7913;c Cron (N&#226;ng cao)</label>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5">Biểu thức Cron</label>
                 <input
                   type="text"
                   value={formCron}
-                  onChange={e => setFormCron(e.target.value)}
-                  placeholder="0 8 * * *"
-                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
-                  disabled={formFrequency !== 'custom'}
+                  readOnly
+                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-mono bg-slate-100 text-slate-500"
                 />
                 <p className="text-[10px] text-slate-400 mt-1">Cron: {formCron}</p>
               </div>
