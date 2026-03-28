@@ -1,5 +1,5 @@
 import type { Node } from '@xyflow/react';
-import { NODE_DEFS } from './nodeDefinitions';
+import { NODE_DEFS, type NodeDef } from './nodeDefinitions';
 import NodeIcon from './nodeIcons';
 import { Trash2, Crosshair } from 'lucide-react';
 
@@ -8,11 +8,13 @@ interface PropertyPanelProps {
   onUpdateNode: (nodeId: string, params: Record<string, unknown>) => void;
   onDeleteNode?: (nodeId: string) => void;
   onPickCoordinate?: (fieldPrefix: string) => void;
+  extraDefs?: Record<string, NodeDef>;
 }
 
 /** Check if the node has pickable coordinate fields */
-function getPickableFields(nodeType: string): { prefix: string; label: string }[] {
-  const def = NODE_DEFS[nodeType];
+function getPickableFields(nodeType: string, extraDefs?: Record<string, NodeDef>): { prefix: string; label: string }[] {
+  const allDefs = extraDefs ? { ...NODE_DEFS, ...extraDefs } : NODE_DEFS;
+  const def = allDefs[nodeType];
   if (!def) return [];
 
   const keys = def.fields.map(f => f.key);
@@ -34,7 +36,7 @@ function getPickableFields(nodeType: string): { prefix: string; label: string }[
   return result;
 }
 
-export default function PropertyPanel({ selectedNode, onUpdateNode, onDeleteNode, onPickCoordinate }: PropertyPanelProps) {
+export default function PropertyPanel({ selectedNode, onUpdateNode, onDeleteNode, onPickCoordinate, extraDefs }: PropertyPanelProps) {
   if (!selectedNode) {
     return (
       <div className="w-64 bg-white border-l border-slate-200 flex items-center justify-center p-4">
@@ -44,9 +46,10 @@ export default function PropertyPanel({ selectedNode, onUpdateNode, onDeleteNode
   }
 
   const nodeData = selectedNode.data as { nodeType: string; params: Record<string, unknown> };
-  const def = NODE_DEFS[nodeData?.nodeType];
+  const allDefs = extraDefs ? { ...NODE_DEFS, ...extraDefs } : NODE_DEFS;
+  const def = allDefs[nodeData?.nodeType];
   const isStart = selectedNode.type === 'start';
-  const pickableFields = nodeData?.nodeType ? getPickableFields(nodeData.nodeType) : [];
+  const pickableFields = nodeData?.nodeType ? getPickableFields(nodeData.nodeType, extraDefs) : [];
 
   const handleChange = (key: string, value: string) => {
     const field = def?.fields.find(f => f.key === key);

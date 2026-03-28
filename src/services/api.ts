@@ -173,3 +173,12 @@ export const videos = {
   sendToDevice: (videoId: string, deviceId: string) =>
     post(`/api/videos/${videoId}/send-to-device`, { deviceId }),
 };
+
+// ============================================================
+// Custom Nodes
+// ============================================================
+export const customNodes = {
+  getAll: () => get<{ id: string; name: string; createdAt: string }[]>('/api/custom-nodes'),
+  create: (name: string) => post<{ id: string; name: string }>('/api/custom-nodes', { name }),
+  remove: (id: string) => del<void>(`/api/custom-nodes/${id}`),
+};

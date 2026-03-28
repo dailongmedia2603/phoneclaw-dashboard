@@ -247,8 +247,28 @@ export const NODE_CATEGORIES = [
   { id: 'tiktok_vn', label: 'TikTok Việt', color: '#000000' },
   { id: 'tiktok_us', label: 'TikTok US', color: '#2563eb' },
   { id: 'facebook', label: 'Facebook', color: '#1877f2' },
+  { id: 'custom', label: 'Tuỳ chỉnh', color: '#f97316' },
 ];
 
-export function getNodesByCategory(categoryId: string): NodeDef[] {
-  return Object.values(NODE_DEFS).filter(d => d.category === categoryId);
+/** Create a NodeDef for a custom node (same behavior as tap nodes) */
+export function makeCustomNodeDef(id: string, name: string): NodeDef {
+  return {
+    nodeType: `custom_${id}`,
+    label: name,
+    category: 'custom',
+    color: '#f97316',
+    bgColor: '#fff7ed',
+    icon: 'target',
+    stepType: 'tap',
+    defaultParams: { x: 0.5, y: 0.5 },
+    fields: [
+      { key: 'x', label: 'X (0-1)', type: 'number' },
+      { key: 'y', label: 'Y (0-1)', type: 'number' },
+    ],
+  };
+}
+
+export function getNodesByCategory(categoryId: string, extraDefs?: Record<string, NodeDef>): NodeDef[] {
+  const allDefs = extraDefs ? { ...NODE_DEFS, ...extraDefs } : NODE_DEFS;
+  return Object.values(allDefs).filter(d => d.category === categoryId);
 }

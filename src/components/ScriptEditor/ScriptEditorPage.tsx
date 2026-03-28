@@ -9,7 +9,7 @@ import '@xyflow/react/dist/style.css';
 
 import { nodeTypes } from './nodes';
 import DeleteEdge from './nodes/DeleteEdge';
-import { NODE_DEFS } from './nodeDefinitions';
+import { NODE_DEFS, type NodeDef } from './nodeDefinitions';
 
 const edgeTypes = { default: DeleteEdge };
 import NodePalette from './NodePalette';
@@ -42,6 +42,7 @@ export default function ScriptEditorPage({ appTab }: ScriptEditorPageProps = {})
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [scriptName, setScriptName] = useState('');
+  const [customNodeDefs, setCustomNodeDefs] = useState<Record<string, NodeDef>>({});
   const [scriptDesc, setScriptDesc] = useState('');
   const [scriptChannel, setScriptChannel] = useState(appTab || 'tiktok_vn');
   const [saving, setSaving] = useState(false);
@@ -118,9 +119,10 @@ export default function ScriptEditorPage({ appTab }: ScriptEditorPageProps = {})
   const onDrop = useCallback((event: React.DragEvent) => {
     event.preventDefault();
     const nodeType = event.dataTransfer.getData('application/reactflow');
-    if (!nodeType || !NODE_DEFS[nodeType]) return;
+    const allDefs = { ...NODE_DEFS, ...customNodeDefs };
+    if (!nodeType || !allDefs[nodeType]) return;
 
-    const def = NODE_DEFS[nodeType];
+    const def = allDefs[nodeType];
     const position = reactFlowInstance?.screenToFlowPosition({
       x: event.clientX,
       y: event.clientY,
@@ -137,7 +139,7 @@ export default function ScriptEditorPage({ appTab }: ScriptEditorPageProps = {})
     };
 
     setNodes(nds => [...nds, newNode]);
-  }, [reactFlowInstance, setNodes]);
+  }, [reactFlowInstance, setNodes, customNodeDefs]);
 
   // Save
   const handleSave = useCallback(async () => {
@@ -328,7 +330,7 @@ export default function ScriptEditorPage({ appTab }: ScriptEditorPageProps = {})
       {/* Editor Body */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left: Node Palette */}
-        <NodePalette />
+        <NodePalette onCustomNodesLoaded={setCustomNodeDefs} />
 
         {/* Center: Canvas */}
         <div className="flex-1" ref={reactFlowWrapper}>
@@ -371,6 +373,7 @@ export default function ScriptEditorPage({ appTab }: ScriptEditorPageProps = {})
             setSelectedNode(null);
           }}
           onPickCoordinate={handlePickCoordinate}
+          extraDefs={customNodeDefs}
         />
       </div>
 

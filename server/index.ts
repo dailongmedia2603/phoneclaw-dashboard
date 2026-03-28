@@ -22,6 +22,7 @@ import logsRoutes from './routes/logs';
 import settingsRoutes from './routes/settings';
 import vncViewerRoutes from './routes/vnc-viewer';
 import videosRoutes from './routes/videos';
+import customNodesRoutes from './routes/custom-nodes';
 
 import type { Notification, WsMessage } from '../src/types';
 
@@ -89,6 +90,7 @@ app.use('/api/logs', logsRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/vnc-viewer', vncViewerRoutes);
 app.use('/api/videos', videosRoutes);
+app.use('/api/custom-nodes', customNodesRoutes);
 
 // Health check endpoint
 app.get('/api/health', (_req, res) => {
