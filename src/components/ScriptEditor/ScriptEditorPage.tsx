@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ReactFlow, Background, Controls, MiniMap,
@@ -121,13 +121,19 @@ export default function ScriptEditorPage({ appTab }: ScriptEditorPageProps = {})
     event.dataTransfer.dropEffect = 'move';
   }, []);
 
-  const onDrop = useCallback((event: React.DragEvent) => {
+  const onDrop = (event: React.DragEvent) => {
     event.preventDefault();
     const nodeType = event.dataTransfer.getData('application/reactflow');
-    const allDefs = { ...NODE_DEFS, ...customNodeDefsRef.current };
-    if (!nodeType || !allDefs[nodeType]) return;
+    if (!nodeType) return;
 
+    // Lookup in both built-in and custom node definitions
+    const allDefs: Record<string, NodeDef> = { ...NODE_DEFS, ...customNodeDefsRef.current };
     const def = allDefs[nodeType];
+    if (!def) {
+      console.warn('[onDrop] Unknown nodeType:', nodeType, 'available:', Object.keys(allDefs));
+      return;
+    }
+
     const position = reactFlowInstance?.screenToFlowPosition({
       x: event.clientX,
       y: event.clientY,
@@ -144,7 +150,7 @@ export default function ScriptEditorPage({ appTab }: ScriptEditorPageProps = {})
     };
 
     setNodes(nds => [...nds, newNode]);
-  }, [reactFlowInstance, setNodes]);
+  };
 
   // Save
   const handleSave = useCallback(async () => {
