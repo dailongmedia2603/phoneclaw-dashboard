@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ReactFlow, Background, Controls, MiniMap,
@@ -43,6 +43,11 @@ export default function ScriptEditorPage({ appTab }: ScriptEditorPageProps = {})
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [scriptName, setScriptName] = useState('');
   const [customNodeDefs, setCustomNodeDefs] = useState<Record<string, NodeDef>>({});
+  const customNodeDefsRef = useRef<Record<string, NodeDef>>({});
+  const updateCustomDefs = useCallback((defs: Record<string, NodeDef>) => {
+    customNodeDefsRef.current = defs;
+    setCustomNodeDefs(defs);
+  }, []);
   const [scriptDesc, setScriptDesc] = useState('');
   const [scriptChannel, setScriptChannel] = useState(appTab || 'tiktok_vn');
   const [saving, setSaving] = useState(false);
@@ -119,7 +124,7 @@ export default function ScriptEditorPage({ appTab }: ScriptEditorPageProps = {})
   const onDrop = useCallback((event: React.DragEvent) => {
     event.preventDefault();
     const nodeType = event.dataTransfer.getData('application/reactflow');
-    const allDefs = { ...NODE_DEFS, ...customNodeDefs };
+    const allDefs = { ...NODE_DEFS, ...customNodeDefsRef.current };
     if (!nodeType || !allDefs[nodeType]) return;
 
     const def = allDefs[nodeType];
@@ -139,7 +144,7 @@ export default function ScriptEditorPage({ appTab }: ScriptEditorPageProps = {})
     };
 
     setNodes(nds => [...nds, newNode]);
-  }, [reactFlowInstance, setNodes, customNodeDefs]);
+  }, [reactFlowInstance, setNodes]);
 
   // Save
   const handleSave = useCallback(async () => {
@@ -330,7 +335,7 @@ export default function ScriptEditorPage({ appTab }: ScriptEditorPageProps = {})
       {/* Editor Body */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left: Node Palette */}
-        <NodePalette onCustomNodesLoaded={setCustomNodeDefs} />
+        <NodePalette onCustomNodesLoaded={updateCustomDefs} />
 
         {/* Center: Canvas */}
         <div className="flex-1" ref={reactFlowWrapper}>
