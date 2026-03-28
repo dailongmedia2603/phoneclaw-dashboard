@@ -146,7 +146,7 @@ export default function ScriptEditorPage({ appTab }: ScriptEditorPageProps = {})
       id: `${nodeType}-${Date.now()}`,
       type: rfType,
       position,
-      data: { nodeType, params: { ...def.defaultParams } },
+      data: { nodeType, params: { ...def.defaultParams }, label: def.label },
     };
 
     setNodes(nds => [...nds, newNode]);

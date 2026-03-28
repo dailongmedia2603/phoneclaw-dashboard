@@ -3,16 +3,29 @@ import { NODE_DEFS } from '../nodeDefinitions';
 import NodeIcon from '../nodeIcons';
 import { X } from 'lucide-react';
 
+/** Fallback def for custom nodes not in static NODE_DEFS */
+const CUSTOM_NODE_FALLBACK = {
+  color: '#f97316',
+  bgColor: '#fff7ed',
+  icon: 'target',
+  label: 'Custom',
+};
+
 interface ActionNodeProps {
   id: string;
-  data: { nodeType: string; params: Record<string, unknown> };
+  data: { nodeType: string; params: Record<string, unknown>; label?: string };
   selected?: boolean;
 }
 
 export default function ActionNode({ id, data, selected }: ActionNodeProps) {
-  const def = NODE_DEFS[data.nodeType];
+  const staticDef = NODE_DEFS[data.nodeType];
   const { deleteElements } = useReactFlow();
-  if (!def) return null;
+
+  // Use static def, or fallback for custom nodes
+  const def = staticDef || {
+    ...CUSTOM_NODE_FALLBACK,
+    label: data.label || data.nodeType.replace('custom_', ''),
+  };
 
   const summary = getSummary(data.nodeType, data.params);
 
