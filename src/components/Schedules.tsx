@@ -81,6 +81,19 @@ export default function Schedules() {
 
   const todayStr = new Date().toDateString();
 
+  /** Convert cron expression to Vietnamese label */
+  const cronToLabel = (cron: string): string => {
+    const parts = cron.split(' ');
+    if (parts.length !== 5) return cron;
+    const [mm, hh, day, month, weekday] = parts;
+    if (day !== '*' && month !== '*') {
+      return `Ngày ${day}/${month} lúc ${hh}:${mm.padStart(2, '0')}`;
+    }
+    if (hh === '*') return 'Hàng giờ';
+    if (weekday !== '*') return 'Hàng tuần';
+    return 'Hàng ngày';
+  };
+
   const toggleSchedule = async (id: string) => {
     await schedulesApi.toggle(id);
     refreshSchedules();
@@ -306,7 +319,7 @@ export default function Schedules() {
                     </div>
                   </td>
                   <td className="py-4 px-4">
-                    <span className="text-sm text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md">{schedule.cron}</span>
+                    <span className="text-sm text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md">{cronToLabel(schedule.cron)}</span>
                   </td>
                   <td className="py-4 px-4">
                     <div className="flex items-center gap-1.5 text-sm text-blue-600 font-medium">
@@ -581,7 +594,6 @@ export default function Schedules() {
                     value={formFrequency}
                     onChange={handleFrequencyChange}
                     options={[
-                      { value: 'once', label: 'Chạy 1 lần' },
                       { value: 'hourly', label: 'Hàng giờ' },
                       { value: 'daily', label: 'Hàng ngày' },
                       { value: 'weekly', label: 'Hàng tuần' },
@@ -609,17 +621,8 @@ export default function Schedules() {
                 </div>
               )}
 
-              {/* Cron Preview */}
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                <label className="block text-xs font-medium text-slate-500 mb-1.5">Biểu thức Cron</label>
-                <input
-                  type="text"
-                  value={formCron}
-                  readOnly
-                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-mono bg-slate-100 text-slate-500"
-                />
-                <p className="text-[10px] text-slate-400 mt-1">Cron: {formCron}</p>
-              </div>
+              {/* Cron value (hidden, used internally) */}
+              <input type="hidden" value={formCron} />
             </div>
 
             <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
