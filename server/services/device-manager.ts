@@ -28,11 +28,14 @@ export function createDevice(data: Omit<Device, 'id' | 'status' | 'uptime' | 'la
   devices.push(device);
   writeCollection('devices', devices);
   // Trigger immediate health check for new device
-  checkDeviceHealth(device).then(newStatus => {
-    updateDevice(device.id, {
-      status: newStatus,
-      lastSeen: newStatus !== 'offline' ? new Date().toISOString() : device.lastSeen,
-    });
+  checkDeviceHealth(device).then(result => {
+    const updates: Partial<Device> = {
+      status: result.status,
+      lastSeen: result.status !== 'offline' ? new Date().toISOString() : device.lastSeen,
+    };
+    if (result.info?.systemVersion) updates.iosVersion = String(result.info.systemVersion);
+    if (result.info?.model) updates.model = String(result.info.model);
+    updateDevice(device.id, updates);
   });
   return device;
 }
@@ -87,8 +90,7 @@ export function deleteGroup(id: string): boolean {
 
 // --- Health Check ---
 
-async function checkDeviceHealth(device: Device): Promise<'online' | 'offline'> {
-  // Check PhoneClawAPI (httpPort + 1) via /api/status — no VNC connection needed
+async function checkDeviceHealth(device: Device): Promise<{ status: 'online' | 'offline'; info?: Record<string, unknown> }> {
   const apiPort = device.httpPort + 1;
   try {
     const controller = new AbortController();
@@ -97,22 +99,46 @@ async function checkDeviceHealth(device: Device): Promise<'online' | 'offline'> 
       signal: controller.signal,
     });
     clearTimeout(timeout);
-    if (res.ok || res.status > 0) return 'online';
+    if (res.ok) {
+      try {
+        const data = await res.json();
+        return { status: 'online', info: data };
+      } catch {
+        return { status: 'online' };
+      }
+    }
+    if (res.status > 0) return { status: 'online' };
   } catch { /* device unreachable */ }
 
-  return 'offline';
+  return { status: 'offline' };
 }
 
 async function runHealthChecks() {
   const devices = getAllDevices();
   for (const device of devices) {
-    const newStatus = device.currentScript ? 'running' : await checkDeviceHealth(device);
-    if (newStatus !== device.status) {
-      const updated = updateDevice(device.id, {
-        status: newStatus,
-        lastSeen: newStatus !== 'offline' ? new Date().toISOString() : device.lastSeen,
-      });
-      if (updated && statusChangeCallback) {
+    const healthResult = device.currentScript ? null : await checkDeviceHealth(device);
+    const newStatus: Device['status'] = device.currentScript ? 'running' : (healthResult?.status || 'offline');
+
+    // Build update payload
+    const updateData: Partial<Device> = {
+      status: newStatus,
+      lastSeen: newStatus !== 'offline' ? new Date().toISOString() : device.lastSeen,
+    };
+
+    // Update device info from /api/status response
+    if (healthResult?.info) {
+      const info = healthResult.info;
+      if (info.systemVersion && info.systemVersion !== device.iosVersion) {
+        updateData.iosVersion = String(info.systemVersion);
+      }
+      if (info.model && info.model !== device.model) {
+        updateData.model = String(info.model);
+      }
+    }
+
+    if (newStatus !== device.status || updateData.iosVersion || updateData.model) {
+      const updated = updateDevice(device.id, updateData);
+      if (updated && statusChangeCallback && newStatus !== device.status) {
         statusChangeCallback(updated);
       }
     } else if (newStatus !== 'offline') {
