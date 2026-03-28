@@ -262,16 +262,16 @@ export default function ScriptEditorPage({ appTab }: ScriptEditorPageProps = {})
               className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-200 transition-colors"
             >
               {scriptChannel === 'tiktok_vn' && <><Music size={14} className="text-slate-900" /> TikTok Việt</>}
-              {scriptChannel === 'tiktok_us' && <><Globe size={14} className="text-blue-600" /> TikTok US</>}
-              {scriptChannel === 'facebook' && <><Facebook size={14} className="text-blue-500" /> Facebook</>}
+              {scriptChannel === 'tiktok_us' && <><Globe size={14} className="text-[#2563eb]" /> TikTok US</>}
+              {scriptChannel === 'facebook' && <><Facebook size={14} className="text-[#1877f2]" /> Facebook</>}
               <ChevronDown size={14} className="text-slate-400" />
             </button>
             {showChannelDropdown && (
               <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg py-1 z-50 w-44">
                 {[
                   { id: 'tiktok_vn', label: 'TikTok Việt', icon: Music, iconColor: 'text-slate-900' },
-                  { id: 'tiktok_us', label: 'TikTok US', icon: Globe, iconColor: 'text-blue-600' },
-                  { id: 'facebook', label: 'Facebook', icon: Facebook, iconColor: 'text-blue-500' },
+                  { id: 'tiktok_us', label: 'TikTok US', icon: Globe, iconColor: 'text-[#2563eb]' },
+                  { id: 'facebook', label: 'Facebook', icon: Facebook, iconColor: 'text-[#1877f2]' },
                 ].map(ch => (
                   <button
                     key={ch.id}

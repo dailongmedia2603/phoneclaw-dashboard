@@ -413,8 +413,8 @@ export default function Schedules() {
                       const ch = script?.channel || 'tiktok_vn';
                       const channelMap: Record<string, { label: string; bg: string; text: string }> = {
                         tiktok_vn: { label: 'TikTok VN', bg: 'bg-black', text: 'text-white' },
-                        tiktok_us: { label: 'TikTok US', bg: 'bg-blue-600', text: 'text-white' },
-                        facebook: { label: 'Facebook', bg: 'bg-blue-500', text: 'text-white' },
+                        tiktok_us: { label: 'TikTok US', bg: 'bg-[#2563eb]', text: 'text-white' },
+                        facebook: { label: 'Facebook', bg: 'bg-[#1877f2]', text: 'text-white' },
                       };
                       const info = channelMap[ch] || channelMap.tiktok_vn;
                       return (
