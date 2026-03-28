@@ -9,6 +9,7 @@ import { useApi } from '../hooks/useApi';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { showToast } from './Toast';
 import type { Device, DeviceGroup } from '../types';
+import CustomSelect from './CustomSelect';
 
 export default function Devices() {
   const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
@@ -365,58 +366,32 @@ export default function Devices() {
                 <X size={20} />
               </button>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 overflow-y-auto">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Tên thiết bị</label>
-                <input
-                  type="text"
-                  placeholder="Ví dụ: iPhone 13 Pro - 01"
-                  value={addForm.name}
-                  onChange={e => setAddForm(p => ({ ...p, name: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  autoFocus
-                />
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Tên thiết bị <span className="text-red-500">(Bắt buộc)</span></label>
+                <input type="text" placeholder="Ví dụ: iPhone 13 Pro - 01" value={addForm.name} onChange={e => setAddForm(p => ({ ...p, name: e.target.value }))} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" autoFocus />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">IP Tailscale</label>
-                <input
-                  type="text"
-                  placeholder="Ví dụ: 100.96.65.5"
-                  value={addForm.tailscaleIp}
-                  onChange={e => setAddForm(p => ({ ...p, tailscaleIp: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-mono"
-                />
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">IP Tailscale <span className="text-red-500">(Bắt buộc)</span></label>
+                <input type="text" placeholder="Ví dụ: 100.96.65.5" value={addForm.tailscaleIp} onChange={e => setAddForm(p => ({ ...p, tailscaleIp: e.target.value }))} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-mono" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Mật khẩu VNC <span className="text-red-500">(Bắt buộc)</span></label>
+                <input type="password" placeholder="Mật khẩu truy cập thiết bị" value={addForm.vncPassword} onChange={e => setAddForm(p => ({ ...p, vncPassword: e.target.value }))} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                <p className="text-xs text-slate-400 mt-1">Mật khẩu Full-access trong Phone Agent trên thiết bị</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Tài khoản (tuỳ chọn)</label>
-                <input
-                  type="text"
-                  placeholder="Ví dụ: @tiktok_user_01"
-                  value={addForm.account || ''}
-                  onChange={e => setAddForm(p => ({ ...p, account: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                />
+                <input type="text" placeholder="Ví dụ: @tiktok_user_01" value={addForm.account || ''} onChange={e => setAddForm(p => ({ ...p, account: e.target.value }))} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Nhóm (tuỳ chọn)</label>
-                <input
-                  type="text"
-                  placeholder="Ví dụ: TikTok Farm"
+                <CustomSelect
                   value={addForm.group}
-                  onChange={e => setAddForm(p => ({ ...p, group: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  onChange={v => setAddForm(p => ({ ...p, group: v }))}
+                  options={[{ value: '', label: 'Chưa phân nhóm' }, ...(groupList || []).map(g => ({ value: g.name, label: g.name }))]}
+                  placeholder="Chọn nhóm..."
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Mật khẩu VNC (tuỳ chọn)</label>
-                <input
-                  type="password"
-                  placeholder="Mật khẩu truy cập thiết bị"
-                  value={addForm.vncPassword}
-                  onChange={e => setAddForm(p => ({ ...p, vncPassword: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                />
-                <p className="text-xs text-slate-400 mt-1">Mật khẩu Full-access trong PhoneClaw VNC trên thiết bị</p>
               </div>
               <button
                 onClick={handleAddDevice}
@@ -601,24 +576,29 @@ export default function Devices() {
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Tên thiết bị</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Tên thiết bị <span className="text-red-500">(Bắt buộc)</span></label>
                 <input type="text" value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" autoFocus />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">IP Tailscale</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">IP Tailscale <span className="text-red-500">(Bắt buộc)</span></label>
                 <input type="text" value={editForm.tailscaleIp} onChange={e => setEditForm(p => ({ ...p, tailscaleIp: e.target.value }))} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-mono" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Tài khoản</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Mật khẩu VNC <span className="text-red-500">(Bắt buộc)</span></label>
+                <input type="password" value={editForm.vncPassword} onChange={e => setEditForm(p => ({ ...p, vncPassword: e.target.value }))} placeholder="Để trống nếu không đổi" className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Tài khoản (tuỳ chọn)</label>
                 <input type="text" value={editForm.account} onChange={e => setEditForm(p => ({ ...p, account: e.target.value }))} placeholder="VD: @tiktok_user_01" className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Nhóm</label>
-                <input type="text" value={editForm.group} onChange={e => setEditForm(p => ({ ...p, group: e.target.value }))} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Mật khẩu VNC</label>
-                <input type="password" value={editForm.vncPassword} onChange={e => setEditForm(p => ({ ...p, vncPassword: e.target.value }))} placeholder="Để trống nếu không đổi" className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Nhóm (tuỳ chọn)</label>
+                <CustomSelect
+                  value={editForm.group}
+                  onChange={v => setEditForm(p => ({ ...p, group: v }))}
+                  options={[{ value: '', label: 'Chưa phân nhóm' }, ...(groupList || []).map(g => ({ value: g.name, label: g.name }))]}
+                  placeholder="Chọn nhóm..."
+                />
               </div>
               <div className="flex gap-3 pt-2">
                 <button onClick={() => setShowEditModal(null)} className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-700 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors">
