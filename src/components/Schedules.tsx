@@ -288,6 +288,7 @@ export default function Schedules() {
           <table className="w-full text-left border-collapse bg-white">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50/50 text-sm font-medium text-slate-500 sticky top-0 z-10">
+                <th className="py-3 px-4">Kênh</th>
                 <th className="py-3 px-6">T&#234;n l&#7883;ch tr&#236;nh</th>
                 <th className="py-3 px-4">K&#7883;ch b&#7843;n</th>
                 <th className="py-3 px-4">Thi&#7871;t b&#7883; / Nh&#243;m</th>
@@ -300,6 +301,23 @@ export default function Schedules() {
             <tbody className="divide-y divide-slate-100">
               {scheduleList.map((schedule) => (
                 <tr key={schedule.id} className={`hover:bg-slate-50 transition-colors group ${!schedule.enabled ? 'opacity-60' : ''}`}>
+                  <td className="py-4 px-4">
+                    {(() => {
+                      const script = scriptsList?.find(s => s.id === schedule.scriptId);
+                      const ch = script?.channel || 'tiktok_vn';
+                      const channelMap: Record<string, { label: string; bg: string; text: string }> = {
+                        tiktok_vn: { label: 'TikTok VN', bg: 'bg-black', text: 'text-white' },
+                        tiktok_us: { label: 'TikTok US', bg: 'bg-blue-600', text: 'text-white' },
+                        facebook: { label: 'Facebook', bg: 'bg-blue-500', text: 'text-white' },
+                      };
+                      const info = channelMap[ch] || channelMap.tiktok_vn;
+                      return (
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium ${info.bg} ${info.text}`}>
+                          {info.label}
+                        </span>
+                      );
+                    })()}
+                  </td>
                   <td className="py-4 px-6">
                     <div className="flex items-center gap-3">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${schedule.enabled ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-400'}`}>
