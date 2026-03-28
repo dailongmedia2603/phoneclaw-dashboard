@@ -41,11 +41,13 @@ function collectChain(
 
     const data = node.data as { nodeType: string; params: Record<string, unknown> };
     const def = NODE_DEFS[data.nodeType];
-    if (!def) { currentId = null; break; }
+
+    // Custom nodes (custom_xxx) default to 'tap' stepType
+    const stepType = def ? (def.stepType === 'start' ? 'wait' : def.stepType) : 'tap';
 
     const step: ScriptStep = {
       id: node.id,
-      type: def.stepType === 'start' ? 'wait' : def.stepType,
+      type: stepType,
       params: { ...data.params },
     };
 
