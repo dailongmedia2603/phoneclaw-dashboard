@@ -64,7 +64,7 @@ function addNotification(type: Notification['type'], title: string, message: str
 }
 
 // --- Middleware ---
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '500mb' }));
 
 // CORS
 app.use((_req, res, next) => {
