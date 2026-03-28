@@ -2,7 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import { readCollection, writeCollection, generateId } from '../store';
 import { uploadToR2, deleteFromR2 } from '../services/r2-storage';
-import { callDeviceApi } from '../services/device-manager';
+import { callDeviceApi, getDevice } from '../services/device-manager';
 
 interface Video {
   id: string;
@@ -84,19 +84,36 @@ router.post('/:id/send-to-device', async (req, res) => {
   const video = videos.find(v => v.id === req.params.id);
   if (!video) return res.json({ success: false, error: 'Video không tồn tại' });
 
-  // Try save-to-photos endpoint (requires TrollVNC rebuild with Photos.framework)
-  const result = await callDeviceApi(deviceId, 'POST', '/api/save-to-photos', { url: video.url });
+  // Call device /api/save-to-photos with long timeout (video download can take minutes)
+  const device = getDevice(deviceId);
+  if (!device) return res.json({ success: false, error: 'Thiết bị không tìm thấy' });
 
-  if (result.ok) {
-    return res.json({ success: true, data: { message: 'Đã lưu video vào Photos trên thiết bị' } });
+  const apiPort = device.httpPort + 1;
+  const apiUrl = `http://${device.tailscaleIp}:${apiPort}/api/save-to-photos`;
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 120000); // 120 seconds for download + save
+
+    const apiRes = await fetch(apiUrl, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: video.url }),
+    });
+    clearTimeout(timeout);
+
+    const data = await apiRes.json().catch(() => null);
+
+    if (data?.ok) {
+      return res.json({ success: true, data: { message: 'Đã lưu video vào Photos trên thiết bị!' } });
+    }
+
+    return res.json({ success: false, error: data?.error || 'Thiết bị không thể lưu video' });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Lỗi kết nối thiết bị';
+    return res.json({ success: false, error: msg });
   }
-
-  // Fallback: set clipboard to URL so user can paste in Safari
-  await callDeviceApi(deviceId, 'POST', '/api/clipboard', { text: video.url });
-  res.json({
-    success: true,
-    data: { message: 'Đã copy URL video vào clipboard thiết bị. Mở Safari để tải về.', fallback: true },
-  });
 });
 
 export default router;
