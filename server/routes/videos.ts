@@ -93,6 +93,19 @@ router.post('/:id/send-to-device', async (req, res) => {
 
   console.log(`[SEND-VIDEO] Sending to ${apiUrl} video=${video.url}`);
 
+  // Pre-check: verify video URL is accessible
+  try {
+    const checkRes = await fetch(video.url, { method: 'HEAD' });
+    if (!checkRes.ok) {
+      console.log(`[SEND-VIDEO] Video URL not accessible: ${checkRes.status}`);
+      return res.json({ success: false, error: `Video URL không truy cập được (HTTP ${checkRes.status}). Kiểm tra R2 bucket có bật public access chưa.` });
+    }
+    console.log(`[SEND-VIDEO] Video URL OK: ${checkRes.status}, size=${checkRes.headers.get('content-length')}`);
+  } catch (urlErr) {
+    console.log(`[SEND-VIDEO] Video URL check failed:`, urlErr);
+    return res.json({ success: false, error: 'Không thể truy cập video URL. Kiểm tra R2 public URL hoặc custom domain.' });
+  }
+
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 120000);
@@ -112,7 +125,7 @@ router.post('/:id/send-to-device', async (req, res) => {
     try { data = JSON.parse(text); } catch {}
 
     if (data?.ok) {
-      return res.json({ success: true, data: { message: 'Đã lưu video vào Photos trên thiết bị!' } });
+      return res.json({ success: true, data: { message: 'Đã gửi lệnh tải video tới thiết bị. Kiểm tra Photos sau vài giây.' } });
     }
 
     return res.json({ success: false, error: data?.error || `Thiết bị trả về: ${text.substring(0, 200)}` });
