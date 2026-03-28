@@ -180,5 +180,6 @@ export const videos = {
 export const customNodes = {
   getAll: () => get<{ id: string; name: string; createdAt: string }[]>('/api/custom-nodes'),
   create: (name: string) => post<{ id: string; name: string }>('/api/custom-nodes', { name }),
+  update: (id: string, name: string) => put<{ id: string; name: string }>(`/api/custom-nodes/${id}`, { name }),
   remove: (id: string) => del<void>(`/api/custom-nodes/${id}`),
 };

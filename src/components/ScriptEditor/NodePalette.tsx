@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, X, Trash2 } from 'lucide-react';
+import { Plus, X, Trash2, Pencil, Check } from 'lucide-react';
 import { NODE_CATEGORIES, getNodesByCategory, makeCustomNodeDef, type NodeDef } from './nodeDefinitions';
 import NodeIcon from './nodeIcons';
 import { customNodes as customNodesApi } from '../../services/api';
@@ -14,6 +14,8 @@ export default function NodePalette({ onCustomNodesLoaded }: NodePaletteProps) {
   const [saving, setSaving] = useState(false);
   const [customNodesList, setCustomNodesList] = useState<{ id: string; name: string }[]>([]);
   const [customDefs, setCustomDefs] = useState<Record<string, NodeDef>>({});
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
 
   // Load custom nodes on mount
   useEffect(() => {
@@ -61,6 +63,29 @@ export default function NodePalette({ onCustomNodesLoaded }: NodePaletteProps) {
     });
   };
 
+  const handleStartRename = (id: string, currentName: string) => {
+    setEditingId(id);
+    setEditName(currentName);
+  };
+
+  const handleSaveRename = async () => {
+    if (!editingId || !editName.trim()) return;
+    const res = await customNodesApi.update(editingId, editName.trim());
+    if (res.success) {
+      setCustomNodesList(prev => prev.map(n => n.id === editingId ? { ...n, name: editName.trim() } : n));
+      setCustomDefs(prev => {
+        const updated = { ...prev };
+        const key = `custom_${editingId}`;
+        if (updated[key]) {
+          updated[key] = makeCustomNodeDef(editingId, editName.trim());
+        }
+        onCustomNodesLoaded?.(updated);
+        return updated;
+      });
+    }
+    setEditingId(null);
+  };
+
   const onDragStart = (event: React.DragEvent, nodeType: string) => {
     event.dataTransfer.setData('application/reactflow', nodeType);
     event.dataTransfer.effectAllowed = 'move';
@@ -105,15 +130,37 @@ export default function NodePalette({ onCustomNodesLoaded }: NodePaletteProps) {
                     className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 cursor-grab active:cursor-grabbing transition-colors text-sm group"
                   >
                     <NodeIcon name={node.icon} size={18} className="text-slate-500" />
-                    <span className="font-medium text-slate-700 flex-1">{node.label}</span>
-                    {cat.id === 'custom' && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleDelete(node.nodeType.replace('custom_', '')); }}
-                        className="opacity-0 group-hover:opacity-100 p-0.5 text-slate-400 hover:text-red-500 transition-all"
-                        title="Xoá node"
-                      >
-                        <Trash2 size={12} />
-                      </button>
+                    {cat.id === 'custom' && editingId === node.nodeType.replace('custom_', '') ? (
+                      <input
+                        type="text"
+                        value={editName}
+                        onChange={e => setEditName(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') handleSaveRename(); if (e.key === 'Escape') setEditingId(null); }}
+                        onBlur={handleSaveRename}
+                        className="flex-1 px-1 py-0 text-sm border border-orange-300 rounded focus:outline-none focus:border-orange-500 bg-orange-50"
+                        autoFocus
+                        onClick={e => e.stopPropagation()}
+                      />
+                    ) : (
+                      <span className="font-medium text-slate-700 flex-1">{node.label}</span>
+                    )}
+                    {cat.id === 'custom' && editingId !== node.nodeType.replace('custom_', '') && (
+                      <>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleStartRename(node.nodeType.replace('custom_', ''), node.label); }}
+                          className="opacity-0 group-hover:opacity-100 p-0.5 text-slate-400 hover:text-orange-500 transition-all"
+                          title="Đổi tên"
+                        >
+                          <Pencil size={12} />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDelete(node.nodeType.replace('custom_', '')); }}
+                          className="opacity-0 group-hover:opacity-100 p-0.5 text-slate-400 hover:text-red-500 transition-all"
+                          title="Xoá node"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </>
                     )}
                   </div>
                 ))}
