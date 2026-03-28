@@ -49,7 +49,39 @@ export default function Schedules() {
   const { data: scriptsList } = useApi<Script[]>(() => scriptsApi.getAll(), []);
   const { data: devicesList } = useApi<Device[]>(() => devicesApi.getAll(), []);
 
-  const scheduleList = schedules ?? [];
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showFilter, setShowFilter] = useState(false);
+  const [filterChannel, setFilterChannel] = useState('');
+  const [filterFreq, setFilterFreq] = useState('');
+  const [filterDevice, setFilterDevice] = useState('');
+
+  const scheduleList = useMemo(() => {
+    let list = schedules ?? [];
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(s => s.name.toLowerCase().includes(q) || s.scriptName.toLowerCase().includes(q));
+    }
+    if (filterChannel) {
+      list = list.filter(s => {
+        const script = scriptsList?.find(sc => sc.id === s.scriptId);
+        return (script?.channel || 'tiktok_vn') === filterChannel;
+      });
+    }
+    if (filterFreq) {
+      list = list.filter(s => {
+        const parts = s.cron.split(' ');
+        if (filterFreq === 'hourly') return parts[1] === '*';
+        if (filterFreq === 'weekly') return parts[4] !== '*';
+        if (filterFreq === 'daily') return parts[1] !== '*' && parts[2] === '*' && parts[4] === '*';
+        if (filterFreq === 'custom_date') return parts[2] !== '*' && parts[3] !== '*';
+        return true;
+      });
+    }
+    if (filterDevice) {
+      list = list.filter(s => s.targetId === filterDevice);
+    }
+    return list;
+  }, [schedules, searchQuery, filterChannel, filterFreq, filterDevice, scriptsList]);
   const historyList = historyData ?? [];
   const queueList = useMemo(() => historyList.filter(h => h.status === 'running'), [historyList]);
 
@@ -259,22 +291,96 @@ export default function Schedules() {
         ))}
       </div>
 
-      {/* Toolbar (Contextual based on tab) */}
-      <div className="px-6 py-4 flex items-center justify-between border-b border-slate-100">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-          <input
-            type="text"
-            placeholder="T\u00ecm ki\u1ebfm..."
-            className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-64 transition-all"
-          />
-        </div>
-        <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 shadow-sm">
-            <Filter size={16} className="text-slate-400" />
-            B&#7897; l&#7885;c
+      {/* Toolbar */}
+      <div className="px-6 py-4 border-b border-slate-100 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Nhập để tìm kiếm"
+              className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-64 transition-all"
+            />
+          </div>
+          <button
+            onClick={() => setShowFilter(!showFilter)}
+            className={`flex items-center gap-2 px-4 py-2 border rounded-xl text-sm font-medium shadow-sm transition-colors ${
+              showFilter || filterChannel || filterFreq || filterDevice
+                ? 'bg-blue-50 border-blue-200 text-blue-700'
+                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            <Filter size={16} />
+            Bộ lọc
+            {(filterChannel || filterFreq || filterDevice) && (
+              <span className="w-2 h-2 rounded-full bg-blue-600" />
+            )}
           </button>
         </div>
+
+        {/* Filter panel */}
+        {showFilter && (
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5">Kênh</label>
+                <CustomSelect
+                  value={filterChannel}
+                  onChange={setFilterChannel}
+                  options={[
+                    { value: '', label: 'Tất cả' },
+                    { value: 'tiktok_vn', label: 'TikTok VN' },
+                    { value: 'tiktok_us', label: 'TikTok US' },
+                    { value: 'facebook', label: 'Facebook' },
+                  ]}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5">Tần suất</label>
+                <CustomSelect
+                  value={filterFreq}
+                  onChange={setFilterFreq}
+                  options={[
+                    { value: '', label: 'Tất cả' },
+                    { value: 'hourly', label: 'Hàng giờ' },
+                    { value: 'daily', label: 'Hàng ngày' },
+                    { value: 'weekly', label: 'Hàng tuần' },
+                    { value: 'custom_date', label: 'Ngày tuỳ chỉnh' },
+                  ]}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5">Thiết bị</label>
+                <CustomSelect
+                  value={filterDevice}
+                  onChange={setFilterDevice}
+                  options={[
+                    { value: '', label: 'Tất cả' },
+                    ...(devicesList ?? []).map(d => ({ value: d.id, label: d.name })),
+                  ]}
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-200">
+              <button
+                onClick={() => { setFilterChannel(''); setFilterFreq(''); setFilterDevice(''); }}
+                className="text-xs text-slate-500 hover:text-slate-700"
+              >
+                Reset
+              </button>
+              <div className="flex gap-2">
+                <button onClick={() => setShowFilter(false)} className="px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-200 rounded-lg transition-colors">
+                  Huỷ
+                </button>
+                <button onClick={() => setShowFilter(false)} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
+                  Áp dụng
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Content Area */}
