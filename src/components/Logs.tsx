@@ -10,7 +10,7 @@ import { useApi } from '../hooks/useApi';
 import type { ActivityLog, ScreenshotLog, ScheduleHistory } from '../types';
 
 export default function Logs() {
-  const [activeTab, setActiveTab] = useState<'gallery' | 'activity' | 'scripts'>('gallery');
+  const [activeTab] = useState<'gallery' | 'activity' | 'scripts'>('scripts');
   const [lightboxImage, setLightboxImage] = useState<{ url: string; device: string; timestamp: string; script?: string | null } | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -108,8 +108,8 @@ export default function Logs() {
       {/* Header */}
       <div className="px-6 pt-6 pb-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-1">Ảnh chụp & Nhật ký</h1>
-          <p className="text-sm text-slate-500">Quản lý hình ảnh, theo dõi hoạt động và lịch sử chạy kịch bản</p>
+          <h1 className="text-2xl font-bold text-slate-900 mb-1">Nhật ký</h1>
+          <p className="text-sm text-slate-500">Theo dõi lịch sử chạy kịch bản</p>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -148,27 +148,6 @@ export default function Logs() {
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="px-6 border-b border-slate-100 flex gap-6 bg-slate-50/30">
-        {[
-          { id: 'gallery', label: 'Thư viện ảnh', icon: ImageIcon },
-          { id: 'activity', label: 'Nhật ký hoạt động', icon: Activity },
-          { id: 'scripts', label: 'Nhật ký kịch bản', icon: FileText },
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
-            className={`flex items-center gap-2 py-4 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === tab.id
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-            }`}
-          >
-            <tab.icon size={16} />
-            {tab.label}
-          </button>
-        ))}
-      </div>
 
       {/* Toolbar */}
       <div className="px-6 py-4 flex items-center justify-between border-b border-slate-100">
