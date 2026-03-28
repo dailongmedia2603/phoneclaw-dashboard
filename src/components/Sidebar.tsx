@@ -23,11 +23,12 @@ export default function Sidebar({ activeTab, setActiveTab, onLogout, userName }:
   return (
     <aside className={`${isCollapsed ? 'w-20' : 'w-64'} bg-white border-r border-slate-200 flex flex-col relative h-full shrink-0 transition-all duration-300`}>
       {/* Logo */}
-      <div className={`h-20 flex items-center ${isCollapsed ? 'justify-center' : 'px-6'}`}>
-        <div className="text-xl font-bold tracking-tight flex items-center gap-1">
-          <span className="text-blue-600">Phone</span>
-          {!isCollapsed && <span className="text-slate-800">Claw</span>}
-        </div>
+      <div className={`h-20 flex items-center ${isCollapsed ? 'justify-center' : 'px-4'}`}>
+        {isCollapsed ? (
+          <img src="/favico.png" alt="Phone Agent" className="w-10 h-10 object-contain" />
+        ) : (
+          <img src="/logo.png" alt="Phone Agent" className="h-12 object-contain" />
+        )}
       </div>
 
       {/* Collapse Button */}
