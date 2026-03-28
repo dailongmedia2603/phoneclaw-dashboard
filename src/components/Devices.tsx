@@ -23,9 +23,12 @@ export default function Devices() {
   const [editing, setEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<Device | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [showAddGroupModal, setShowAddGroupModal] = useState(false);
+  const [newGroupName, setNewGroupName] = useState('');
+  const [addingGroup, setAddingGroup] = useState(false);
 
   const { data: deviceList, refresh: refreshDevices } = useApi<Device[]>(() => devicesApi.getAll(), []);
-  const { data: groupList } = useApi<DeviceGroup[]>(() => devicesApi.getGroups(), []);
+  const { data: groupList, refresh: refreshGroups } = useApi<DeviceGroup[]>(() => devicesApi.getGroups(), []);
   const { on } = useWebSocket();
 
   useEffect(() => {
@@ -38,7 +41,11 @@ export default function Devices() {
 
   const filtered = allDevices.filter(d => {
     if (activeGroup !== 'Tất cả') {
-      if (activeGroup === 'Chưa phân nhóm' ? d.group : d.group !== activeGroup) return false;
+      if (activeGroup === 'Chưa phân nhóm') {
+        if (d.group && d.group !== '') return false;
+      } else {
+        if (d.group !== activeGroup) return false;
+      }
     }
     if (search) {
       const q = search.toLowerCase();
@@ -60,6 +67,15 @@ export default function Devices() {
     if (level <= 20) return <BatteryLow className="text-red-500" size={16} />;
     if (level <= 50) return <BatteryMedium className="text-amber-500" size={16} />;
     return <Battery className="text-emerald-500" size={16} />;
+  };
+
+  const handleAddGroup = async () => {
+    if (!newGroupName.trim()) return;
+    setAddingGroup(true);
+    await devicesApi.createGroup(newGroupName.trim(), '#f86a06');
+    refreshGroups();
+    setShowAddGroupModal(false);
+    setAddingGroup(false);
   };
 
   const formatUptime = (seconds: number) => {
@@ -195,9 +211,12 @@ export default function Devices() {
         </div>
 
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 shadow-sm">
+          <button
+            onClick={() => { setShowAddGroupModal(true); setNewGroupName(''); }}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 shadow-sm"
+          >
             <FolderPlus size={16} className="text-slate-400" />
-            Quản lý Nhóm
+            Thêm nhóm
           </button>
         </div>
       </div>
@@ -476,19 +495,31 @@ export default function Devices() {
                 <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Thông tin hệ thống</h3>
                 <div className="grid grid-cols-2 gap-4 mb-8">
                   <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                    <p className="text-xs text-slate-500 mb-1">IP Tailscale</p>
+                    <p className="text-xs text-slate-500 mb-1 flex items-center gap-1.5">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f86a06" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                      IP Tailscale
+                    </p>
                     <p className="font-mono text-sm font-medium text-slate-900">{detailDevice.tailscaleIp}</p>
                   </div>
                   <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                    <p className="text-xs text-slate-500 mb-1">Phiên bản iOS</p>
+                    <p className="text-xs text-slate-500 mb-1 flex items-center gap-1.5">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f86a06" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                      Phiên bản iOS
+                    </p>
                     <p className="text-sm font-medium text-slate-900">{detailDevice.iosVersion}</p>
                   </div>
                   <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                    <p className="text-xs text-slate-500 mb-1">Model</p>
+                    <p className="text-xs text-slate-500 mb-1 flex items-center gap-1.5">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f86a06" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                      Model
+                    </p>
                     <p className="text-sm font-medium text-slate-900">{detailDevice.model}</p>
                   </div>
                   <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                    <p className="text-xs text-slate-500 mb-1">VNC Port</p>
+                    <p className="text-xs text-slate-500 mb-1 flex items-center gap-1.5">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f86a06" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                      VNC Port
+                    </p>
                     <p className="font-mono text-sm font-medium text-slate-900">{detailDevice.vncPort}</p>
                   </div>
                 </div>
@@ -624,6 +655,46 @@ export default function Devices() {
               <button onClick={handleDeleteDevice} disabled={deleting} className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2">
                 {deleting && <Loader2 size={16} className="animate-spin" />}
                 Xoá
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Group Modal */}
+      {showAddGroupModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <FolderPlus size={18} className="text-blue-600" /> Thêm nhóm
+              </h2>
+              <button onClick={() => setShowAddGroupModal(false)} className="p-2 text-slate-400 hover:text-slate-600 rounded-full">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6">
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Tên nhóm</label>
+              <input
+                type="text"
+                value={newGroupName}
+                onChange={e => setNewGroupName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleAddGroup()}
+                placeholder="VD: TikTok Farm, Facebook Team..."
+                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                autoFocus
+              />
+            </div>
+            <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+              <button onClick={() => setShowAddGroupModal(false)} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-xl">
+                Huỷ
+              </button>
+              <button
+                onClick={handleAddGroup}
+                disabled={addingGroup || !newGroupName.trim()}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white text-sm font-medium rounded-xl transition-colors"
+              >
+                {addingGroup ? 'Đang lưu...' : 'Tạo nhóm'}
               </button>
             </div>
           </div>
