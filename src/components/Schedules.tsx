@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import CustomSelect from './CustomSelect';
 import {
   CalendarDays, Plus, Search, Clock, List, History,
   PlaySquare, CheckCircle2, XCircle, MoreVertical,
@@ -498,32 +499,38 @@ export default function Schedules() {
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Ch&#7885;n k&#7883;ch b&#7843;n</label>
-                <select value={formScriptId} onChange={e => setFormScriptId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white">
-                  {(scriptsList ?? []).map(s => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
+                <CustomSelect
+                  value={formScriptId}
+                  onChange={setFormScriptId}
+                  options={(scriptsList ?? []).map(s => ({ value: s.id, label: s.name }))}
+                  placeholder="Chọn kịch bản..."
+                />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Thi&#7871;t b&#7883; / Nh&#243;m th&#7921;c thi</label>
-                <select value={formDeviceId} onChange={e => setFormDeviceId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white">
-                  {(devicesList ?? []).map(d => (
-                    <option key={d.id} value={d.id}>{d.name}</option>
-                  ))}
-                </select>
+                <CustomSelect
+                  value={formDeviceId}
+                  onChange={setFormDeviceId}
+                  options={(devicesList ?? []).map(d => ({ value: d.id, label: d.name }))}
+                  placeholder="Chọn thiết bị..."
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">T&#7847;n su&#7845;t</label>
-                  <select value={formFrequency} onChange={e => handleFrequencyChange(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white">
-                    <option value="once">Ch&#7841;y 1 l&#7847;n</option>
-                    <option value="hourly">H&#224;ng gi&#7901;</option>
-                    <option value="daily">H&#224;ng ng&#224;y</option>
-                    <option value="weekly">H&#224;ng tu&#7847;n</option>
-                    <option value="custom">T&#249;y ch&#7881;nh (Cron)</option>
-                  </select>
+                  <CustomSelect
+                    value={formFrequency}
+                    onChange={handleFrequencyChange}
+                    options={[
+                      { value: 'once', label: 'Chạy 1 lần' },
+                      { value: 'hourly', label: 'Hàng giờ' },
+                      { value: 'daily', label: 'Hàng ngày' },
+                      { value: 'weekly', label: 'Hàng tuần' },
+                      { value: 'custom', label: 'Tuỳ chỉnh (Cron)' },
+                    ]}
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Th&#7901;i gian b&#7855;t &#273;&#7847;u</label>
