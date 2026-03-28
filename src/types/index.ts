@@ -147,9 +147,18 @@ export interface NotificationConfig {
   alertOnScriptComplete: boolean;
 }
 
+export interface R2Config {
+  accountId: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+  bucketName: string;
+  publicUrl: string;
+}
+
 export interface AppSettings {
   vncDefaults: VncDefaults;
   notifications: NotificationConfig;
+  r2?: R2Config;
   theme: 'dark' | 'light';
   language: 'vi' | 'en';
   logRetentionDays: number;

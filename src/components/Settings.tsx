@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  Server, MonitorPlay, Network, Users, Bell, DatabaseBackup, Palette,
+  Server, MonitorPlay, Network, Users, Bell, DatabaseBackup, Palette, Cloud,
   Cpu, HardDrive, Activity, CheckCircle2, AlertCircle, Shield,
   Plus, Edit, Trash2, Save, Upload, Download, Smartphone, Check, X, Loader2
 } from 'lucide-react';
@@ -14,6 +14,7 @@ const SETTINGS_TABS = [
   { id: 'tailscale', label: 'Tailscale', icon: Network },
   { id: 'account', label: 'Tài khoản', icon: Users },
   { id: 'notifications', label: 'Thông báo', icon: Bell },
+  { id: 'r2', label: 'Cloudflare R2', icon: Cloud },
   { id: 'backup', label: 'Sao lưu & Phục hồi', icon: DatabaseBackup },
   { id: 'appearance', label: 'Giao diện', icon: Palette },
 ];
@@ -419,6 +420,16 @@ export default function Settings() {
             </div>
           )}
 
+          {/* CLOUDFLARE R2 TAB */}
+          {activeTab === 'r2' && (
+            <R2Settings settings={appSettings} onSave={async (r2) => {
+              setSaving(true);
+              await settingsApi.update({ r2 });
+              refreshSettings();
+              setSaving(false);
+            }} saving={saving} />
+          )}
+
           {/* BACKUP TAB */}
           {activeTab === 'backup' && (
             <div>
@@ -492,6 +503,112 @@ export default function Settings() {
           )}
 
         </div>
+      </div>
+    </div>
+  );
+}
+
+/** Cloudflare R2 Settings sub-component */
+function R2Settings({ settings, onSave, saving }: { settings?: AppSettings | null; onSave: (r2: AppSettings['r2']) => void; saving: boolean }) {
+  const r2 = settings?.r2;
+  const [accountId, setAccountId] = useState(r2?.accountId || '');
+  const [accessKeyId, setAccessKeyId] = useState(r2?.accessKeyId || '');
+  const [secretAccessKey, setSecretAccessKey] = useState(r2?.secretAccessKey || '');
+  const [bucketName, setBucketName] = useState(r2?.bucketName || '');
+  const [publicUrl, setPublicUrl] = useState(r2?.publicUrl || '');
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  const handleTest = async () => {
+    if (!accountId || !accessKeyId || !secretAccessKey || !bucketName) {
+      setTestResult({ ok: false, msg: 'Vui lòng điền đầy đủ thông tin bắt buộc' });
+      return;
+    }
+    setTesting(true);
+    setTestResult(null);
+    const res = await settingsApi.testR2({ accountId, accessKeyId, secretAccessKey, bucketName });
+    setTestResult({ ok: res.success, msg: res.success ? 'Kết nối R2 thành công!' : (res.error || 'Kết nối thất bại') });
+    setTesting(false);
+  };
+
+  const handleSave = () => {
+    onSave({ accountId, accessKeyId, secretAccessKey, bucketName, publicUrl });
+  };
+
+  const inputCls = "w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white";
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-bold text-slate-900">Cloudflare R2 Storage</h3>
+        <p className="text-sm text-slate-500 mt-1">Cấu hình kết nối Cloudflare R2 để lưu trữ ảnh chụp và tệp tin</p>
+      </div>
+
+      <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-800 flex gap-3">
+        <Cloud className="shrink-0 mt-0.5" size={18} />
+        <div>
+          <p className="font-medium mb-1">Hướng dẫn lấy thông tin:</p>
+          <ol className="list-decimal list-inside space-y-0.5 text-blue-700">
+            <li>Đăng nhập Cloudflare Dashboard → R2 Object Storage</li>
+            <li>Tạo Bucket mới hoặc chọn bucket có sẵn</li>
+            <li>Vào Manage R2 API Tokens → Tạo API Token</li>
+            <li>Copy Account ID, Access Key ID, Secret Access Key</li>
+          </ol>
+        </div>
+      </div>
+
+      <div className="grid gap-4">
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1.5">Account ID <span className="text-red-500">*</span></label>
+          <input type="text" value={accountId} onChange={e => setAccountId(e.target.value)} placeholder="VD: a1b2c3d4e5f6..." className={inputCls} />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1.5">Access Key ID <span className="text-red-500">*</span></label>
+          <input type="text" value={accessKeyId} onChange={e => setAccessKeyId(e.target.value)} placeholder="VD: 1a2b3c4d5e6f..." className={inputCls} />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1.5">Secret Access Key <span className="text-red-500">*</span></label>
+          <input type="password" value={secretAccessKey} onChange={e => setSecretAccessKey(e.target.value)} placeholder="••••••••••••••••" className={inputCls} />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1.5">Bucket Name <span className="text-red-500">*</span></label>
+          <input type="text" value={bucketName} onChange={e => setBucketName(e.target.value)} placeholder="VD: phoneclaw-storage" className={inputCls} />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1.5">Public URL <span className="text-slate-400">(tuỳ chọn)</span></label>
+          <input type="text" value={publicUrl} onChange={e => setPublicUrl(e.target.value)} placeholder="VD: https://cdn.example.com" className={inputCls} />
+          <p className="text-xs text-slate-400 mt-1">URL công khai nếu bucket có custom domain hoặc R2.dev subdomain</p>
+        </div>
+      </div>
+
+      {testResult && (
+        <div className={`flex items-center gap-2 p-3 rounded-xl text-sm font-medium ${testResult.ok ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+          {testResult.ok ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+          {testResult.msg}
+        </div>
+      )}
+
+      <div className="flex gap-3 pt-2">
+        <button
+          onClick={handleTest}
+          disabled={testing}
+          className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 shadow-sm transition-colors disabled:opacity-50"
+        >
+          {testing ? <Loader2 size={16} className="animate-spin" /> : <Activity size={16} />}
+          Kiểm tra kết nối
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-medium transition-colors shadow-sm shadow-blue-200 disabled:opacity-50"
+        >
+          {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+          Lưu cấu hình
+        </button>
       </div>
     </div>
   );

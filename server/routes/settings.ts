@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import os from 'os';
+import { S3Client, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import { readSingleton, writeSingleton } from '../store';
 import { getActiveProxies, startProxy, stopProxy } from '../services/vnc-proxy';
 import type { AppSettings, VpsStatus } from '../../src/types';
@@ -88,6 +89,36 @@ router.post('/vnc-proxy/stop', (req, res) => {
   if (!deviceId) return res.status(400).json({ success: false, error: 'deviceId is required' });
   stopProxy(deviceId);
   res.json({ success: true });
+});
+
+// POST /api/settings/test-r2 — kiểm tra kết nối Cloudflare R2
+router.post('/test-r2', async (req, res) => {
+  const { accountId, accessKeyId, secretAccessKey, bucketName } = req.body;
+
+  if (!accountId || !accessKeyId || !secretAccessKey || !bucketName) {
+    return res.json({ success: false, error: 'Vui lòng điền đầy đủ thông tin' });
+  }
+
+  try {
+    const client = new S3Client({
+      region: 'auto',
+      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+      credentials: {
+        accessKeyId,
+        secretAccessKey,
+      },
+    });
+
+    await client.send(new ListObjectsV2Command({
+      Bucket: bucketName,
+      MaxKeys: 1,
+    }));
+
+    res.json({ success: true, data: { message: 'Kết nối R2 thành công!' } });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Kết nối thất bại';
+    res.json({ success: false, error: msg });
+  }
 });
 
 export default router;

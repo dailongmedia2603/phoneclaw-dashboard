@@ -146,4 +146,6 @@ export const settings = {
   getVncProxies: () => get<VncProxy[]>('/api/settings/vnc-proxies'),
   startVncProxy: (deviceId: string) => post<VncProxy>('/api/settings/vnc-proxy/start', { deviceId }),
   stopVncProxy: (deviceId: string) => post('/api/settings/vnc-proxy/stop', { deviceId }),
+  testR2: (config: { accountId: string; accessKeyId: string; secretAccessKey: string; bucketName: string }) =>
+    post('/api/settings/test-r2', config),
 };
