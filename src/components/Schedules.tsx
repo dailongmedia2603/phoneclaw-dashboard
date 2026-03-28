@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import CustomSelect from './CustomSelect';
 import {
   CalendarDays, Plus, Search, Clock, List, History,
-  PlaySquare, CheckCircle2, XCircle, MoreVertical,
+  PlaySquare, CheckCircle2, XCircle,
   Edit, Trash2, Calendar as CalendarIcon, Filter, X,
   Smartphone, Wand2, ChevronLeft, ChevronRight, Loader2
 } from 'lucide-react';
@@ -61,6 +61,8 @@ export default function Schedules() {
   const [formTime, setFormTime] = useState('08:00');
   const [formCron, setFormCron] = useState('0 8 * * *');
   const [formCustomDate, setFormCustomDate] = useState('');
+  const [editingScheduleId, setEditingScheduleId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   // Calendar state
@@ -141,23 +143,63 @@ export default function Schedules() {
     updateCron('custom_date', formTime, date);
   };
 
-  const handleCreateSchedule = async () => {
+  const openEditModal = (schedule: Schedule) => {
+    setEditingScheduleId(schedule.id);
+    setFormName(schedule.name);
+    setFormScriptId(schedule.scriptId);
+    setFormDeviceId(schedule.targetId);
+    setFormCron(schedule.cron);
+    // Parse cron to detect frequency
+    const parts = schedule.cron.split(' ');
+    if (parts.length === 5) {
+      const [mm, hh, day, month] = parts;
+      setFormTime(`${hh.padStart(2, '0')}:${mm.padStart(2, '0')}`);
+      if (day !== '*' && month !== '*') {
+        setFormFrequency('custom_date');
+        const now = new Date();
+        setFormCustomDate(`${now.getFullYear()}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+      } else if (hh === '*') {
+        setFormFrequency('hourly');
+      } else if (parts[4] !== '*') {
+        setFormFrequency('weekly');
+      } else {
+        setFormFrequency('daily');
+      }
+    }
+    setShowCreateModal(true);
+  };
+
+  const handleSaveSchedule = async () => {
     if (!formName || !formScriptId || !formDeviceId) return;
     setSaving(true);
     const selectedScript = scriptsList?.find(s => s.id === formScriptId);
     const selectedDevice = devicesList?.find(d => d.id === formDeviceId);
-    await schedulesApi.create({
+    const data = {
       name: formName,
       scriptId: formScriptId,
       scriptName: selectedScript?.name ?? '',
-      targetType: 'device',
+      targetType: 'device' as const,
       targetId: formDeviceId,
       targetName: selectedDevice?.name ?? '',
       cron: formCron,
       enabled: true,
-    });
+    };
+
+    if (editingScheduleId) {
+      await schedulesApi.update(editingScheduleId, data);
+    } else {
+      await schedulesApi.create(data);
+    }
     setSaving(false);
     setShowCreateModal(false);
+    setEditingScheduleId(null);
+    refreshSchedules();
+  };
+
+  const confirmDeleteSchedule = async () => {
+    if (!deleteConfirmId) return;
+    await schedulesApi.remove(deleteConfirmId);
+    setDeleteConfirmId(null);
     refreshSchedules();
   };
 
@@ -280,15 +322,12 @@ export default function Schedules() {
                     </button>
                   </td>
                   <td className="py-4 px-6 text-right">
-                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Ch&#7881;nh s&#7917;a">
+                    <div className="flex items-center justify-end gap-2">
+                      <button onClick={() => openEditModal(schedule)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Chỉnh sửa">
                         <Edit size={16} />
                       </button>
-                      <button onClick={() => deleteSchedule(schedule.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="X&#243;a">
+                      <button onClick={() => setDeleteConfirmId(schedule.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Xóa">
                         <Trash2 size={16} />
-                      </button>
-                      <button className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
-                        <MoreVertical size={16} />
                       </button>
                     </div>
                   </td>
@@ -502,9 +541,9 @@ export default function Schedules() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
               <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <CalendarDays size={18} className="text-blue-600" /> T&#7841;o l&#7883;ch tr&#236;nh m&#7899;i
+                <CalendarDays size={18} className="text-blue-600" /> {editingScheduleId ? 'Chỉnh sửa lịch trình' : 'Tạo lịch trình mới'}
               </h2>
-              <button onClick={() => setShowCreateModal(false)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-full transition-colors">
+              <button onClick={() => { setShowCreateModal(false); setEditingScheduleId(null); }} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-full transition-colors">
                 <X size={20} />
               </button>
             </div>
@@ -587,8 +626,31 @@ export default function Schedules() {
               <button onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-xl transition-colors">
                 H&#7911;y
               </button>
-              <button onClick={handleCreateSchedule} disabled={saving} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors shadow-sm shadow-blue-200 disabled:opacity-50">
+              <button onClick={handleSaveSchedule} disabled={saving} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors shadow-sm shadow-blue-200 disabled:opacity-50">
                 {saving ? 'Saving...' : 'L\u01b0u l\u1ecbch tr\u00ecnh'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirm Modal */}
+      {deleteConfirmId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
+            <div className="p-6 text-center">
+              <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
+                <Trash2 size={24} />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 mb-2">Xoá lịch trình?</h3>
+              <p className="text-sm text-slate-500">Hành động này không thể hoàn tác. Lịch trình sẽ bị xoá vĩnh viễn.</p>
+            </div>
+            <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3">
+              <button onClick={() => setDeleteConfirmId(null)} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
+                Huỷ
+              </button>
+              <button onClick={confirmDeleteSchedule} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-xl transition-colors">
+                Xác nhận xoá
               </button>
             </div>
           </div>
