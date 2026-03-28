@@ -43,7 +43,14 @@ export default function CustomSelect({ value, onChange, options, placeholder }: 
   }, []);
 
   useEffect(() => {
-    if (open) updatePosition();
+    if (open) {
+      // Wait for layout paint before measuring position
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          updatePosition();
+        });
+      });
+    }
   }, [open, updatePosition]);
 
   return (
