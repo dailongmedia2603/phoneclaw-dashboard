@@ -155,6 +155,17 @@ export interface R2Config {
   publicUrl: string;
 }
 
+export interface Video {
+  id: string;
+  name: string;
+  filename: string;
+  r2Key: string;
+  url: string;
+  size: number;
+  mimeType: string;
+  uploadedAt: string;
+}
+
 export interface AppSettings {
   vncDefaults: VncDefaults;
   notifications: NotificationConfig;

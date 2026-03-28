@@ -6,6 +6,7 @@ import Scripts from './components/Scripts';
 import Schedules from './components/Schedules';
 import Logs from './components/Logs';
 import Settings from './components/Settings';
+import VideoLibrary from './components/VideoLibrary';
 import Login from './components/Login';
 import ToastContainer from './components/Toast';
 import ScriptEditorPage from './components/ScriptEditor/ScriptEditorPage';
@@ -24,6 +25,7 @@ function Layout({ onLogout, userName }: { onLogout: () => void; userName: string
             <Route path="/kich-ban" element={<Scripts />} />
             <Route path="/lich-trinh" element={<Schedules />} />
             <Route path="/nhat-ky" element={<Logs />} />
+            <Route path="/thu-vien-video" element={<VideoLibrary />} />
             <Route path="/cai-dat" element={<Settings />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

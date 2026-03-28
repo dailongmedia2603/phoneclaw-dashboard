@@ -1,7 +1,7 @@
 import type {
   Device, DeviceGroup, Script, Schedule, ScheduleHistory,
   ActivityLog, ScreenshotLog, DashboardStats, Notification,
-  AppSettings, VpsStatus, VncProxy, ApiResponse,
+  AppSettings, VpsStatus, VncProxy, ApiResponse, Video,
 } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -148,4 +148,28 @@ export const settings = {
   stopVncProxy: (deviceId: string) => post('/api/settings/vnc-proxy/stop', { deviceId }),
   testR2: (config: { accountId: string; accessKeyId: string; secretAccessKey: string; bucketName: string }) =>
     post('/api/settings/test-r2', config),
+};
+
+// ============================================================
+// Videos
+// ============================================================
+export const videos = {
+  getAll: () => get<Video[]>('/api/videos'),
+  upload: async (file: File, name?: string): Promise<ApiResponse<Video>> => {
+    const formData = new FormData();
+    formData.append('video', file);
+    if (name) formData.append('name', name);
+    try {
+      const res = await fetch(`${API_BASE}/api/videos/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      return await res.json();
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Upload failed' };
+    }
+  },
+  remove: (id: string) => del<void>(`/api/videos/${id}`),
+  sendToDevice: (videoId: string, deviceId: string) =>
+    post(`/api/videos/${videoId}/send-to-device`, { deviceId }),
 };
