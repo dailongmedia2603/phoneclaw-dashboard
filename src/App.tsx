@@ -9,16 +9,17 @@ import Settings from './components/Settings';
 import VideoLibrary from './components/VideoLibrary';
 import ProxyManager from './components/ProxyManager';
 import SharedScripts from './components/SharedScripts';
+import UserManagement from './components/UserManagement';
 import Login from './components/Login';
 import ToastContainer from './components/Toast';
 import ScriptEditorPage from './components/ScriptEditor/ScriptEditorPage';
 import { useAuth } from './hooks/useAuth';
 import { Loader2 } from 'lucide-react';
 
-function Layout({ onLogout, userName }: { onLogout: () => void; userName: string }) {
+function Layout({ onLogout, userName, userRole }: { onLogout: () => void; userName: string; userRole: string }) {
   return (
     <div className="flex h-screen bg-[#F8FAFC] font-sans text-slate-800 overflow-hidden">
-      <Sidebar onLogout={onLogout} userName={userName} />
+      <Sidebar onLogout={onLogout} userName={userName} userRole={userRole} />
       <div className="flex-1 flex flex-col overflow-hidden">
         <main className="flex-1 overflow-hidden p-6">
           <Routes>
@@ -30,6 +31,7 @@ function Layout({ onLogout, userName }: { onLogout: () => void; userName: string
             <Route path="/lich-trinh" element={<Schedules />} />
             <Route path="/nhat-ky" element={<Logs />} />
             <Route path="/thu-vien-video" element={<VideoLibrary />} />
+            <Route path="/nguoi-dung" element={<UserManagement />} />
             <Route path="/cai-dat" element={<Settings />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
@@ -64,7 +66,7 @@ export default function App() {
       <Route path="/kho-kich-ban/tao-moi" element={<><ScriptEditorPage apiType="shared" /><ToastContainer /></>} />
       <Route path="/kho-kich-ban/:scriptId" element={<><ScriptEditorPage apiType="shared" /><ToastContainer /></>} />
       {/* All other pages: sidebar layout */}
-      <Route path="/*" element={<Layout onLogout={logout} userName={user.name} />} />
+      <Route path="/*" element={<Layout onLogout={logout} userName={user.name} userRole={user.role} />} />
     </Routes>
   );
 }

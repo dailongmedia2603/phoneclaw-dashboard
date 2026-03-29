@@ -1,7 +1,7 @@
 import type {
   Device, DeviceGroup, Script, Schedule, ScheduleHistory,
   ActivityLog, ScreenshotLog, DashboardStats, Notification,
-  AppSettings, VpsStatus, VncProxy, ApiResponse, Video,
+  AppSettings, VpsStatus, VncProxy, ApiResponse, Video, AppUser,
 } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -194,6 +194,18 @@ export const proxy = {
     post('/api/proxy/batch/start', { deviceIds }),
   batchStop: (deviceIds: string[]) =>
     post('/api/proxy/batch/stop', { deviceIds }),
+};
+
+// ============================================================
+// Users (Admin Only)
+// ============================================================
+export const users = {
+  getAll: () => get<AppUser[]>('/api/auth/users'),
+  create: (data: { name: string; email: string; password: string; phone?: string; role: string }) =>
+    post<AppUser>('/api/auth/users', data),
+  update: (id: string, data: Partial<{ name: string; email: string; phone: string; role: string; password: string }>) =>
+    put<AppUser>(`/api/auth/users/${id}`, data),
+  remove: (id: string) => del<void>(`/api/auth/users/${id}`),
 };
 
 // ============================================================

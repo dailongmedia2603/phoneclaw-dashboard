@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Cpu, Wand2, CalendarDays, ScrollText, Film, BookOpen, Settings, Shield, ChevronLeft, ChevronRight, LogOut, User } from 'lucide-react';
+import { LayoutDashboard, Cpu, Wand2, CalendarDays, ScrollText, Film, BookOpen, Settings, Shield, Users, ChevronLeft, ChevronRight, LogOut, User } from 'lucide-react';
 
 interface SidebarProps {
   onLogout?: () => void;
   userName?: string;
+  userRole?: string;
 }
 
 const navItems = [
@@ -16,10 +17,11 @@ const navItems = [
   { icon: CalendarDays, label: 'Lịch trình', to: '/lich-trinh' },
   { icon: ScrollText, label: 'Nhật ký', to: '/nhat-ky' },
   { icon: Film, label: 'Thư viện Video', to: '/thu-vien-video' },
+  { icon: Users, label: 'Người dùng', to: '/nguoi-dung', adminOnly: true },
   { icon: Settings, label: 'Cài đặt', to: '/cai-dat' },
-];
+] as const;
 
-export default function Sidebar({ onLogout, userName }: SidebarProps) {
+export default function Sidebar({ onLogout, userName, userRole }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
@@ -43,7 +45,7 @@ export default function Sidebar({ onLogout, userName }: SidebarProps) {
 
       {/* Navigation */}
       <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto">
-        {navItems.map((item) => {
+        {navItems.filter(item => !('adminOnly' in item && item.adminOnly) || userRole === 'admin').map((item) => {
           const Icon = item.icon;
           return (
             <NavLink

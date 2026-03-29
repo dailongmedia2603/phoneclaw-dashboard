@@ -19,6 +19,15 @@ export interface ProxyConfig {
 }
 
 // --- Device ---
+export interface AppUser {
+  id: string;
+  email: string;
+  name: string;
+  phone: string;
+  role: 'admin' | 'user';
+  createdAt: string;
+}
+
 export interface Device {
   id: string;
   name: string;
