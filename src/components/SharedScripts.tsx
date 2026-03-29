@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus, Play, Download, Upload, Edit, Trash2,
-  Clock, Search, List, Loader2, X
+  Clock, Search, List, Loader2, X, Copy
 } from 'lucide-react';
 import { sharedScripts as sharedApi, devices as devicesApi, scripts as scriptsApi } from '../services/api';
 import { useApi } from '../hooks/useApi';
@@ -41,6 +41,22 @@ export default function SharedScripts({ userRole = 'user' }: SharedScriptsProps)
   const { data: deviceList } = useApi<Device[]>(() => devicesApi.getAll(), []);
   const scriptsData = scriptsList || [];
   const onlineDevices = (deviceList || []).filter(d => d.status !== 'offline');
+
+  const handleAddToMyScripts = async (script: Script) => {
+    const res = await scriptsApi.create({
+      name: script.name,
+      description: script.description,
+      channel: script.channel,
+      steps: script.steps,
+      graphData: script.graphData,
+      status: 'active',
+    });
+    if (res.success) {
+      showToast('success', `Đã thêm "${script.name}" vào kịch bản của bạn`);
+    } else {
+      showToast('error', res.error || 'Thêm thất bại');
+    }
+  };
 
   const handleRun = async () => {
     if (!showRunModal || !runDeviceId) return;
@@ -193,6 +209,13 @@ export default function SharedScripts({ userRole = 'user' }: SharedScriptsProps)
                 </td>
                 <td className="py-4 px-4 text-right">
                   <div className="flex items-center justify-end gap-1">
+                    <button
+                      onClick={() => handleAddToMyScripts(script)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-sm font-medium transition-colors"
+                      title="Thêm vào kịch bản của tôi"
+                    >
+                      <Copy size={14} /> Thêm
+                    </button>
                     {isAdmin && (
                       <button
                         onClick={() => { setShowRunModal(script.id); setRunDeviceId(onlineDevices[0]?.id || ''); }}
