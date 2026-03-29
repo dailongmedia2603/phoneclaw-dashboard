@@ -4,9 +4,10 @@ import {
   Plus, Play, Download, Upload, Edit, Trash2,
   Clock, Search, List, Loader2, X
 } from 'lucide-react';
-import { sharedScripts as sharedApi, devices as devicesApi } from '../services/api';
+import { sharedScripts as sharedApi, devices as devicesApi, scripts as scriptsApi } from '../services/api';
 import { useApi } from '../hooks/useApi';
 import { showToast } from './Toast';
+import CustomSelect from './CustomSelect';
 import type { Script, Device } from '../types';
 
 function getTimeAgo(iso: string): string {
@@ -21,14 +22,38 @@ function getTimeAgo(iso: string): string {
 
 const tiktokSvg = <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3.15 15.2 6.34 6.34 0 0 0 9.49 21.5a6.34 6.34 0 0 0 6.34-6.34V8.71a8.16 8.16 0 0 0 4.76 1.52v-3.4a4.85 4.85 0 0 1-1-.14z"/></svg>;
 
-export default function SharedScripts() {
+interface SharedScriptsProps {
+  userRole?: string;
+}
+
+export default function SharedScripts({ userRole = 'user' }: SharedScriptsProps) {
   const navigate = useNavigate();
   const [activeAppTab, setActiveAppTab] = useState('tiktok_vn');
   const [searchQuery, setSearchQuery] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [showRunModal, setShowRunModal] = useState<string | null>(null);
+  const [runDeviceId, setRunDeviceId] = useState('');
+  const [runLoading, setRunLoading] = useState(false);
+
+  const isAdmin = userRole === 'admin';
 
   const { data: scriptsList, loading, refresh } = useApi<Script[]>(() => sharedApi.getAll(), []);
+  const { data: deviceList } = useApi<Device[]>(() => devicesApi.getAll(), []);
   const scriptsData = scriptsList || [];
+  const onlineDevices = (deviceList || []).filter(d => d.status !== 'offline');
+
+  const handleRun = async () => {
+    if (!showRunModal || !runDeviceId) return;
+    setRunLoading(true);
+    const res = await sharedApi.run(showRunModal, runDeviceId);
+    setRunLoading(false);
+    setShowRunModal(null);
+    if (res.success) {
+      showToast('success', 'Đã gửi kịch bản tới thiết bị');
+    } else {
+      showToast('error', res.error || 'Chạy kịch bản thất bại');
+    }
+  };
 
   const APP_TABS = [
     { id: 'tiktok_vn', label: 'TikTok Việt', icon: tiktokSvg, color: 'bg-black text-white' },
@@ -168,6 +193,14 @@ export default function SharedScripts() {
                 </td>
                 <td className="py-4 px-4 text-right">
                   <div className="flex items-center justify-end gap-1">
+                    {isAdmin && (
+                      <button
+                        onClick={() => { setShowRunModal(script.id); setRunDeviceId(onlineDevices[0]?.id || ''); }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        <Play size={14} fill="currentColor" /> Chạy
+                      </button>
+                    )}
                     <button
                       onClick={() => navigate(`/kho-kich-ban/${script.id}`)}
                       className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -190,6 +223,39 @@ export default function SharedScripts() {
         </table>
         )}
       </div>
+
+      {/* Run Modal */}
+      {showRunModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <Play size={18} className="text-blue-600" fill="currentColor" /> Chạy kịch bản
+              </h2>
+              <button onClick={() => setShowRunModal(null)} className="p-2 text-slate-400 hover:text-slate-600 rounded-full"><X size={20} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-slate-600">Kịch bản: <strong>{scriptsData.find(s => s.id === showRunModal)?.name}</strong></p>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Chọn thiết bị</label>
+                <CustomSelect
+                  value={runDeviceId}
+                  onChange={setRunDeviceId}
+                  options={onlineDevices.map(d => ({ value: d.id, label: d.name }))}
+                  placeholder="Chọn thiết bị..."
+                />
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+              <button onClick={() => setShowRunModal(null)} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-xl">Huỷ</button>
+              <button onClick={handleRun} disabled={runLoading || !runDeviceId} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white text-sm font-medium rounded-xl flex items-center gap-2">
+                {runLoading && <Loader2 size={16} className="animate-spin" />}
+                <Play size={14} fill="currentColor" /> Chạy ngay
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirm */}
       {deleteConfirm && (

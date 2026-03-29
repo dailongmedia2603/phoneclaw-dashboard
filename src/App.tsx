@@ -27,7 +27,7 @@ function Layout({ onLogout, userName, userRole }: { onLogout: () => void; userNa
             <Route path="/thiet-bi" element={<Devices />} />
             <Route path="/proxy" element={<ProxyManager />} />
             <Route path="/kich-ban" element={<Scripts />} />
-            <Route path="/kho-kich-ban" element={<SharedScripts />} />
+            <Route path="/kho-kich-ban" element={<SharedScripts userRole={userRole} />} />
             <Route path="/lich-trinh" element={<Schedules />} />
             <Route path="/nhat-ky" element={<Logs />} />
             <Route path="/thu-vien-video" element={<VideoLibrary />} />

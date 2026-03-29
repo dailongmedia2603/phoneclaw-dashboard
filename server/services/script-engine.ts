@@ -81,6 +81,16 @@ export function stopExecution(executionId: string) {
 
 type ProgressCallback = (execution: ScheduleHistory) => void;
 
+/** Execute a script object directly (for shared scripts) */
+export async function executeScriptDirect(
+  script: Script,
+  deviceId: string,
+  scheduleName: string,
+  onProgress?: ProgressCallback
+): Promise<ScheduleHistory> {
+  return _executeScript(script, deviceId, scheduleName, onProgress);
+}
+
 export async function executeScript(
   scriptId: string,
   deviceId: string,
@@ -89,6 +99,15 @@ export async function executeScript(
 ): Promise<ScheduleHistory> {
   const script = getScript(scriptId);
   if (!script) throw new Error('Script not found');
+  return _executeScript(script, deviceId, scheduleName, onProgress);
+}
+
+async function _executeScript(
+  script: Script,
+  deviceId: string,
+  scheduleName: string,
+  onProgress?: ProgressCallback
+): Promise<ScheduleHistory> {
 
   const device = getDevice(deviceId);
   if (!device) throw new Error('Device not found');
@@ -124,12 +143,14 @@ export async function executeScript(
     activeExecutions.delete(executionId);
     updateDevice(deviceId, { status: 'online', currentScript: undefined });
 
-    // Update script stats
-    updateScript(scriptId, {
-      lastRun: new Date().toISOString(),
-      runCount: (script.runCount || 0) + 1,
-      status: 'active',
-    });
+    // Update script stats (only for scripts in main collection)
+    if (script.id) {
+      updateScript(script.id, {
+        lastRun: new Date().toISOString(),
+        runCount: (script.runCount || 0) + 1,
+        status: 'active',
+      });
+    }
 
     onProgress?.(execution);
   }

@@ -217,6 +217,8 @@ export const sharedScripts = {
   create: (data: Partial<Script>) => post<Script>('/api/shared-scripts', data),
   update: (id: string, data: Partial<Script>) => put<Script>(`/api/shared-scripts/${id}`, data),
   remove: (id: string) => del<void>(`/api/shared-scripts/${id}`),
+  run: (scriptId: string, deviceId: string) =>
+    post<{ executionId: string }>(`/api/shared-scripts/${scriptId}/run`, { deviceId }),
 };
 
 // ============================================================
