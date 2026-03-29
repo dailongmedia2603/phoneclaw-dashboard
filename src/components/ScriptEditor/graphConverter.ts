@@ -163,7 +163,7 @@ function findNodeType(step: ScriptStep): string {
   if (step.type === 'screenshot') return 'screenshot';
   if (step.type === 'type') return 'type_text';
   if (step.type === 'swipe') return 'swipe_up';
-  if (step.type === 'double_tap') return 'tiktok_vn_heart';
+  if (step.type === 'double_tap') return 'tap_custom';
   if (step.type === 'tap') return 'tap_custom';
   if (step.type === 'launch') return 'tiktok_vn_open';
   return 'wait';

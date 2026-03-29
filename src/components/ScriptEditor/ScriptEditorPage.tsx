@@ -364,7 +364,7 @@ export default function ScriptEditorPage({ appTab, apiType = 'scripts' }: Script
             edgeTypes={edgeTypes}
             defaultEdgeOptions={{ type: 'default' }}
             fitView
-            deleteKeyCode="Delete"
+            deleteKeyCode={['Delete', 'Backspace']}
             className="bg-slate-50"
           >
             <Background color="#cbd5e1" gap={20} size={1} />

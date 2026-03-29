@@ -109,144 +109,28 @@ export const NODE_DEFS: Record<string, NodeDef> = {
     fields: [{ key: 'text', label: 'Nội dung', type: 'text' }],
   },
 
-  // --- TikTok Việt ---
+  // --- Ứng dụng (App Launchers) ---
   tiktok_vn_open: {
-    nodeType: 'tiktok_vn_open', label: 'Mở TikTok VN', category: 'tiktok_vn',
+    nodeType: 'tiktok_vn_open', label: 'Mở TikTok VN', category: 'apps',
     color: '#000000', bgColor: '#f8fafc', icon: 'music',
     stepType: 'launch', defaultParams: { bundleId: 'com.ss.iphone.ugc.Ame' }, fields: [],
   },
-  tiktok_vn_heart: {
-    nodeType: 'tiktok_vn_heart', label: 'Thả tim', category: 'tiktok_vn',
-    color: '#ef4444', bgColor: '#fef2f2', icon: 'heart',
-    stepType: 'double_tap',
-    defaultParams: { x: 0.5, y: 0.4, delay: 0.1 },
-    fields: [
-      { key: 'x', label: 'X (0-1)', type: 'number' },
-      { key: 'y', label: 'Y (0-1)', type: 'number' },
-    ],
-  },
-  tiktok_vn_comment: {
-    nodeType: 'tiktok_vn_comment', label: 'Bình luận', category: 'tiktok_vn',
-    color: '#3b82f6', bgColor: '#eff6ff', icon: 'message',
-    stepType: 'tap',
-    defaultParams: { x: 0.923, y: 0.607 },
-    fields: [
-      { key: 'x', label: 'X (0-1)', type: 'number' },
-      { key: 'y', label: 'Y (0-1)', type: 'number' },
-    ],
-  },
-  tiktok_vn_share: {
-    nodeType: 'tiktok_vn_share', label: 'Chia sẻ', category: 'tiktok_vn',
-    color: '#3b82f6', bgColor: '#eff6ff', icon: 'share',
-    stepType: 'tap',
-    defaultParams: { x: 0.93, y: 0.65 },
-    fields: [
-      { key: 'x', label: 'X (0-1)', type: 'number' },
-      { key: 'y', label: 'Y (0-1)', type: 'number' },
-    ],
-  },
-  tiktok_vn_follow: {
-    nodeType: 'tiktok_vn_follow', label: 'Theo dõi', category: 'tiktok_vn',
-    color: '#ef4444', bgColor: '#fef2f2', icon: 'user_plus',
-    stepType: 'tap',
-    defaultParams: { x: 0.93, y: 0.35 },
-    fields: [
-      { key: 'x', label: 'X (0-1)', type: 'number' },
-      { key: 'y', label: 'Y (0-1)', type: 'number' },
-    ],
-  },
-  tiktok_vn_bookmark: {
-    nodeType: 'tiktok_vn_bookmark', label: 'Lưu video', category: 'tiktok_vn',
-    color: '#f59e0b', bgColor: '#fffbeb', icon: 'bookmark',
-    stepType: 'tap',
-    defaultParams: { x: 0.93, y: 0.6 },
-    fields: [
-      { key: 'x', label: 'X (0-1)', type: 'number' },
-      { key: 'y', label: 'Y (0-1)', type: 'number' },
-    ],
-  },
-  tiktok_vn_foryou: {
-    nodeType: 'tiktok_vn_foryou', label: 'Tab For You', category: 'tiktok_vn',
-    color: '#000000', bgColor: '#f8fafc', icon: 'home',
-    stepType: 'tap',
-    defaultParams: { x: 0.5, y: 0.04 },
-    fields: [
-      { key: 'x', label: 'X (0-1)', type: 'number' },
-      { key: 'y', label: 'Y (0-1)', type: 'number' },
-    ],
-  },
-  tiktok_vn_search: {
-    nodeType: 'tiktok_vn_search', label: 'Tìm kiếm', category: 'tiktok_vn',
-    color: '#000000', bgColor: '#f8fafc', icon: 'search',
-    stepType: 'tap',
-    defaultParams: { x: 0.93, y: 0.04 },
-    fields: [
-      { key: 'x', label: 'X (0-1)', type: 'number' },
-      { key: 'y', label: 'Y (0-1)', type: 'number' },
-    ],
-  },
-
-  // --- TikTok US ---
   tiktok_us_open: {
-    nodeType: 'tiktok_us_open', label: 'Mở TikTok US', category: 'tiktok_us',
+    nodeType: 'tiktok_us_open', label: 'Mở TikTok US', category: 'apps',
     color: '#2563eb', bgColor: '#eff6ff', icon: 'globe',
     stepType: 'launch', defaultParams: { bundleId: 'com.zhiliaoapp.musically' }, fields: [],
   },
-  tiktok_us_heart: {
-    nodeType: 'tiktok_us_heart', label: 'Thả tim (US)', category: 'tiktok_us',
-    color: '#ef4444', bgColor: '#fef2f2', icon: 'heart',
-    stepType: 'double_tap',
-    defaultParams: { x: 0.5, y: 0.4, delay: 0.1 },
-    fields: [
-      { key: 'x', label: 'X (0-1)', type: 'number' },
-      { key: 'y', label: 'Y (0-1)', type: 'number' },
-    ],
-  },
-
-  // --- Facebook ---
   fb_open: {
-    nodeType: 'fb_open', label: 'Mở Facebook', category: 'facebook',
+    nodeType: 'fb_open', label: 'Mở Facebook', category: 'apps',
     color: '#1877f2', bgColor: '#eff6ff', icon: 'facebook',
     stepType: 'launch', defaultParams: { bundleId: 'com.facebook.Facebook' }, fields: [],
-  },
-  fb_like: {
-    nodeType: 'fb_like', label: 'Like (FB)', category: 'facebook',
-    color: '#1877f2', bgColor: '#eff6ff', icon: 'thumbs_up',
-    stepType: 'tap',
-    defaultParams: { x: 0.5, y: 0.5 },
-    fields: [
-      { key: 'x', label: 'X (0-1)', type: 'number' },
-      { key: 'y', label: 'Y (0-1)', type: 'number' },
-    ],
-  },
-  fb_comment: {
-    nodeType: 'fb_comment', label: 'Comment (FB)', category: 'facebook',
-    color: '#1877f2', bgColor: '#eff6ff', icon: 'message',
-    stepType: 'tap',
-    defaultParams: { x: 0.5, y: 0.5 },
-    fields: [
-      { key: 'x', label: 'X (0-1)', type: 'number' },
-      { key: 'y', label: 'Y (0-1)', type: 'number' },
-    ],
-  },
-  fb_share: {
-    nodeType: 'fb_share', label: 'Share (FB)', category: 'facebook',
-    color: '#1877f2', bgColor: '#eff6ff', icon: 'share',
-    stepType: 'tap',
-    defaultParams: { x: 0.5, y: 0.5 },
-    fields: [
-      { key: 'x', label: 'X (0-1)', type: 'number' },
-      { key: 'y', label: 'Y (0-1)', type: 'number' },
-    ],
   },
 };
 
 export const NODE_CATEGORIES = [
   { id: 'common', label: 'Cơ bản', color: '#10b981' },
   { id: 'device', label: 'Điều khiển', color: '#6366f1' },
-  { id: 'tiktok_vn', label: 'TikTok Việt', color: '#000000' },
-  { id: 'tiktok_us', label: 'TikTok US', color: '#2563eb' },
-  { id: 'facebook', label: 'Facebook', color: '#1877f2' },
+  { id: 'apps', label: 'Ứng dụng', color: '#8b5cf6' },
   { id: 'custom', label: 'Tuỳ chỉnh', color: '#f97316' },
 ];
 
