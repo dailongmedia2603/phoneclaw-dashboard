@@ -4,12 +4,17 @@ import type { ProxyConfig } from '../../src/types';
 
 const router = Router();
 
+// Helper: đợi ms
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
 // Helper: verify proxy is actually running on device after start
-async function verifyProxyRunning(deviceId: string): Promise<{ running: boolean; error?: string }> {
+async function verifyProxyRunning(deviceId: string): Promise<{ running: boolean; error?: string; detail?: unknown }> {
+  // Đợi 2s để sing-box có thời gian khởi tạo TUN interface
+  await sleep(2000);
   const statusResult = await callDeviceApi(deviceId, 'GET', '/api/proxy/status');
-  if (!statusResult.ok) return { running: false, error: 'Cannot reach device for verification' };
+  if (!statusResult.ok) return { running: false, error: 'Không thể kết nối thiết bị để xác nhận' };
   const data = statusResult.data as Record<string, unknown>;
-  return { running: data?.proxyStatus === 'running' };
+  return { running: data?.proxyStatus === 'running', detail: data };
 }
 
 // GET /api/proxy/:deviceId/status
@@ -67,7 +72,8 @@ router.post('/:deviceId/start', async (req, res) => {
     } else {
       // Device says it started but verification shows it's not running
       updateDevice(req.params.deviceId, { proxyStatus: 'stopped' });
-      res.json({ success: false, error: 'Proxy started but crashed immediately (sing-box failed)', data: result.data });
+      console.log(`[Proxy] sing-box crashed on ${req.params.deviceId}. Start response:`, result.data, 'Status:', verify.detail);
+      res.json({ success: false, error: 'sing-box crashed sau khi khởi động — có thể do binary không tương thích hoặc TUN interface không tạo được', data: { startResult: result.data, statusAfter: verify.detail } });
     }
   } else {
     res.json({ success: false, data: result.data, error: result.error });
@@ -166,7 +172,9 @@ router.post('/batch/start', async (req, res) => {
         results[deviceId] = { ok: true };
       } else {
         updateDevice(deviceId, { proxyStatus: 'stopped' });
-        results[deviceId] = { ok: false, error: 'Proxy started but crashed (sing-box failed)' };
+        const device = getDevice(deviceId);
+        console.log(`[Proxy] sing-box crashed on ${device?.name || deviceId}. Status after:`, verify.detail);
+        results[deviceId] = { ok: false, error: 'sing-box crashed — kiểm tra binary/TUN trên iPhone' };
       }
     } else {
       results[deviceId] = { ok: false, error: result.error };

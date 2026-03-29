@@ -275,38 +275,42 @@ export default function ProxyManager() {
           await proxy.setSpoof(deviceId, { mode: 'none' });
         }
       } else {
-        // Step 1: Config
+        // Step 1: Config — gửi proxy config tới các thiết bị
         const configRes = await proxy.batchConfig(selectedDevices, {
           ip: proxyIp, port: Number(proxyPort), username: proxyUser, password: proxyPass, mode: proxyMode,
         });
         if (!configRes.success) {
-          const { fail, errors } = countResults(configRes.data);
-          showToast('error', `${fail} thiết bị không nhận config: ${errors[0] || 'Không kết nối được'}`);
-          hasError = true;
+          const { errors } = countResults(configRes.data);
+          showToast('error', errors[0] || configRes.error || 'Không gửi được config tới thiết bị');
+          for (const id of selectedDevices) setDeviceLoading(id, false);
+          refreshDevices();
+          return; // Dừng — không start nếu config thất bại
         }
 
-        // Step 2: Start
+        // Step 2: Start — khởi động proxy tunnel (server tự verify sing-box)
         const startRes = await proxy.batchStart(selectedDevices);
         if (!startRes.success) {
-          const { fail, errors } = countResults(startRes.data);
-          showToast('error', `${fail} thiết bị không bật được proxy: ${errors[0] || 'sing-box failed'}`);
+          const { errors } = countResults(startRes.data);
+          showToast('error', errors[0] || startRes.error || 'Proxy không khởi động được (sing-box failed)');
           hasError = true;
         }
 
-        // Step 3: Spoof
-        if (proxyMode === 'us') {
-          const [lat, lon] = selectedLocation.split(',').map(Number);
-          for (const deviceId of selectedDevices) {
-            const spoofRes = await proxy.setSpoof(deviceId, { mode: 'us', timezone, locale, latitude: lat, longitude: lon });
-            if (!spoofRes.success) {
-              const dev = allDevices.find(d => d.id === deviceId);
-              showToast('error', `${dev?.name}: Lỗi spoof — ${spoofRes.error || 'Không xác định'}`);
-              hasError = true;
+        // Step 3: Spoof — chỉ chạy nếu start thành công
+        if (!hasError) {
+          if (proxyMode === 'us') {
+            const [lat, lon] = selectedLocation.split(',').map(Number);
+            for (const deviceId of selectedDevices) {
+              const spoofRes = await proxy.setSpoof(deviceId, { mode: 'us', timezone, locale, latitude: lat, longitude: lon });
+              if (!spoofRes.success) {
+                const dev = allDevices.find(d => d.id === deviceId);
+                showToast('error', `${dev?.name}: Lỗi spoof — ${spoofRes.error || 'Không xác định'}`);
+                hasError = true;
+              }
             }
-          }
-        } else {
-          for (const deviceId of selectedDevices) {
-            await proxy.setSpoof(deviceId, { mode: 'vn' });
+          } else {
+            for (const deviceId of selectedDevices) {
+              await proxy.setSpoof(deviceId, { mode: 'vn' });
+            }
           }
         }
       }
