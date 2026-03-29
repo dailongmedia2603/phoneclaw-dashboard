@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Shield, ShieldCheck, ShieldOff, Play, Square, Settings2,
   Globe, MapPin, Clock, Loader2, CheckCircle, XCircle,
-  Smartphone, RefreshCw,
+  Smartphone, RefreshCw, ChevronDown, Wand2,
 } from 'lucide-react';
 import { devices as devicesApi, proxy } from '../services/api';
 import { useApi } from '../hooks/useApi';
@@ -26,10 +26,77 @@ const US_LOCATIONS = [
 ];
 
 const MODE_OPTIONS: { value: ProxyMode; label: string; desc: string; color: string }[] = [
-  { value: 'us', label: 'Proxy US', desc: 'Route traffic qua US + spoof tat ca sang US', color: 'blue' },
-  { value: 'vn', label: 'Proxy VN', desc: 'Chi route traffic qua VN, khong spoof', color: 'emerald' },
-  { value: 'none', label: 'Khong proxy', desc: 'Tat proxy, moi thu binh thuong', color: 'slate' },
+  { value: 'us', label: 'Proxy US', desc: 'Route traffic qua US + spoof tất cả sang US', color: 'blue' },
+  { value: 'vn', label: 'Proxy VN', desc: 'Chỉ route traffic qua VN, không spoof', color: 'emerald' },
+  { value: 'none', label: 'Không proxy', desc: 'Tắt proxy, mọi thứ bình thường', color: 'slate' },
 ];
+
+// Custom dropdown component thay thế native <select>
+function CustomSelect({ value, onChange, options }: {
+  value: string;
+  onChange: (val: string) => void;
+  options: { value: string; label: string }[];
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const selected = options.find(o => o.value === value);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-left flex items-center justify-between bg-white hover:border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+      >
+        <span className="text-slate-700">{selected?.label || 'Chọn...'}</span>
+        <ChevronDown size={16} className={`text-slate-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg py-1 max-h-60 overflow-auto">
+          {options.map(opt => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => { onChange(opt.value); setOpen(false); }}
+              className={`w-full px-3 py-2 text-sm text-left flex items-center gap-2 transition-colors ${
+                opt.value === value
+                  ? 'text-blue-600 bg-blue-50 font-medium'
+                  : 'text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              {opt.value === value && <CheckCircle size={14} className="shrink-0" />}
+              <span className={opt.value === value ? '' : 'pl-[22px]'}>{opt.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Tìm location gần nhất dựa trên tọa độ
+function findNearestLocation(lat: number, lon: number): string {
+  let minDist = Infinity;
+  let nearest = US_LOCATIONS[0].value;
+  for (const loc of US_LOCATIONS) {
+    const [locLat, locLon] = loc.value.split(',').map(Number);
+    const dist = (lat - locLat) ** 2 + (lon - locLon) ** 2;
+    if (dist < minDist) {
+      minDist = dist;
+      nearest = loc.value;
+    }
+  }
+  return nearest;
+}
 
 export default function ProxyManager() {
   const { data: deviceList, refresh: refreshDevices } = useApi<Device[]>(() => devicesApi.getAll(), []);
@@ -52,6 +119,7 @@ export default function ProxyManager() {
   // Selection
   const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
   const [loading, setLoading] = useState<Record<string, boolean>>({});
+  const [autoDetecting, setAutoDetecting] = useState(false);
 
   useEffect(() => {
     const unsub = on('device:status', () => refreshDevices());
@@ -82,6 +150,38 @@ export default function ProxyManager() {
     }
   };
 
+  // Auto-detect timezone & GPS từ proxy IP
+  const autoDetectFromIp = async () => {
+    if (!proxyIp) {
+      showToast('error', 'Vui lòng nhập IP proxy trước');
+      return;
+    }
+    setAutoDetecting(true);
+    try {
+      const res = await proxy.geolocate(proxyIp);
+      if (res.success && res.data) {
+        const { timezone: detectedTz, lat, lon } = res.data;
+        // Map timezone
+        const matchedTz = US_TIMEZONES.find(tz => tz.value === detectedTz);
+        if (matchedTz) {
+          setTimezone(matchedTz.value);
+        } else {
+          showToast('error', `Timezone "${detectedTz}" không nằm trong danh sách US`);
+        }
+        // Map GPS
+        const nearest = findNearestLocation(lat, lon);
+        setSelectedLocation(nearest);
+        const nearestLabel = US_LOCATIONS.find(l => l.value === nearest)?.label;
+        showToast('success', `Đã phát hiện: ${matchedTz?.label || detectedTz} — ${nearestLabel}`);
+      } else {
+        showToast('error', res.error || 'Không thể xác định vị trí từ IP');
+      }
+    } catch {
+      showToast('error', 'Lỗi khi tra cứu IP');
+    }
+    setAutoDetecting(false);
+  };
+
   const setDeviceLoading = (id: string, val: boolean) => {
     setLoading(prev => ({ ...prev, [id]: val }));
   };
@@ -89,15 +189,15 @@ export default function ProxyManager() {
   // Apply config to single device
   const applyConfig = async (deviceId: string) => {
     if (proxyMode !== 'none' && (!proxyIp || !proxyPort)) {
-      showToast('error', 'Vui long nhap IP va Port');
+      showToast('error', 'Vui lòng nhập IP và Port');
       return;
     }
     setDeviceLoading(deviceId, true);
     const res = await proxy.setConfig(deviceId, {
       ip: proxyIp, port: Number(proxyPort), username: proxyUser, password: proxyPass, mode: proxyMode,
     });
-    if (res.success) showToast('success', 'Config da luu');
-    else showToast('error', res.error || 'Loi');
+    if (res.success) showToast('success', 'Config đã lưu');
+    else showToast('error', res.error || 'Lỗi');
     setDeviceLoading(deviceId, false);
   };
 
@@ -106,10 +206,10 @@ export default function ProxyManager() {
     setDeviceLoading(deviceId, true);
     const res = await proxy.start(deviceId);
     if (res.success) {
-      showToast('success', 'Proxy da bat');
+      showToast('success', 'Proxy đã bật');
       refreshDevices();
     } else {
-      showToast('error', res.error || 'Loi khi bat proxy');
+      showToast('error', res.error || 'Lỗi khi bật proxy');
     }
     setDeviceLoading(deviceId, false);
   };
@@ -119,10 +219,10 @@ export default function ProxyManager() {
     setDeviceLoading(deviceId, true);
     const res = await proxy.stop(deviceId);
     if (res.success) {
-      showToast('success', 'Proxy da tat');
+      showToast('success', 'Proxy đã tắt');
       refreshDevices();
     } else {
-      showToast('error', res.error || 'Loi khi tat proxy');
+      showToast('error', res.error || 'Lỗi khi tắt proxy');
     }
     setDeviceLoading(deviceId, false);
   };
@@ -135,21 +235,21 @@ export default function ProxyManager() {
       const res = await proxy.setSpoof(deviceId, {
         mode: 'us', timezone, locale, latitude: lat, longitude: lon,
       });
-      if (res.success) showToast('success', 'US spoof da ap dung');
-      else showToast('error', res.error || 'Loi');
+      if (res.success) showToast('success', 'US spoof đã áp dụng');
+      else showToast('error', res.error || 'Lỗi');
     } else {
       // mode=vn or none → disable spoofing
       const res = await proxy.setSpoof(deviceId, { mode: proxyMode });
-      if (res.success) showToast('success', 'Spoof da tat');
-      else showToast('error', res.error || 'Loi');
+      if (res.success) showToast('success', 'Spoof đã tắt');
+      else showToast('error', res.error || 'Lỗi');
     }
     setDeviceLoading(deviceId, false);
   };
 
   // Batch operations
   const batchApplyAndStart = async () => {
-    if (!selectedDevices.length) { showToast('error', 'Chon thiet bi truoc'); return; }
-    if (proxyMode !== 'none' && (!proxyIp || !proxyPort)) { showToast('error', 'Nhap IP va Port'); return; }
+    if (!selectedDevices.length) { showToast('error', 'Chọn thiết bị trước'); return; }
+    if (proxyMode !== 'none' && (!proxyIp || !proxyPort)) { showToast('error', 'Nhập IP và Port'); return; }
 
     for (const id of selectedDevices) setDeviceLoading(id, true);
 
@@ -182,16 +282,16 @@ export default function ProxyManager() {
     }
 
     for (const id of selectedDevices) setDeviceLoading(id, false);
-    showToast('success', `Da ap dung ${proxyMode === 'none' ? 'tat proxy' : `proxy ${proxyMode.toUpperCase()}`} cho ${selectedDevices.length} thiet bi`);
+    showToast('success', `Đã áp dụng ${proxyMode === 'none' ? 'tắt proxy' : `proxy ${proxyMode.toUpperCase()}`} cho ${selectedDevices.length} thiết bị`);
     refreshDevices();
   };
 
   const batchStop = async () => {
-    if (!selectedDevices.length) { showToast('error', 'Chon thiet bi truoc'); return; }
+    if (!selectedDevices.length) { showToast('error', 'Chọn thiết bị trước'); return; }
     for (const id of selectedDevices) setDeviceLoading(id, true);
     await proxy.batchStop(selectedDevices);
     for (const id of selectedDevices) setDeviceLoading(id, false);
-    showToast('success', `Da tat proxy cho ${selectedDevices.length} thiet bi`);
+    showToast('success', `Đã tắt proxy cho ${selectedDevices.length} thiết bị`);
     refreshDevices();
   };
 
@@ -204,11 +304,11 @@ export default function ProxyManager() {
             <Shield size={28} /> Proxy Manager
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Quan ly Proxy & Anti-detection cho TikTok
+            Quản lý Proxy & Anti-detection cho TikTok
           </p>
         </div>
         <button onClick={() => refreshDevices()} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50">
-          <RefreshCw size={16} /> Lam moi
+          <RefreshCw size={16} /> Làm mới
         </button>
       </div>
 
@@ -216,7 +316,7 @@ export default function ProxyManager() {
       <div className="bg-white rounded-2xl border border-slate-200 p-4">
         <div className="flex items-center gap-2 mb-3">
           <Settings2 size={18} className="text-slate-500" />
-          <span className="text-sm font-semibold text-slate-700">Che do hoat dong</span>
+          <span className="text-sm font-semibold text-slate-700">Chế độ hoạt động</span>
         </div>
         <div className="grid grid-cols-3 gap-3">
           {MODE_OPTIONS.map(opt => (
@@ -255,7 +355,7 @@ export default function ProxyManager() {
 
           {/* Quick paste */}
           <div className="mb-4">
-            <label className="text-xs font-medium text-slate-500 mb-1 block">Dan nhanh (ip:port:user:pass)</label>
+            <label className="text-xs font-medium text-slate-500 mb-1 block">Dán nhanh (ip:port:user:pass)</label>
             <input
               type="text"
               placeholder="1.2.3.4:8080:username:password"
@@ -307,43 +407,47 @@ export default function ProxyManager() {
         {/* Anti-Detection / Spoof Config — only shown for US mode */}
         {proxyMode === 'us' ? (
         <div className="bg-white rounded-2xl border border-slate-200 p-6">
-          <h2 className="text-lg font-semibold text-slate-700 flex items-center gap-2 mb-4">
-            <Settings2 size={20} /> Anti-Detection (US Spoof)
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-slate-700 flex items-center gap-2">
+              <Settings2 size={20} /> Anti-Detection (US Spoof)
+            </h2>
+            <button
+              onClick={autoDetectFromIp}
+              disabled={autoDetecting || !proxyIp}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-50 text-blue-600 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {autoDetecting ? <Loader2 size={14} className="animate-spin" /> : <Wand2 size={14} />}
+              Tự động phát hiện
+            </button>
+          </div>
 
           <div className="space-y-3">
             <div>
               <label className="text-xs font-medium text-slate-500 mb-1 flex items-center gap-1">
                 <Clock size={12} /> Timezone
               </label>
-              <select
-                value={timezone} onChange={e => setTimezone(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                {US_TIMEZONES.map(tz => (
-                  <option key={tz.value} value={tz.value}>{tz.label}</option>
-                ))}
-              </select>
+              <CustomSelect
+                value={timezone}
+                onChange={setTimezone}
+                options={US_TIMEZONES}
+              />
             </div>
 
             <div>
               <label className="text-xs font-medium text-slate-500 mb-1 flex items-center gap-1">
-                <MapPin size={12} /> Vi tri GPS
+                <MapPin size={12} /> Vị trí GPS
               </label>
-              <select
-                value={selectedLocation} onChange={e => setSelectedLocation(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                {US_LOCATIONS.map(loc => (
-                  <option key={loc.value} value={loc.value}>{loc.label}</option>
-                ))}
-              </select>
+              <CustomSelect
+                value={selectedLocation}
+                onChange={setSelectedLocation}
+                options={US_LOCATIONS}
+              />
             </div>
 
             <div className="pt-2 text-xs text-slate-400">
-              <p>Locale: en_US | WiFi BSSID: an | Cell: US (310/260)</p>
-              <p>DNS: DoH qua proxy (1.1.1.1) - Tu dong</p>
-              <p>Tailscale: Loai tru khoi tunnel - Tu dong</p>
+              <p>Locale: en_US | WiFi BSSID: ẩn | Cell: US (310/260)</p>
+              <p>DNS: DoH qua proxy (1.1.1.1) - Tự động</p>
+              <p>Tailscale: Loại trừ khỏi tunnel - Tự động</p>
             </div>
           </div>
         </div>
@@ -352,7 +456,7 @@ export default function ProxyManager() {
           <div className="text-center text-slate-400">
             <Globe size={32} className="mx-auto mb-2 opacity-50" />
             <p className="text-sm font-medium">Proxy VN</p>
-            <p className="text-xs mt-1">Chi route traffic, khong spoof.<br/>Moi thu giu nguyen trang thai tu nhien.</p>
+            <p className="text-xs mt-1">Chỉ route traffic, không spoof.<br/>Mọi thứ giữ nguyên trạng thái tự nhiên.</p>
           </div>
         </div>
         )}
@@ -363,7 +467,7 @@ export default function ProxyManager() {
       <div className="bg-white rounded-2xl border border-slate-200 p-4 flex items-center gap-3 flex-wrap">
         <button onClick={selectAll}
           className="px-3 py-2 rounded-lg text-sm border border-slate-200 text-slate-600 hover:bg-slate-50">
-          {selectedDevices.length === onlineDevices.length && onlineDevices.length > 0 ? 'Bo chon tat ca' : 'Chon tat ca'}
+          {selectedDevices.length === onlineDevices.length && onlineDevices.length > 0 ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
         </button>
 
         <button onClick={batchApplyAndStart}
@@ -380,7 +484,7 @@ export default function ProxyManager() {
 
         {selectedDevices.length > 0 && (
           <span className="text-sm text-slate-500">
-            Da chon {selectedDevices.length} thiet bi
+            Đã chọn {selectedDevices.length} thiết bị
           </span>
         )}
       </div>
@@ -394,11 +498,11 @@ export default function ProxyManager() {
                 <input type="checkbox" checked={selectedDevices.length === onlineDevices.length && onlineDevices.length > 0}
                   onChange={selectAll} className="rounded" />
               </th>
-              <th className="px-4 py-3 text-left text-slate-600 font-medium">Thiet bi</th>
-              <th className="px-4 py-3 text-left text-slate-600 font-medium">Trang thai</th>
+              <th className="px-4 py-3 text-left text-slate-600 font-medium">Thiết bị</th>
+              <th className="px-4 py-3 text-left text-slate-600 font-medium">Trạng thái</th>
               <th className="px-4 py-3 text-left text-slate-600 font-medium">Proxy</th>
               <th className="px-4 py-3 text-left text-slate-600 font-medium">Proxy Status</th>
-              <th className="px-4 py-3 text-right text-slate-600 font-medium">Hanh dong</th>
+              <th className="px-4 py-3 text-right text-slate-600 font-medium">Hành động</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -438,7 +542,7 @@ export default function ProxyManager() {
                   {device.proxyConfig?.ip ? (
                     <span>{device.proxyConfig.ip}:{device.proxyConfig.port}</span>
                   ) : (
-                    <span className="text-slate-300">Chua cau hinh</span>
+                    <span className="text-slate-300">Chưa cấu hình</span>
                   )}
                 </td>
                 <td className="px-4 py-3">
@@ -459,25 +563,25 @@ export default function ProxyManager() {
                     ) : device.status !== 'offline' ? (
                       <>
                         <button onClick={() => applyConfig(device.id)}
-                          title="Apply Config"
+                          title="Áp dụng Config"
                           className="p-1.5 rounded-lg text-slate-400 hover:text-blue-500 hover:bg-blue-50">
                           <Settings2 size={16} />
                         </button>
                         {device.proxyStatus === 'running' ? (
                           <button onClick={() => stopProxy(device.id)}
-                            title="Stop Proxy"
+                            title="Dừng Proxy"
                             className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50">
                             <XCircle size={16} />
                           </button>
                         ) : (
                           <button onClick={() => startProxy(device.id)}
-                            title="Start Proxy"
+                            title="Bật Proxy"
                             className="p-1.5 rounded-lg text-emerald-400 hover:text-emerald-600 hover:bg-emerald-50">
                             <CheckCircle size={16} />
                           </button>
                         )}
                         <button onClick={() => applySpoof(device.id)}
-                          title="Apply Spoof"
+                          title="Áp dụng Spoof"
                           className="p-1.5 rounded-lg text-slate-400 hover:text-purple-500 hover:bg-purple-50">
                           <MapPin size={16} />
                         </button>
@@ -490,7 +594,7 @@ export default function ProxyManager() {
             {allDevices.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
-                  Chua co thiet bi nao
+                  Chưa có thiết bị nào
                 </td>
               </tr>
             )}

@@ -194,6 +194,8 @@ export const proxy = {
     post('/api/proxy/batch/start', { deviceIds }),
   batchStop: (deviceIds: string[]) =>
     post('/api/proxy/batch/stop', { deviceIds }),
+  geolocate: (ip: string) =>
+    get<{ country: string; regionName: string; city: string; lat: number; lon: number; timezone: string }>(`/api/proxy/geolocate/${ip}`),
 };
 
 // ============================================================

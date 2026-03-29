@@ -171,4 +171,21 @@ router.post('/batch/stop', async (req, res) => {
   res.json({ success: true, data: results });
 });
 
+// GET /api/proxy/geolocate/:ip — Tra cứu vị trí địa lý từ IP
+router.get('/geolocate/:ip', async (req, res) => {
+  try {
+    const response = await fetch(
+      `http://ip-api.com/json/${req.params.ip}?fields=status,country,regionName,city,lat,lon,timezone`
+    );
+    const data = await response.json();
+    if (data.status === 'success') {
+      res.json({ success: true, data });
+    } else {
+      res.json({ success: false, error: 'Không thể xác định vị trí từ IP' });
+    }
+  } catch {
+    res.json({ success: false, error: 'Lỗi khi tra cứu IP' });
+  }
+});
+
 export default router;
