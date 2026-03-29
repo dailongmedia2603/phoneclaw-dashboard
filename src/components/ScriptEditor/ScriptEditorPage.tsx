@@ -264,17 +264,17 @@ export default function ScriptEditorPage({ appTab, apiType = 'scripts' }: Script
               onClick={() => setShowChannelDropdown(!showChannelDropdown)}
               className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-200 transition-colors"
             >
-              {scriptChannel === 'tiktok_vn' && <><Music size={14} className="text-slate-900" /> TikTok Việt</>}
-              {scriptChannel === 'tiktok_us' && <><Globe size={14} className="text-[#2563eb]" /> TikTok US</>}
-              {scriptChannel === 'facebook' && <><Facebook size={14} className="text-[#1877f2]" /> Facebook</>}
+              {scriptChannel === 'tiktok_vn' && <><span className="w-5 h-5 rounded bg-black flex items-center justify-center"><svg viewBox="0 0 24 24" width="12" height="12" fill="white"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3.15 15.2 6.34 6.34 0 0 0 9.49 21.5a6.34 6.34 0 0 0 6.34-6.34V8.71a8.16 8.16 0 0 0 4.76 1.52v-3.4a4.85 4.85 0 0 1-1-.14z"/></svg></span> TikTok Việt</>}
+              {scriptChannel === 'tiktok_us' && <><span className="w-5 h-5 rounded bg-[#2563eb] flex items-center justify-center"><svg viewBox="0 0 24 24" width="12" height="12" fill="white"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3.15 15.2 6.34 6.34 0 0 0 9.49 21.5a6.34 6.34 0 0 0 6.34-6.34V8.71a8.16 8.16 0 0 0 4.76 1.52v-3.4a4.85 4.85 0 0 1-1-.14z"/></svg></span> TikTok US</>}
+              {scriptChannel === 'facebook' && <><span className="w-5 h-5 rounded bg-[#1877f2] flex items-center justify-center text-white text-xs font-bold">f</span> Facebook</>}
               <ChevronDown size={14} className="text-slate-400" />
             </button>
             {showChannelDropdown && (
-              <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg py-1 z-50 w-44">
+              <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg py-1 z-50 w-48">
                 {[
-                  { id: 'tiktok_vn', label: 'TikTok Việt', icon: Music, iconColor: 'text-slate-900' },
-                  { id: 'tiktok_us', label: 'TikTok US', icon: Globe, iconColor: 'text-[#2563eb]' },
-                  { id: 'facebook', label: 'Facebook', icon: Facebook, iconColor: 'text-[#1877f2]' },
+                  { id: 'tiktok_vn', label: 'TikTok Việt', bg: 'bg-black' },
+                  { id: 'tiktok_us', label: 'TikTok US', bg: 'bg-[#2563eb]' },
+                  { id: 'facebook', label: 'Facebook', bg: 'bg-[#1877f2]' },
                 ].map(ch => (
                   <button
                     key={ch.id}
@@ -283,7 +283,9 @@ export default function ScriptEditorPage({ appTab, apiType = 'scripts' }: Script
                       scriptChannel === ch.id ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-700'
                     }`}
                   >
-                    <ch.icon size={16} className={ch.iconColor} />
+                    <span className={`w-5 h-5 rounded ${ch.bg} flex items-center justify-center`}>
+                      {ch.id.startsWith('tiktok') ? <svg viewBox="0 0 24 24" width="12" height="12" fill="white"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3.15 15.2 6.34 6.34 0 0 0 9.49 21.5a6.34 6.34 0 0 0 6.34-6.34V8.71a8.16 8.16 0 0 0 4.76 1.52v-3.4a4.85 4.85 0 0 1-1-.14z"/></svg> : <span className="text-white text-xs font-bold">f</span>}
+                    </span>
                     {ch.label}
                     {scriptChannel === ch.id && <span className="ml-auto text-blue-600 text-xs">✓</span>}
                   </button>
