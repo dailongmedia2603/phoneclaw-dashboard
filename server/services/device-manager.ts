@@ -260,9 +260,12 @@ export async function callDeviceApi(
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unknown error';
-    // For action endpoints (tap/swipe/key/launch), empty reply means command was received
-    // but connection closed before response. Treat as success.
-    if (msg.includes('terminated') || msg.includes('ECONNRESET') || msg.includes('empty')) {
+    // Only treat connection-closed-early as success for quick action endpoints
+    // (tap/swipe/key/launch/type) where the device received the command but closed before responding.
+    // For proxy/config endpoints, connection errors ARE real failures.
+    const actionEndpoints = ['/api/tap', '/api/swipe', '/api/key', '/api/launch', '/api/type'];
+    const isAction = actionEndpoints.some(a => endpoint.startsWith(a));
+    if (isAction && (msg.includes('terminated') || msg.includes('ECONNRESET') || msg.includes('empty'))) {
       return { ok: true, data: { ok: true, note: 'Command sent (connection closed early)' } };
     }
     return { ok: false, error: msg };

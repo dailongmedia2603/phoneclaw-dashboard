@@ -246,52 +246,93 @@ export default function ProxyManager() {
     setDeviceLoading(deviceId, false);
   };
 
+  // Helper: count successes/failures from batch response data
+  const countResults = (data?: unknown) => {
+    if (!data || typeof data !== 'object') return { ok: 0, fail: 0, errors: [] as string[] };
+    const entries = Object.entries(data as Record<string, { ok: boolean; error?: string }>);
+    const ok = entries.filter(([, r]) => r.ok).length;
+    const fail = entries.length - ok;
+    const errors = entries.filter(([, r]) => !r.ok).map(([id, r]) => {
+      const dev = allDevices.find(d => d.id === id);
+      return `${dev?.name || id}: ${r.error || 'Lỗi không xác định'}`;
+    });
+    return { ok, fail, errors };
+  };
+
   // Batch operations
   const batchApplyAndStart = async () => {
     if (!selectedDevices.length) { showToast('error', 'Chọn thiết bị trước'); return; }
     if (proxyMode !== 'none' && (!proxyIp || !proxyPort)) { showToast('error', 'Nhập IP và Port'); return; }
 
     for (const id of selectedDevices) setDeviceLoading(id, true);
+    let hasError = false;
 
-    if (proxyMode === 'none') {
-      // Stop proxy on all selected devices
-      await proxy.batchStop(selectedDevices);
-      // Disable spoofing on all
-      for (const deviceId of selectedDevices) {
-        await proxy.setSpoof(deviceId, { mode: 'none' });
-      }
-    } else {
-      // Config
-      await proxy.batchConfig(selectedDevices, {
-        ip: proxyIp, port: Number(proxyPort), username: proxyUser, password: proxyPass, mode: proxyMode,
-      });
-      // Start
-      await proxy.batchStart(selectedDevices);
-      // Spoof based on mode
-      if (proxyMode === 'us') {
-        const [lat, lon] = selectedLocation.split(',').map(Number);
+    try {
+      if (proxyMode === 'none') {
+        const stopRes = await proxy.batchStop(selectedDevices);
+        if (!stopRes.success) { showToast('error', stopRes.error || 'Lỗi khi tắt proxy'); hasError = true; }
         for (const deviceId of selectedDevices) {
-          await proxy.setSpoof(deviceId, { mode: 'us', timezone, locale, latitude: lat, longitude: lon });
+          await proxy.setSpoof(deviceId, { mode: 'none' });
         }
       } else {
-        // vn mode → disable spoofing
-        for (const deviceId of selectedDevices) {
-          await proxy.setSpoof(deviceId, { mode: 'vn' });
+        // Step 1: Config
+        const configRes = await proxy.batchConfig(selectedDevices, {
+          ip: proxyIp, port: Number(proxyPort), username: proxyUser, password: proxyPass, mode: proxyMode,
+        });
+        if (!configRes.success) {
+          const { fail, errors } = countResults(configRes.data);
+          showToast('error', `${fail} thiết bị không nhận config: ${errors[0] || 'Không kết nối được'}`);
+          hasError = true;
+        }
+
+        // Step 2: Start
+        const startRes = await proxy.batchStart(selectedDevices);
+        if (!startRes.success) {
+          const { fail, errors } = countResults(startRes.data);
+          showToast('error', `${fail} thiết bị không bật được proxy: ${errors[0] || 'sing-box failed'}`);
+          hasError = true;
+        }
+
+        // Step 3: Spoof
+        if (proxyMode === 'us') {
+          const [lat, lon] = selectedLocation.split(',').map(Number);
+          for (const deviceId of selectedDevices) {
+            const spoofRes = await proxy.setSpoof(deviceId, { mode: 'us', timezone, locale, latitude: lat, longitude: lon });
+            if (!spoofRes.success) {
+              const dev = allDevices.find(d => d.id === deviceId);
+              showToast('error', `${dev?.name}: Lỗi spoof — ${spoofRes.error || 'Không xác định'}`);
+              hasError = true;
+            }
+          }
+        } else {
+          for (const deviceId of selectedDevices) {
+            await proxy.setSpoof(deviceId, { mode: 'vn' });
+          }
         }
       }
+
+      if (!hasError) {
+        showToast('success', `Đã áp dụng ${proxyMode === 'none' ? 'tắt proxy' : `proxy ${proxyMode.toUpperCase()}`} cho ${selectedDevices.length} thiết bị`);
+      }
+    } catch (err) {
+      showToast('error', `Lỗi: ${err instanceof Error ? err.message : 'Không xác định'}`);
     }
 
     for (const id of selectedDevices) setDeviceLoading(id, false);
-    showToast('success', `Đã áp dụng ${proxyMode === 'none' ? 'tắt proxy' : `proxy ${proxyMode.toUpperCase()}`} cho ${selectedDevices.length} thiết bị`);
     refreshDevices();
   };
 
   const batchStop = async () => {
     if (!selectedDevices.length) { showToast('error', 'Chọn thiết bị trước'); return; }
     for (const id of selectedDevices) setDeviceLoading(id, true);
-    await proxy.batchStop(selectedDevices);
+    const res = await proxy.batchStop(selectedDevices);
     for (const id of selectedDevices) setDeviceLoading(id, false);
-    showToast('success', `Đã tắt proxy cho ${selectedDevices.length} thiết bị`);
+    if (res.success) {
+      showToast('success', `Đã tắt proxy cho ${selectedDevices.length} thiết bị`);
+    } else {
+      const { fail, errors } = countResults(res.data);
+      showToast('error', `${fail} thiết bị không tắt được: ${errors[0] || 'Lỗi'}`);
+    }
     refreshDevices();
   };
 
