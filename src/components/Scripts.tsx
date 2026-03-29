@@ -10,6 +10,7 @@ import {
 import { scripts as scriptsApi, devices as devicesApi } from '../services/api';
 import { useApi } from '../hooks/useApi';
 import type { Script, Device } from '../types';
+import { showToast } from './Toast';
 
 const COMMAND_CATEGORIES = [
   {
@@ -173,6 +174,15 @@ export default function Scripts() {
     }
     // Start polling for execution status
     startPolling();
+  };
+
+  const handleStop = async () => {
+    if (!showRunModal || !runningExecution?.id) return;
+    await scriptsApi.stop(showRunModal, runningExecution.id);
+    stopPolling();
+    setRunLoading(false);
+    setRunningExecution(null);
+    showToast('success', 'Đã dừng kịch bản');
   };
 
   const handleOpenRunModal = (scriptId: string) => {
@@ -643,9 +653,17 @@ screenshot()`}
                     </button>
                   </>
                 ) : (
-                  <button onClick={() => { stopPolling(); setShowRunModal(null); setRunLoading(false); setRunningExecution(null); }} className="flex-1 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-medium hover:bg-slate-50 transition-colors">
-                    {runningExecution?.status === 'running' ? 'Chạy nền' : 'Đóng'}
-                  </button>
+                  <div className="flex gap-3 w-full">
+                    {runningExecution?.status === 'running' && (
+                      <button onClick={handleStop} className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+                        Dừng
+                      </button>
+                    )}
+                    <button onClick={() => { stopPolling(); setShowRunModal(null); setRunLoading(false); setRunningExecution(null); }} className="flex-1 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-medium hover:bg-slate-50 transition-colors">
+                      {runningExecution?.status === 'running' ? 'Chạy nền' : 'Đóng'}
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
