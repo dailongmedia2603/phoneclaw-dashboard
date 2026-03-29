@@ -1,6 +1,6 @@
 import { readCollection, writeCollection, generateId } from '../store';
 import { callDeviceApi, updateDevice, getDevice } from './device-manager';
-import { vncTap } from './vnc-tap';
+// vncTap no longer needed — PhoneAgent HTTP API now uses VNC coordinate transform
 import type { Script, ScriptStep, ScheduleHistory, ExecutionStep } from '../../src/types';
 
 // --- Script CRUD ---
@@ -189,24 +189,22 @@ async function executeStep(
 
   switch (step.type) {
     case 'tap': {
-      // Use VNC protocol for accurate tap (same path as Live VNC viewer)
-      await vncTap(deviceId, Number(p.x), Number(p.y));
+      const res = await callDeviceApi(deviceId, 'POST', '/api/tap', { x: Number(p.x), y: Number(p.y) });
+      if (!res.ok) throw new Error(`Tap failed: ${res.error}`);
       break;
     }
     case 'double_tap': {
       const x = Number(p.x) || 0.5;
       const y = Number(p.y) || 0.4;
-      // Double tap = 2 VNC taps with short delay
-      await vncTap(deviceId, x, y);
-      await new Promise(r => setTimeout(r, 100));
-      await vncTap(deviceId, x, y);
+      const res = await callDeviceApi(deviceId, 'POST', '/api/doubletap', { x, y, delay: 0.1 });
+      if (!res.ok) throw new Error(`Double-tap failed: ${res.error}`);
       break;
     }
     case 'tap_image': {
-      // Legacy backward compat: treat as tap using fallback coordinates
       const x = Number(p.fallbackX ?? p.x) || 0.5;
       const y = Number(p.fallbackY ?? p.y) || 0.5;
-      await vncTap(deviceId, x, y);
+      const res = await callDeviceApi(deviceId, 'POST', '/api/tap', { x, y });
+      if (!res.ok) throw new Error(`Tap failed: ${res.error}`);
       break;
     }
     case 'swipe': {

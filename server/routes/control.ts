@@ -1,28 +1,15 @@
 import { Router } from 'express';
 import { callDeviceApi, getDevice } from '../services/device-manager';
-import { vncTap, triggerVncCapture } from '../services/vnc-tap';
+import { triggerVncCapture } from '../services/vnc-tap';
 
 const router = Router();
 
 // POST /api/control/:deviceId/tap
-// Uses VNC protocol for accurate tapping (same path as Live VNC viewer)
-// Falls back to HTTP API if VNC fails
+// Uses HTTP API — PhoneAgent now has VNC coordinate transform built-in
 router.post('/:deviceId/tap', async (req, res) => {
   const { x, y } = req.body;
-  const device = getDevice(req.params.deviceId);
-  if (!device) return res.json({ success: false, error: 'Device not found' });
-
-  // Try VNC tap first (accurate, same path as Live VNC viewer)
-  try {
-    await vncTap(req.params.deviceId, Number(x), Number(y));
-    return res.json({ success: true, data: { ok: true, method: 'vnc', x, y } });
-  } catch (err) {
-    console.log(`[TAP] VNC tap failed, falling back to HTTP API:`, err instanceof Error ? err.message : err);
-  }
-
-  // Fallback: HTTP API
   const result = await callDeviceApi(req.params.deviceId, 'POST', '/api/tap', { x, y });
-  res.json({ success: result.ok, data: { ...(result.data as any), method: 'http-fallback' }, error: result.error });
+  res.json({ success: result.ok, data: result.data, error: result.error });
 });
 
 // POST /api/control/:deviceId/swipe
