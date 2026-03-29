@@ -15,7 +15,7 @@ export interface NodeDef {
 export const NODE_DEFS: Record<string, NodeDef> = {
   // --- Common ---
   start: {
-    nodeType: 'start', label: 'Bắt đầu', category: 'common',
+    nodeType: 'start', label: 'Bắt đầu', category: '_hidden',
     color: '#10b981', bgColor: '#ecfdf5', icon: 'play',
     stepType: 'start', defaultParams: {}, fields: [],
   },
@@ -81,7 +81,7 @@ export const NODE_DEFS: Record<string, NodeDef> = {
     fields: [],
   },
   tap_custom: {
-    nodeType: 'tap_custom', label: 'Tap toạ độ', category: 'device',
+    nodeType: 'tap_custom', label: 'Tap toạ độ', category: '_hidden',
     color: '#6366f1', bgColor: '#eef2ff', icon: 'crosshair',
     stepType: 'tap', defaultParams: { x: 0.5, y: 0.5 },
     fields: [
@@ -107,6 +107,17 @@ export const NODE_DEFS: Record<string, NodeDef> = {
     color: '#6366f1', bgColor: '#eef2ff', icon: 'keyboard',
     stepType: 'type', defaultParams: { text: '' },
     fields: [{ key: 'text', label: 'Nội dung', type: 'text' }],
+  },
+
+  // --- Transfer ---
+  send_file: {
+    nodeType: 'send_file', label: 'Truyền File', category: 'common',
+    color: '#0891b2', bgColor: '#ecfeff', icon: 'upload',
+    stepType: 'send_file',
+    defaultParams: { videoId: '', timeout: 1200 },
+    fields: [
+      { key: 'videoId', label: 'Video', type: 'text' },
+    ],
   },
 
   // --- Ứng dụng (App Launchers) ---

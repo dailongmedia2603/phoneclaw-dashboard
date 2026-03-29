@@ -228,6 +228,43 @@ async function executeStep(
       if (!res.ok) throw new Error(`Tap failed: ${res.error}`);
       break;
     }
+    case 'send_file': {
+      const videoId = String(p.videoId || '');
+      if (!videoId) throw new Error('No video selected');
+
+      // Get video URL from collection
+      const videos = readCollection<{ id: string; url: string; name: string }>('videos');
+      const video = videos.find(v => v.id === videoId);
+      if (!video) throw new Error(`Video not found: ${videoId}`);
+
+      // Send to device — PhoneAgent will download + save to Photos
+      const device = getDevice(deviceId);
+      if (!device) throw new Error('Device not found');
+      const apiPort = device.httpPort + 1;
+      const apiUrl = `http://${device.tailscaleIp}:${apiPort}/api/save-to-photos`;
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 1200000); // 20 min
+      try {
+        const apiRes = await fetch(apiUrl, {
+          method: 'POST',
+          signal: controller.signal,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: video.url }),
+        });
+        clearTimeout(timeout);
+        const data = await apiRes.json().catch(() => null);
+        if (!data?.ok) throw new Error(data?.error || 'Gửi file thất bại');
+      } catch (err) {
+        clearTimeout(timeout);
+        if (err instanceof Error && err.name === 'AbortError') throw new Error('Timeout tải file');
+        throw err;
+      }
+      // Wait for download + save to complete on device (async on device side)
+      // Small delay to let device start processing
+      await new Promise(r => setTimeout(r, 3000));
+      break;
+    }
     case 'swipe': {
       const res = await callDeviceApi(deviceId, 'POST', '/api/swipe', {
         fromX: p.fromX, fromY: p.fromY, toX: p.toX, toY: p.toY, duration: p.duration,

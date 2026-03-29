@@ -1,7 +1,11 @@
+import { useState, useEffect } from 'react';
 import type { Node } from '@xyflow/react';
 import { NODE_DEFS, type NodeDef } from './nodeDefinitions';
 import NodeIcon from './nodeIcons';
-import { Trash2, Crosshair } from 'lucide-react';
+import { Trash2, Crosshair, Clock } from 'lucide-react';
+import { videos as videosApi } from '../../services/api';
+import CustomSelect from '../CustomSelect';
+import type { Video } from '../../types';
 
 interface PropertyPanelProps {
   selectedNode: Node | null;
@@ -37,6 +41,18 @@ function getPickableFields(nodeType: string, extraDefs?: Record<string, NodeDef>
 }
 
 export default function PropertyPanel({ selectedNode, onUpdateNode, onDeleteNode, onPickCoordinate, extraDefs }: PropertyPanelProps) {
+  const [videoList, setVideoList] = useState<Video[]>([]);
+
+  // Load videos for send_file node
+  useEffect(() => {
+    const nodeData = selectedNode?.data as any;
+    if (nodeData?.nodeType === 'send_file') {
+      videosApi.getAll().then(res => {
+        if (res.success && res.data) setVideoList(res.data);
+      });
+    }
+  }, [selectedNode?.id]);
+
   if (!selectedNode) {
     return (
       <div className="w-64 bg-white border-l border-slate-200 flex items-center justify-center p-4">
@@ -66,17 +82,42 @@ export default function PropertyPanel({ selectedNode, onUpdateNode, onDeleteNode
 
       {def && def.fields.length > 0 && def.fields.map(field => (
         <div key={field.key}>
-          <label className="block text-xs font-medium text-slate-600 mb-1">{field.label}</label>
-          <input
-            type={field.type === 'number' ? 'number' : 'text'}
-            key={`${selectedNode.id}-${field.key}`}
-            defaultValue={String(nodeData.params?.[field.key] ?? '')}
-            onBlur={e => handleChange(field.key, e.target.value)}
-            onChange={e => handleChange(field.key, e.target.value)}
-            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-          />
+          {/* Special: videoId field → show video picker dropdown */}
+          {field.key === 'videoId' && nodeData.nodeType === 'send_file' ? (
+            <>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Chọn Video</label>
+              <CustomSelect
+                value={String(nodeData.params?.videoId || '')}
+                onChange={v => onUpdateNode(selectedNode.id, { ...nodeData.params, videoId: v })}
+                options={videoList.map(v => ({ value: v.id, label: v.name }))}
+                placeholder="Chọn video từ thư viện..."
+              />
+            </>
+          ) : (
+            <>
+              <label className="block text-xs font-medium text-slate-600 mb-1">{field.label}</label>
+              <input
+                type={field.type === 'number' ? 'number' : 'text'}
+                key={`${selectedNode.id}-${field.key}`}
+                defaultValue={String(nodeData.params?.[field.key] ?? '')}
+                onBlur={e => handleChange(field.key, e.target.value)}
+                onChange={e => handleChange(field.key, e.target.value)}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              />
+            </>
+          )}
         </div>
       ))}
+
+      {/* send_file: timeout info */}
+      {nodeData.nodeType === 'send_file' && (
+        <div className="pt-2 border-t border-slate-100">
+          <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-1">
+            <Clock size={12} /> Timeout: 20 phút
+          </div>
+          <p className="text-[10px] text-slate-400">Nếu iPhone tải xong sẽ vẫn tiếp tục mà không phải chờ 20 phút xong mới tiếp tục.</p>
+        </div>
+      )}
 
       {/* Coordinate Picker buttons */}
       {pickableFields.length > 0 && onPickCoordinate && (
