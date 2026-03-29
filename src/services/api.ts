@@ -197,6 +197,17 @@ export const proxy = {
 };
 
 // ============================================================
+// Shared Scripts (Kho kịch bản)
+// ============================================================
+export const sharedScripts = {
+  getAll: () => get<Script[]>('/api/shared-scripts'),
+  getOne: (id: string) => get<Script>(`/api/shared-scripts/${id}`),
+  create: (data: Partial<Script>) => post<Script>('/api/shared-scripts', data),
+  update: (id: string, data: Partial<Script>) => put<Script>(`/api/shared-scripts/${id}`, data),
+  remove: (id: string) => del<void>(`/api/shared-scripts/${id}`),
+};
+
+// ============================================================
 // Custom Nodes
 // ============================================================
 export const customNodes = {

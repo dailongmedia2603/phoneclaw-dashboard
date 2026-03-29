@@ -8,6 +8,7 @@ import Logs from './components/Logs';
 import Settings from './components/Settings';
 import VideoLibrary from './components/VideoLibrary';
 import ProxyManager from './components/ProxyManager';
+import SharedScripts from './components/SharedScripts';
 import Login from './components/Login';
 import ToastContainer from './components/Toast';
 import ScriptEditorPage from './components/ScriptEditor/ScriptEditorPage';
@@ -25,6 +26,7 @@ function Layout({ onLogout, userName }: { onLogout: () => void; userName: string
             <Route path="/thiet-bi" element={<Devices />} />
             <Route path="/proxy" element={<ProxyManager />} />
             <Route path="/kich-ban" element={<Scripts />} />
+            <Route path="/kho-kich-ban" element={<SharedScripts />} />
             <Route path="/lich-trinh" element={<Schedules />} />
             <Route path="/nhat-ky" element={<Logs />} />
             <Route path="/thu-vien-video" element={<VideoLibrary />} />
@@ -58,6 +60,9 @@ export default function App() {
       {/* Script editor: full-screen, no sidebar */}
       <Route path="/kich-ban/tao-moi" element={<><ScriptEditorPage /><ToastContainer /></>} />
       <Route path="/kich-ban/:scriptId" element={<><ScriptEditorPage /><ToastContainer /></>} />
+      {/* Shared script editor */}
+      <Route path="/kho-kich-ban/tao-moi" element={<><ScriptEditorPage apiType="shared" /><ToastContainer /></>} />
+      <Route path="/kho-kich-ban/:scriptId" element={<><ScriptEditorPage apiType="shared" /><ToastContainer /></>} />
       {/* All other pages: sidebar layout */}
       <Route path="/*" element={<Layout onLogout={logout} userName={user.name} />} />
     </Routes>

@@ -16,13 +16,14 @@ import NodePalette from './NodePalette';
 import PropertyPanel from './PropertyPanel';
 import CoordinatePicker from './CoordinatePicker';
 import { graphToScriptSteps, scriptStepsToGraph } from './graphConverter';
-import { scripts as scriptsApi, devices as devicesApi } from '../../services/api';
+import { scripts as scriptsApi, sharedScripts as sharedScriptsApi, devices as devicesApi } from '../../services/api';
 import { showToast } from '../Toast';
 import { ArrowLeft, Save, Loader2, ChevronDown, Music, Globe, Facebook, Smartphone } from 'lucide-react';
 import type { Script, Device } from '../../types';
 
 interface ScriptEditorPageProps {
   appTab?: string;
+  apiType?: 'scripts' | 'shared';
 }
 
 const DEFAULT_START_NODE: Node = {
@@ -33,11 +34,13 @@ const DEFAULT_START_NODE: Node = {
   deletable: false,
 };
 
-export default function ScriptEditorPage({ appTab }: ScriptEditorPageProps = {}) {
+export default function ScriptEditorPage({ appTab, apiType = 'scripts' }: ScriptEditorPageProps = {}) {
   const params = useParams<{ scriptId: string }>();
   const navigate = useNavigate();
-  const scriptId = params.scriptId; // undefined for new scripts (/kich-ban/tao-moi)
-  const onBack = () => navigate('/kich-ban');
+  const scriptId = params.scriptId;
+  const api = apiType === 'shared' ? sharedScriptsApi : scriptsApi;
+  const backPath = apiType === 'shared' ? '/kho-kich-ban' : '/kich-ban';
+  const onBack = () => navigate(backPath);
   const [nodes, setNodes, onNodesChange] = useNodesState([DEFAULT_START_NODE]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
@@ -78,7 +81,7 @@ export default function ScriptEditorPage({ appTab }: ScriptEditorPageProps = {})
   // Load existing script
   useEffect(() => {
     if (scriptId && !loaded) {
-      scriptsApi.getOne(scriptId).then(res => {
+      api.getOne(scriptId).then(res => {
         if (res.success && res.data) {
           const script = res.data;
           setScriptName(script.name);
@@ -165,7 +168,7 @@ export default function ScriptEditorPage({ appTab }: ScriptEditorPageProps = {})
       const graphData = { nodes: nodes.map(n => ({ ...n })), edges: edges.map(e => ({ ...e })) };
 
       if (scriptId) {
-        await scriptsApi.update(scriptId, {
+        await api.update(scriptId, {
           name: scriptName,
           description: scriptDesc,
           channel: scriptChannel,
@@ -174,7 +177,7 @@ export default function ScriptEditorPage({ appTab }: ScriptEditorPageProps = {})
         });
         showToast('success', 'Đã lưu kịch bản');
       } else {
-        await scriptsApi.create({
+        await api.create({
           name: scriptName,
           description: scriptDesc,
           channel: scriptChannel,
