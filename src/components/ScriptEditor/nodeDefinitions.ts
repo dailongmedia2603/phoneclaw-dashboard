@@ -133,6 +133,15 @@ export const NODE_DEFS: Record<string, NodeDef> = {
     ],
   },
 
+  // --- Photos Management ---
+  clear_photos: {
+    nodeType: 'clear_photos', label: 'Xoá Photos', category: 'common',
+    color: '#ef4444', bgColor: '#fef2f2', icon: 'trash',
+    stepType: 'clear_photos',
+    defaultParams: {},
+    fields: [],
+  },
+
   // --- Ứng dụng (App Launchers) ---
   tiktok_vn_open: {
     nodeType: 'tiktok_vn_open', label: 'Mở TikTok VN', category: 'apps',

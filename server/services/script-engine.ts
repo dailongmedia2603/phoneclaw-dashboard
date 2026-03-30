@@ -274,6 +274,13 @@ async function executeStep(
       if (!res.ok) throw new Error(`Select video tap failed: ${res.error}`);
       break;
     }
+    case 'clear_photos': {
+      const res = await callDeviceApi(deviceId, 'POST', '/api/clear-photos');
+      if (!res.ok) throw new Error(`Clear photos failed: ${res.error}`);
+      // Đợi xoá hoàn tất trên device (async)
+      await new Promise(r => setTimeout(r, 5000));
+      break;
+    }
     case 'swipe': {
       const res = await callDeviceApi(deviceId, 'POST', '/api/swipe', {
         fromX: p.fromX, fromY: p.fromY, toX: p.toX, toY: p.toY, duration: p.duration,
