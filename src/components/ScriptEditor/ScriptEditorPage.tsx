@@ -41,7 +41,13 @@ export default function ScriptEditorPage({ appTab, apiType = 'scripts' }: Script
   const scriptId = params.scriptId;
   const api = apiType === 'shared' ? sharedScriptsApi : scriptsApi;
   const backPath = apiType === 'shared' ? '/kho-kich-ban' : '/kich-ban';
-  const onBack = () => navigate(backPath);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const onBack = () => {
+    if (hasUnsavedChanges) {
+      if (!window.confirm('Kịch bản chưa được lưu. Bạn có muốn thoát không?')) return;
+    }
+    navigate(backPath);
+  };
   const [nodes, setNodes, onNodesChange] = useNodesState([DEFAULT_START_NODE]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
@@ -104,6 +110,24 @@ export default function ScriptEditorPage({ appTab, apiType = 'scripts' }: Script
       setLoaded(true);
     }
   }, [scriptId]);
+
+  // Cảnh báo khi đóng tab/reload có thay đổi chưa lưu
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) { e.preventDefault(); e.returnValue = ''; }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [hasUnsavedChanges]);
+
+  // Track unsaved changes (chỉ sau khi đã load xong)
+  const loadedRef = useRef(false);
+  useEffect(() => {
+    if (loaded && loadedRef.current) {
+      setHasUnsavedChanges(true);
+    }
+    loadedRef.current = loaded;
+  }, [nodes, edges, scriptName, scriptDesc, scriptChannel]);
 
   const onConnect = useCallback((connection: Connection) => {
     setEdges(eds => addEdge(connection, eds));
@@ -177,6 +201,7 @@ export default function ScriptEditorPage({ appTab, apiType = 'scripts' }: Script
           graphData,
         });
         showToast('success', 'Đã lưu kịch bản');
+        setHasUnsavedChanges(false);
       } else {
         await api.create({
           name: scriptName,
