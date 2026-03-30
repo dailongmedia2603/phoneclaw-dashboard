@@ -686,29 +686,17 @@ export default function ProxyManager() {
                       <Loader2 size={16} className="animate-spin text-blue-500" />
                     ) : device.status !== 'offline' ? (
                       <>
-                        <button onClick={() => applyConfig(device.id)}
-                          title="Áp dụng Config"
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-blue-500 hover:bg-blue-50">
-                          <Settings2 size={16} />
-                        </button>
                         {device.proxyStatus === 'running' ? (
                           <button onClick={() => stopProxy(device.id)}
-                            title="Dừng Proxy"
-                            className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50">
-                            <XCircle size={16} />
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100">
+                            <XCircle size={14} /> Dừng
                           </button>
                         ) : (
                           <button onClick={() => startProxy(device.id)}
-                            title="Bật Proxy"
-                            className="p-1.5 rounded-lg text-emerald-400 hover:text-emerald-600 hover:bg-emerald-50">
-                            <CheckCircle size={16} />
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-emerald-600 bg-emerald-50 hover:bg-emerald-100">
+                            <CheckCircle size={14} /> Kích hoạt
                           </button>
                         )}
-                        <button onClick={() => applySpoof(device.id)}
-                          title="Áp dụng Spoof"
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-purple-500 hover:bg-purple-50">
-                          <MapPin size={16} />
-                        </button>
                       </>
                     ) : null}
                   </div>
