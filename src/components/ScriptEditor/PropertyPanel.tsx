@@ -98,9 +98,7 @@ export default function PropertyPanel({ selectedNode, onUpdateNode, onDeleteNode
               <label className="block text-xs font-medium text-slate-600 mb-1">{field.label}</label>
               <input
                 type={field.type === 'number' ? 'number' : 'text'}
-                key={`${selectedNode.id}-${field.key}`}
-                defaultValue={String(nodeData.params?.[field.key] ?? '')}
-                onBlur={e => handleChange(field.key, e.target.value)}
+                value={String(nodeData.params?.[field.key] ?? '')}
                 onChange={e => handleChange(field.key, e.target.value)}
                 className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               />

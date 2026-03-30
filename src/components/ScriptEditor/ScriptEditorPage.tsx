@@ -405,7 +405,7 @@ export default function ScriptEditorPage({ appTab, apiType = 'scripts' }: Script
 
         {/* Right: Property Panel */}
         <PropertyPanel
-          selectedNode={selectedNode}
+          selectedNode={selectedNode ? nodes.find(n => n.id === selectedNode.id) || selectedNode : null}
           onUpdateNode={onUpdateNodeParams}
           onDeleteNode={(nodeId) => {
             setNodes(nds => nds.filter(n => n.id !== nodeId));
