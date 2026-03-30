@@ -265,6 +265,15 @@ async function executeStep(
       await new Promise(r => setTimeout(r, 3000));
       break;
     }
+    case 'select_video': {
+      // Tap vào video mới nhất (vị trí đầu tiên) trong Photos picker.
+      // Đặt ngay sau "Truyền File" → video vừa truyền ở vị trí đầu.
+      const tapX = Number(p.tapX) || 0.12;
+      const tapY = Number(p.tapY) || 0.25;
+      const res = await callDeviceApi(deviceId, 'POST', '/api/tap', { x: tapX, y: tapY });
+      if (!res.ok) throw new Error(`Select video tap failed: ${res.error}`);
+      break;
+    }
     case 'swipe': {
       const res = await callDeviceApi(deviceId, 'POST', '/api/swipe', {
         fromX: p.fromX, fromY: p.fromY, toX: p.toX, toY: p.toY, duration: p.duration,

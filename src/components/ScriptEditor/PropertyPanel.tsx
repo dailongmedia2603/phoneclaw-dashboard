@@ -83,7 +83,7 @@ export default function PropertyPanel({ selectedNode, onUpdateNode, onDeleteNode
       {def && def.fields.length > 0 && def.fields.map(field => (
         <div key={field.key}>
           {/* Special: videoId field → show video picker dropdown */}
-          {field.key === 'videoId' && nodeData.nodeType === 'send_file' ? (
+          {field.key === 'videoId' && (nodeData.nodeType === 'send_file' || nodeData.nodeType === 'select_video') ? (
             <>
               <label className="block text-xs font-medium text-slate-600 mb-1">Chọn Video</label>
               <CustomSelect
@@ -116,6 +116,14 @@ export default function PropertyPanel({ selectedNode, onUpdateNode, onDeleteNode
             <Clock size={12} /> Timeout: 20 phút
           </div>
           <p className="text-[10px] text-slate-400">Nếu iPhone tải xong sẽ vẫn tiếp tục mà không phải chờ 20 phút xong mới tiếp tục.</p>
+        </div>
+      )}
+
+      {/* select_video: info */}
+      {nodeData.nodeType === 'select_video' && (
+        <div className="pt-2 border-t border-slate-100">
+          <p className="text-[10px] text-slate-400">Tap vào video mới nhất trong Photos picker. Đặt node này ngay sau &quot;Truyền File&quot; để chọn đúng video vừa truyền.</p>
+          <p className="text-[10px] text-slate-400 mt-1">Tap X/Y là tọa độ thumbnail đầu tiên trong picker (có thể chỉnh nếu cần).</p>
         </div>
       )}
 
