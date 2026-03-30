@@ -1,7 +1,7 @@
 import type { Node, Edge } from '@xyflow/react';
 
-const NODE_HEIGHT = 70;
-const GAP_Y = 100;
+const NODE_HEIGHT = 60;
+const GAP_Y = 30;
 
 // === Helper: BFS từ start node → trả về nodes theo thứ tự thực thi ===
 function getNodeOrder(nodes: Node[], edges: Edge[]): Node[] {
@@ -55,8 +55,8 @@ function layoutZigzag(ordered: Node[]): Node[] {
   return ordered.map((node, i) => ({
     ...node,
     position: {
-      x: 280 + (i % 2 === 0 ? -130 : 130),
-      y: 50 + i * (NODE_HEIGHT + GAP_Y * 0.85),
+      x: 280 + (i % 2 === 0 ? -120 : 120),
+      y: 50 + i * (NODE_HEIGHT + GAP_Y),
     },
   }));
 }
@@ -66,18 +66,18 @@ function layoutWave(ordered: Node[]): Node[] {
   return ordered.map((node, i) => ({
     ...node,
     position: {
-      x: 300 + Math.sin(i * 0.9) * 160,
-      y: 50 + i * (NODE_HEIGHT + GAP_Y * 0.8),
+      x: 300 + Math.sin(i * 0.9) * 140,
+      y: 50 + i * (NODE_HEIGHT + GAP_Y),
     },
   }));
 }
 
 // Spiral: xoắn ốc ra ngoài
 function layoutSpiral(ordered: Node[]): Node[] {
-  const cx = 400, cy = 380;
+  const cx = 350, cy = 300;
   return ordered.map((node, i) => {
-    const angle = i * 0.75;
-    const radius = 60 + i * 50;
+    const angle = i * 0.8;
+    const radius = 50 + i * 42;
     return {
       ...node,
       position: {
@@ -93,8 +93,8 @@ function layoutStaircase(ordered: Node[]): Node[] {
   return ordered.map((node, i) => ({
     ...node,
     position: {
-      x: 80 + i * 85,
-      y: 50 + i * (NODE_HEIGHT + GAP_Y * 0.55),
+      x: 80 + i * 70,
+      y: 50 + i * (NODE_HEIGHT + GAP_Y * 0.8),
     },
   }));
 }
@@ -102,8 +102,8 @@ function layoutStaircase(ordered: Node[]): Node[] {
 // Circle: vòng tròn
 function layoutCircle(ordered: Node[]): Node[] {
   const n = ordered.length;
-  const radius = Math.max(160, n * 35);
-  const cx = 400, cy = radius + 80;
+  const radius = Math.max(130, n * 30);
+  const cx = 350, cy = radius + 60;
   return ordered.map((node, i) => ({
     ...node,
     position: {

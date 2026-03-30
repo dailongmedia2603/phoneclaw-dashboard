@@ -346,15 +346,6 @@ export default function ScriptEditorPage({ appTab, apiType = 'scripts' }: Script
           </div>
         )}
 
-        <button onClick={handleLayoutProfessional} title="Sắp xếp gọn"
-          className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors">
-          <LayoutGrid size={18} />
-        </button>
-        <button onClick={handleLayoutCreative} title="Sắp xếp sáng tạo"
-          className="p-2 rounded-lg text-purple-500 hover:bg-purple-50 hover:text-purple-700 transition-colors">
-          <Sparkles size={18} />
-        </button>
-
         <button
           onClick={handleSave}
           disabled={saving}
@@ -371,7 +362,18 @@ export default function ScriptEditorPage({ appTab, apiType = 'scripts' }: Script
         <NodePalette onCustomNodesLoaded={updateCustomDefs} />
 
         {/* Center: Canvas */}
-        <div className="flex-1" ref={reactFlowWrapper}>
+        <div className="flex-1 relative" ref={reactFlowWrapper}>
+          {/* Auto-layout buttons — overlay trên canvas */}
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2">
+            <button onClick={handleLayoutProfessional}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-800 shadow-sm transition-colors">
+              <LayoutGrid size={14} /> Sắp xếp gọn
+            </button>
+            <button onClick={handleLayoutCreative}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white border border-purple-200 text-purple-600 hover:bg-purple-50 hover:text-purple-800 shadow-sm transition-colors">
+              <Sparkles size={14} /> Sáng tạo
+            </button>
+          </div>
           <ReactFlow
             nodes={nodes}
             edges={edges}
