@@ -516,7 +516,7 @@ export default function ProxyManager() {
         </button>
 
         <button onClick={batchApplyAndStart}
-          disabled={!selectedDevices.length || (proxyMode !== 'none' && !proxyIp)}
+          disabled={!selectedDevices.length || (proxyMode !== 'none' && !proxyIp) || selectedDevices.some(id => allDevices.find(d => d.id === id)?.proxyStatus === 'running')}
           className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed">
           <Play size={16} /> {proxyMode === 'none' ? 'Stop All' : `Apply ${proxyMode.toUpperCase()} & Start`} ({selectedDevices.length})
         </button>
