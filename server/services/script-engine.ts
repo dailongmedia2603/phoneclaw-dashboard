@@ -275,10 +275,15 @@ async function executeStep(
       break;
     }
     case 'clear_photos': {
-      const res = await callDeviceApi(deviceId, 'POST', '/api/clear-photos');
+      const res = await callDeviceApi(deviceId, 'POST', '/api/clear-photos', {
+        deleteX: Number(p.deleteX) || 0.75,
+        deleteY: Number(p.deleteY) || 0.53,
+        trashDeleteX: Number(p.trashDeleteX) || 0.75,
+        trashDeleteY: Number(p.trashDeleteY) || 0.53,
+      });
       if (!res.ok) throw new Error(`Clear photos failed: ${res.error}`);
-      // Đợi xoá hoàn tất: bước 1 (1.5s popup + delete) + bước 2 (3s sync + 1.5s popup + delete)
-      await new Promise(r => setTimeout(r, 12000));
+      // Đợi xoá hoàn tất: bước 1 (2s popup + tap) + bước 2 (3s sync + 2s popup + tap)
+      await new Promise(r => setTimeout(r, 15000));
       break;
     }
     case 'swipe': {

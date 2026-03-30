@@ -125,8 +125,13 @@ export const NODE_DEFS: Record<string, NodeDef> = {
     nodeType: 'clear_photos', label: 'Xoá Photos', category: 'common',
     color: '#ef4444', bgColor: '#fef2f2', icon: 'trash',
     stepType: 'clear_photos',
-    defaultParams: {},
-    fields: [],
+    defaultParams: { deleteX: 0.75, deleteY: 0.53, trashDeleteX: 0.75, trashDeleteY: 0.53 },
+    fields: [
+      { key: 'deleteX', label: 'Tap Delete X (0-1)', type: 'number' },
+      { key: 'deleteY', label: 'Tap Delete Y (0-1)', type: 'number' },
+      { key: 'trashDeleteX', label: 'Tap Thùng rác X (0-1)', type: 'number' },
+      { key: 'trashDeleteY', label: 'Tap Thùng rác Y (0-1)', type: 'number' },
+    ],
   },
 
   // --- Ứng dụng (App Launchers) ---
