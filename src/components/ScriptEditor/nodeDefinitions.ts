@@ -120,19 +120,6 @@ export const NODE_DEFS: Record<string, NodeDef> = {
     ],
   },
 
-  // --- Select Video (chọn video mới nhất trong Photos picker) ---
-  select_video: {
-    nodeType: 'select_video', label: 'Chọn Video', category: 'common',
-    color: '#0891b2', bgColor: '#ecfeff', icon: 'film',
-    stepType: 'select_video',
-    defaultParams: { videoId: '', tapX: 0.12, tapY: 0.25 },
-    fields: [
-      { key: 'videoId', label: 'Video', type: 'text' },
-      { key: 'tapX', label: 'Tap X (0-1)', type: 'number' },
-      { key: 'tapY', label: 'Tap Y (0-1)', type: 'number' },
-    ],
-  },
-
   // --- Photos Management ---
   clear_photos: {
     nodeType: 'clear_photos', label: 'Xoá Photos', category: 'common',
