@@ -71,13 +71,14 @@ export default function CustomSelect({ value, onChange, options, placeholder }: 
         <div
           ref={dropRef}
           style={dropStyle}
+          onMouseDown={e => e.stopPropagation()}
           className="z-[9999] bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-auto py-1"
         >
           {options.map(opt => (
             <button
               key={opt.value}
               type="button"
-              onClick={() => { onChange(opt.value); setOpen(false); }}
+              onMouseDown={e => { e.stopPropagation(); onChange(opt.value); setOpen(false); }}
               className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${
                 opt.value === value
                   ? 'bg-blue-50 text-blue-700 font-medium'

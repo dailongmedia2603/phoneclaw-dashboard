@@ -88,7 +88,10 @@ export default function PropertyPanel({ selectedNode, onUpdateNode, onDeleteNode
               <label className="block text-xs font-medium text-slate-600 mb-1">Chọn Video</label>
               <CustomSelect
                 value={String(nodeData.params?.videoId || '')}
-                onChange={v => onUpdateNode(selectedNode.id, { ...nodeData.params, videoId: v })}
+                onChange={v => {
+                  const video = videoList.find(vid => vid.id === v);
+                  onUpdateNode(selectedNode.id, { ...nodeData.params, videoId: v, videoName: video?.name || '' });
+                }}
                 options={videoList.map(v => ({ value: v.id, label: v.name }))}
                 placeholder="Chọn video từ thư viện..."
               />

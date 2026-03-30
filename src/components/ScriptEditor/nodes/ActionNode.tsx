@@ -63,6 +63,8 @@ function getSummary(nodeType: string, params: Record<string, unknown>): string {
     case 'wait_random': return `${params.min}-${params.max}s`;
     case 'repeat': return `${params.count} lần`;
     case 'type_text': return String(params.text || '').slice(0, 20);
+    case 'send_file':
+    case 'select_video': return params.videoName ? String(params.videoName).slice(0, 20) : '';
     default: return '';
   }
 }
