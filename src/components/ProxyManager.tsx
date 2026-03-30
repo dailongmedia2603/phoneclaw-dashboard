@@ -111,10 +111,13 @@ export default function ProxyManager() {
   const [proxyUser, setProxyUser] = useState('');
   const [proxyPass, setProxyPass] = useState('');
 
-  // Spoof settings (only used when mode=us)
+  // Spoof settings (US mode)
   const [timezone, setTimezone] = useState('America/New_York');
   const [locale] = useState('en_US');
   const [selectedLocation, setSelectedLocation] = useState('40.7128,-74.0060');
+
+  // VN detected location (from geolocate)
+  const [vnDetected, setVnDetected] = useState<{ city: string; region: string; lat: number; lon: number } | null>(null);
 
   // Selection
   const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
@@ -150,7 +153,7 @@ export default function ProxyManager() {
     }
   };
 
-  // Auto-detect timezone & GPS từ proxy IP
+  // Auto-detect timezone & GPS từ proxy IP (hỗ trợ cả US và VN)
   const autoDetectFromIp = async () => {
     if (!proxyIp) {
       showToast('error', 'Vui lòng nhập IP proxy trước');
@@ -160,19 +163,25 @@ export default function ProxyManager() {
     try {
       const res = await proxy.geolocate(proxyIp);
       if (res.success && res.data) {
-        const { timezone: detectedTz, lat, lon } = res.data;
-        // Map timezone
-        const matchedTz = US_TIMEZONES.find(tz => tz.value === detectedTz);
-        if (matchedTz) {
-          setTimezone(matchedTz.value);
+        const { timezone: detectedTz, lat, lon, city, regionName } = res.data;
+
+        if (proxyMode === 'us') {
+          // US mode: map to fixed US timezone/location lists
+          const matchedTz = US_TIMEZONES.find(tz => tz.value === detectedTz);
+          if (matchedTz) {
+            setTimezone(matchedTz.value);
+          } else {
+            showToast('error', `Timezone "${detectedTz}" không nằm trong danh sách US`);
+          }
+          const nearest = findNearestLocation(lat, lon);
+          setSelectedLocation(nearest);
+          const nearestLabel = US_LOCATIONS.find(l => l.value === nearest)?.label;
+          showToast('success', `Đã phát hiện: ${matchedTz?.label || detectedTz} — ${nearestLabel}`);
         } else {
-          showToast('error', `Timezone "${detectedTz}" không nằm trong danh sách US`);
+          // VN mode: dùng trực tiếp tọa độ từ geolocate, không cần danh sách
+          setVnDetected({ city: city || 'Unknown', region: regionName || '', lat, lon });
+          showToast('success', `Đã phát hiện: ${city}, ${regionName} (${lat.toFixed(4)}, ${lon.toFixed(4)})`);
         }
-        // Map GPS
-        const nearest = findNearestLocation(lat, lon);
-        setSelectedLocation(nearest);
-        const nearestLabel = US_LOCATIONS.find(l => l.value === nearest)?.label;
-        showToast('success', `Đã phát hiện: ${matchedTz?.label || detectedTz} — ${nearestLabel}`);
       } else {
         showToast('error', res.error || 'Không thể xác định vị trí từ IP');
       }
@@ -239,11 +248,14 @@ export default function ProxyManager() {
       else showToast('error', res.error || 'Lỗi');
     } else if (proxyMode === 'vn') {
       // mode=vn → GPS khớp proxy VN + WiFi ẩn
-      const geoRes = await proxy.geolocate(proxyIp);
+      let vnLat = vnDetected?.lat;
+      let vnLon = vnDetected?.lon;
+      if (vnLat == null || vnLon == null) {
+        const geoRes = await proxy.geolocate(proxyIp);
+        if (geoRes.success) { vnLat = geoRes.data.lat; vnLon = geoRes.data.lon; }
+      }
       const res = await proxy.setSpoof(deviceId, {
-        mode: 'vn',
-        latitude: geoRes.success ? geoRes.data.lat : undefined,
-        longitude: geoRes.success ? geoRes.data.lon : undefined,
+        mode: 'vn', latitude: vnLat, longitude: vnLon,
       });
       if (res.success) showToast('success', 'VN spoof đã áp dụng (GPS + WiFi ẩn)');
       else showToast('error', res.error || 'Lỗi');
@@ -318,10 +330,16 @@ export default function ProxyManager() {
               }
             }
           } else if (proxyMode === 'vn') {
-            // Geolocate proxy IP → GPS khớp vị trí proxy VN + WiFi ẩn
-            const geoRes = await proxy.geolocate(proxyIp);
-            const vnLat = geoRes.success ? geoRes.data.lat : undefined;
-            const vnLon = geoRes.success ? geoRes.data.lon : undefined;
+            // VN spoof: dùng tọa độ đã detect, hoặc geolocate nếu chưa detect
+            let vnLat = vnDetected?.lat;
+            let vnLon = vnDetected?.lon;
+            if (vnLat == null || vnLon == null) {
+              const geoRes = await proxy.geolocate(proxyIp);
+              if (geoRes.success) {
+                vnLat = geoRes.data.lat;
+                vnLon = geoRes.data.lon;
+              }
+            }
             for (const deviceId of selectedDevices) {
               const spoofRes = await proxy.setSpoof(deviceId, {
                 mode: 'vn',
@@ -519,12 +537,50 @@ export default function ProxyManager() {
             </div>
           </div>
         </div>
+        ) : proxyMode === 'vn' ? (
+        <div className="bg-white rounded-2xl border border-slate-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-slate-700 flex items-center gap-2">
+              <Settings2 size={20} /> Anti-Detection (VN Spoof)
+            </h2>
+            <button
+              onClick={autoDetectFromIp}
+              disabled={autoDetecting || !proxyIp}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-600 hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {autoDetecting ? <Loader2 size={14} className="animate-spin" /> : <Wand2 size={14} />}
+              Tự động phát hiện
+            </button>
+          </div>
+
+          {vnDetected ? (
+          <div className="space-y-3">
+            <div className="bg-emerald-50 rounded-lg p-3">
+              <p className="text-sm font-medium text-emerald-700 flex items-center gap-1">
+                <MapPin size={14} /> {vnDetected.city}, {vnDetected.region}
+              </p>
+              <p className="text-xs text-emerald-600 mt-1">
+                GPS: {vnDetected.lat.toFixed(4)}, {vnDetected.lon.toFixed(4)}
+              </p>
+            </div>
+            <div className="pt-1 text-xs text-slate-400">
+              <p>GPS: Khớp vị trí proxy | WiFi BSSID: ẩn</p>
+              <p>Timezone/Locale/Cell: Giữ VN tự nhiên</p>
+            </div>
+          </div>
+          ) : (
+          <div className="text-center text-slate-400 py-4">
+            <MapPin size={24} className="mx-auto mb-2 opacity-50" />
+            <p className="text-xs">Bấm &quot;Tự động phát hiện&quot; để xác định vị trí proxy</p>
+          </div>
+          )}
+        </div>
         ) : (
         <div className="bg-white rounded-2xl border border-slate-200 p-6 flex items-center justify-center">
           <div className="text-center text-slate-400">
             <Globe size={32} className="mx-auto mb-2 opacity-50" />
-            <p className="text-sm font-medium">Proxy VN</p>
-            <p className="text-xs mt-1">Chỉ route traffic, không spoof.<br/>Mọi thứ giữ nguyên trạng thái tự nhiên.</p>
+            <p className="text-sm font-medium">Không proxy</p>
+            <p className="text-xs mt-1">Tắt proxy, mọi thứ bình thường.</p>
           </div>
         </div>
         )}
