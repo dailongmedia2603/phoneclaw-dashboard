@@ -27,7 +27,7 @@ const US_LOCATIONS = [
 
 const MODE_OPTIONS: { value: ProxyMode; label: string; desc: string; color: string }[] = [
   { value: 'us', label: 'Proxy US', desc: 'Route traffic qua US + spoof tất cả sang US', color: 'blue' },
-  { value: 'vn', label: 'Proxy VN', desc: 'Chỉ route traffic qua VN, không spoof', color: 'emerald' },
+  { value: 'vn', label: 'Proxy VN', desc: 'Route traffic qua VN + GPS khớp proxy + WiFi ẩn', color: 'emerald' },
   { value: 'none', label: 'Không proxy', desc: 'Tắt proxy, mọi thứ bình thường', color: 'slate' },
 ];
 
@@ -237,8 +237,18 @@ export default function ProxyManager() {
       });
       if (res.success) showToast('success', 'US spoof đã áp dụng');
       else showToast('error', res.error || 'Lỗi');
+    } else if (proxyMode === 'vn') {
+      // mode=vn → GPS khớp proxy VN + WiFi ẩn
+      const geoRes = await proxy.geolocate(proxyIp);
+      const res = await proxy.setSpoof(deviceId, {
+        mode: 'vn',
+        latitude: geoRes.success ? geoRes.data.lat : undefined,
+        longitude: geoRes.success ? geoRes.data.lon : undefined,
+      });
+      if (res.success) showToast('success', 'VN spoof đã áp dụng (GPS + WiFi ẩn)');
+      else showToast('error', res.error || 'Lỗi');
     } else {
-      // mode=vn or none → disable spoofing
+      // mode=none → disable spoofing
       const res = await proxy.setSpoof(deviceId, { mode: proxyMode });
       if (res.success) showToast('success', 'Spoof đã tắt');
       else showToast('error', res.error || 'Lỗi');
@@ -307,9 +317,22 @@ export default function ProxyManager() {
                 hasError = true;
               }
             }
-          } else {
+          } else if (proxyMode === 'vn') {
+            // Geolocate proxy IP → GPS khớp vị trí proxy VN + WiFi ẩn
+            const geoRes = await proxy.geolocate(proxyIp);
+            const vnLat = geoRes.success ? geoRes.data.lat : undefined;
+            const vnLon = geoRes.success ? geoRes.data.lon : undefined;
             for (const deviceId of selectedDevices) {
-              await proxy.setSpoof(deviceId, { mode: 'vn' });
+              const spoofRes = await proxy.setSpoof(deviceId, {
+                mode: 'vn',
+                latitude: vnLat,
+                longitude: vnLon,
+              });
+              if (!spoofRes.success) {
+                const dev = allDevices.find(d => d.id === deviceId);
+                showToast('error', `${dev?.name}: Lỗi VN spoof — ${spoofRes.error || 'Không xác định'}`);
+                hasError = true;
+              }
             }
           }
         }
