@@ -18,7 +18,8 @@ import CoordinatePicker from './CoordinatePicker';
 import { graphToScriptSteps, scriptStepsToGraph } from './graphConverter';
 import { scripts as scriptsApi, sharedScripts as sharedScriptsApi, devices as devicesApi } from '../../services/api';
 import { showToast } from '../Toast';
-import { ArrowLeft, Save, Loader2, ChevronDown, Music, Globe, Facebook, Smartphone } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, ChevronDown, Music, Globe, Facebook, Smartphone, LayoutGrid, Sparkles } from 'lucide-react';
+import { layoutProfessional, layoutCreative } from './autoLayout';
 import type { Script, Device } from '../../types';
 
 interface ScriptEditorPageProps {
@@ -193,6 +194,18 @@ export default function ScriptEditorPage({ appTab, apiType = 'scripts' }: Script
     setSaving(false);
   }, [scriptId, scriptName, scriptDesc, nodes, edges, onBack]);
 
+  // --- Auto Layout ---
+  const handleLayoutProfessional = useCallback(() => {
+    setNodes(layoutProfessional(nodes, edges));
+    showToast('success', '🔧 Đã sắp xếp gọn');
+  }, [nodes, edges, setNodes]);
+
+  const handleLayoutCreative = useCallback(() => {
+    const { nodes: newNodes, patternName } = layoutCreative(nodes, edges);
+    setNodes(newNodes);
+    showToast('success', `✨ ${patternName}`);
+  }, [nodes, edges, setNodes]);
+
   // --- Coordinate Picker handlers ---
   const handlePickCoordinate = useCallback((fieldPrefix: string) => {
     if (!selectedNode) return;
@@ -332,6 +345,15 @@ export default function ScriptEditorPage({ appTab, apiType = 'scripts' }: Script
             )}
           </div>
         )}
+
+        <button onClick={handleLayoutProfessional} title="Sắp xếp gọn"
+          className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors">
+          <LayoutGrid size={18} />
+        </button>
+        <button onClick={handleLayoutCreative} title="Sắp xếp sáng tạo"
+          className="p-2 rounded-lg text-purple-500 hover:bg-purple-50 hover:text-purple-700 transition-colors">
+          <Sparkles size={18} />
+        </button>
 
         <button
           onClick={handleSave}
