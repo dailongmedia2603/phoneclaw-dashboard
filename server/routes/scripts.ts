@@ -17,9 +17,9 @@ router.get('/:id', (req, res) => {
 
 // POST /api/scripts
 router.post('/', (req, res) => {
-  const { name, description, steps } = req.body;
+  const { name, description, steps, channel, graphData } = req.body;
   if (!name) return res.status(400).json({ success: false, error: 'name is required' });
-  const script = se.createScript({ name, description: description || '', steps: steps || [] });
+  const script = se.createScript({ name, description: description || '', steps: steps || [], channel, graphData });
   res.status(201).json({ success: true, data: script });
 });
 

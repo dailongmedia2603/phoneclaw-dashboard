@@ -154,6 +154,9 @@ function findNodeType(step: ScriptStep): string {
       }
     }
   }
+  // Direct stepType→nodeType match (for nodes where stepType === nodeType)
+  if (step.type === 'send_file') return 'send_file';
+  if (step.type === 'select_video') return 'select_video';
   // Legacy: tap_image steps from old scripts → map to tap_custom
   if (step.type === 'tap_image') return 'tap_custom';
   // Fallback to generic type

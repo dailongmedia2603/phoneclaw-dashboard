@@ -13,7 +13,7 @@ export function getScript(id: string): Script | undefined {
   return getAllScripts().find(s => s.id === id);
 }
 
-export function createScript(data: Pick<Script, 'name' | 'description' | 'steps'>): Script {
+export function createScript(data: Pick<Script, 'name' | 'description' | 'steps'> & Record<string, unknown>): Script {
   const scripts = getAllScripts();
   const script: Script = {
     ...data,
