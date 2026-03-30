@@ -277,8 +277,8 @@ async function executeStep(
     case 'clear_photos': {
       const res = await callDeviceApi(deviceId, 'POST', '/api/clear-photos');
       if (!res.ok) throw new Error(`Clear photos failed: ${res.error}`);
-      // Đợi xoá hoàn tất trên device (async)
-      await new Promise(r => setTimeout(r, 5000));
+      // Đợi xoá hoàn tất: bước 1 (1.5s popup + delete) + bước 2 (3s sync + 1.5s popup + delete)
+      await new Promise(r => setTimeout(r, 12000));
       break;
     }
     case 'swipe': {
