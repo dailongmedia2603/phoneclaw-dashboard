@@ -1,16 +1,18 @@
 import { useState } from 'react';
 import {
-  Server, MonitorPlay, Network, Users, Bell, DatabaseBackup, Palette, Cloud,
-  Cpu, HardDrive, Activity, CheckCircle2, AlertCircle, Shield,
-  Plus, Edit, Trash2, Save, Upload, Download, Smartphone, Check, X, Loader2,
-  Package
+  Server, MonitorPlay, Network, Users, Bell, Cloud,
+  Cpu, HardDrive, Activity, CheckCircle2, AlertCircle, Shield, Key,
+  Save, Smartphone, Loader2, Package
 } from 'lucide-react';
 import { settings as settingsApi, devices as devicesApi } from '../services/api';
 import { useApi } from '../hooks/useApi';
+import { useAuth } from '../hooks/useAuth';
+import { showToast } from './Toast';
 import PackageSettings from './PackageSettings';
 import type { AppSettings, VpsStatus, Device } from '../types';
 
-const SETTINGS_TABS = [
+// Admin-only tabs + tabs chung
+const ADMIN_TABS = [
   { id: 'vps', label: 'Máy chủ (VPS)', icon: Server },
   { id: 'vnc', label: 'VNC Mặc định', icon: MonitorPlay },
   { id: 'tailscale', label: 'Tailscale', icon: Network },
@@ -18,17 +20,24 @@ const SETTINGS_TABS = [
   { id: 'account', label: 'Tài khoản', icon: Users },
   { id: 'notifications', label: 'Thông báo', icon: Bell },
   { id: 'r2', label: 'Cloudflare R2', icon: Cloud },
-  { id: 'backup', label: 'Sao lưu & Phục hồi', icon: DatabaseBackup },
-  { id: 'appearance', label: 'Giao diện', icon: Palette },
 ];
 
-const MOCK_USERS = [
-  { id: 'u1', username: 'admin', role: 'Quản trị viên', lastLogin: 'Hôm nay' },
+const USER_TABS = [
+  { id: 'account', label: 'Tài khoản', icon: Users },
+  { id: 'notifications', label: 'Thông báo', icon: Bell },
 ];
 
 export default function Settings() {
-  const [activeTab, setActiveTab] = useState('vps');
+  const { user: authUser } = useAuth();
+  const isAdmin = authUser?.role === 'admin';
+  const SETTINGS_TABS = isAdmin ? ADMIN_TABS : USER_TABS;
+  const [activeTab, setActiveTab] = useState(isAdmin ? 'vps' : 'account');
   const [saving, setSaving] = useState(false);
+
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
 
   const { data: vpsStatus } = useApi<VpsStatus>(() => settingsApi.getVpsStatus(), []);
   const { data: appSettings, refresh: refreshSettings } = useApi<AppSettings>(() => settingsApi.get(), []);
@@ -92,9 +101,26 @@ export default function Settings() {
     refreshSettings();
   };
 
-  const handleSaveAppearance = async (theme: string, language: string) => {
-    await settingsApi.update({ theme: theme as 'dark' | 'light', language: language as 'vi' | 'en' });
-    refreshSettings();
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword) {
+      showToast('error', 'Vui lòng nhập đầy đủ mật khẩu');
+      return;
+    }
+    if (newPassword.length < 6) {
+      showToast('error', 'Mật khẩu mới phải ít nhất 6 ký tự');
+      return;
+    }
+    setChangingPassword(true);
+    const { auth: authApi } = await import('../services/api');
+    const res = await authApi.changePassword(currentPassword, newPassword);
+    setChangingPassword(false);
+    if (res.success) {
+      showToast('success', 'Đổi mật khẩu thành công');
+      setCurrentPassword('');
+      setNewPassword('');
+    } else {
+      showToast('error', res.error || 'Đổi mật khẩu thất bại');
+    }
   };
 
   const allDevices = deviceList || [];
@@ -308,48 +334,40 @@ export default function Settings() {
           {activeTab === 'account' && (
             <div className="space-y-8">
               <div>
-                <h3 className="text-lg font-bold text-slate-900 mb-1">Đổi mật khẩu Dashboard</h3>
-                <p className="text-sm text-slate-500 mb-4">Cập nhật mật khẩu đăng nhập cho tài khoản hiện tại</p>
-                <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6 space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Mật khẩu hiện tại</label>
-                    <input type="password" placeholder="••••••••" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                <h3 className="text-lg font-bold text-slate-900 mb-1">Thông tin tài khoản</h3>
+                <p className="text-sm text-slate-500 mb-4">Tài khoản đang đăng nhập</p>
+                <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isAdmin ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>
+                      {isAdmin ? <Shield size={20} /> : <Users size={20} />}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-slate-900">{authUser?.name}</p>
+                      <p className="text-sm text-slate-500">{authUser?.email}</p>
+                    </div>
+                    <span className={`ml-auto inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium border ${isAdmin ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
+                      {isAdmin ? 'Admin' : 'Người dùng'}
+                    </span>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Mật khẩu mới</label>
-                    <input type="password" placeholder="••••••••" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
-                  </div>
-                  <button className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm">
-                    Cập nhật mật khẩu
-                  </button>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-bold text-slate-900 mb-4">Quản lý người dùng</h3>
-                <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-200 bg-slate-50/50 text-sm font-medium text-slate-500">
-                        <th className="py-3 px-6">Tên đăng nhập</th>
-                        <th className="py-3 px-4">Vai trò</th>
-                        <th className="py-3 px-4">Đăng nhập lần cuối</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {MOCK_USERS.map((user) => (
-                        <tr key={user.id} className="hover:bg-slate-50 transition-colors">
-                          <td className="py-3 px-6 font-medium text-slate-900">{user.username}</td>
-                          <td className="py-3 px-4">
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100">
-                              <Shield size={12} /> {user.role}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-sm text-slate-500">{user.lastLogin}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <h3 className="text-lg font-bold text-slate-900 mb-1">Đổi mật khẩu</h3>
+                <p className="text-sm text-slate-500 mb-4">Cập nhật mật khẩu đăng nhập cho tài khoản hiện tại</p>
+                <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Mật khẩu hiện tại</label>
+                    <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Mật khẩu mới (ít nhất 6 ký tự)</label>
+                    <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                  </div>
+                  <button onClick={handleChangePassword} disabled={changingPassword} className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm flex items-center justify-center gap-2">
+                    {changingPassword && <Loader2 size={16} className="animate-spin" />}
+                    <Key size={16} /> Cập nhật mật khẩu
+                  </button>
                 </div>
               </div>
             </div>
@@ -436,77 +454,6 @@ export default function Settings() {
             }} saving={saving} />
           )}
 
-          {/* BACKUP TAB */}
-          {activeTab === 'backup' && (
-            <div>
-              <div className="mb-6">
-                <h3 className="text-lg font-bold text-slate-900">Sao lưu & Phục hồi</h3>
-                <p className="text-sm text-slate-500">Bảo vệ dữ liệu hệ thống</p>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6 flex flex-col">
-                  <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
-                    <Download size={24} />
-                  </div>
-                  <h4 className="text-lg font-bold text-slate-900 mb-2">Xuất dữ liệu (Backup)</h4>
-                  <p className="text-sm text-slate-500 mb-6 flex-1">Tải xuống toàn bộ cấu hình, danh sách thiết bị và kịch bản dưới dạng JSON.</p>
-                  <button className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors shadow-sm shadow-blue-200">
-                    <Download size={18} /> Tạo file Backup
-                  </button>
-                </div>
-                <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6 flex flex-col">
-                  <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4">
-                    <Upload size={24} />
-                  </div>
-                  <h4 className="text-lg font-bold text-slate-900 mb-2">Nhập dữ liệu (Restore)</h4>
-                  <p className="text-sm text-slate-500 mb-6 flex-1">Khôi phục từ file backup JSON. Dữ liệu hiện tại có thể bị ghi đè.</p>
-                  <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 flex flex-col items-center justify-center text-center mb-6 bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer">
-                    <Upload size={24} className="text-slate-400 mb-2" />
-                    <p className="text-sm font-medium text-slate-700">Kéo thả file JSON vào đây</p>
-                  </div>
-                  <button className="w-full bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors shadow-sm">
-                    Phục hồi dữ liệu
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* APPEARANCE TAB */}
-          {activeTab === 'appearance' && (
-            <div>
-              <div className="mb-6">
-                <h3 className="text-lg font-bold text-slate-900">Giao diện & Ngôn ngữ</h3>
-                <p className="text-sm text-slate-500">Tùy chỉnh trải nghiệm hiển thị</p>
-              </div>
-              <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6 space-y-8">
-                <div>
-                  <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4">Chủ đề (Theme)</h4>
-                  <div className="grid grid-cols-3 gap-4">
-                    {['light', 'dark'].map(theme => (
-                      <label key={theme} className="cursor-pointer">
-                        <input type="radio" name="theme" value={theme} className="peer sr-only" checked={cfg.theme === theme} onChange={() => handleSaveAppearance(theme, cfg.language)} />
-                        <div className="border-2 border-slate-200 rounded-xl p-4 hover:bg-slate-50 peer-checked:border-blue-600 peer-checked:bg-blue-50 transition-all text-center">
-                          <div className={`w-full h-20 rounded-lg border mb-3 flex flex-col gap-2 p-2 ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
-                            <div className={`w-full h-4 rounded shadow-sm ${theme === 'dark' ? 'bg-slate-700' : 'bg-white'}`}></div>
-                            <div className={`w-2/3 h-4 rounded shadow-sm ${theme === 'dark' ? 'bg-slate-700' : 'bg-white'}`}></div>
-                          </div>
-                          <span className="text-sm font-medium text-slate-700">{theme === 'light' ? 'Sáng (Light)' : 'Tối (Dark)'}</span>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4">Ngôn ngữ (Language)</h4>
-                  <select value={cfg.language} onChange={e => handleSaveAppearance(cfg.theme, e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
-                    <option value="vi">Tiếng Việt</option>
-                    <option value="en">English (US)</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          )}
 
         </div>
       </div>

@@ -212,6 +212,11 @@ export const packages = {
 // ============================================================
 // Users (Admin Only)
 // ============================================================
+export const auth = {
+  changePassword: (currentPassword: string, newPassword: string) =>
+    post<void>('/api/auth/change-password', { currentPassword, newPassword }),
+};
+
 export const users = {
   getAll: () => get<AppUser[]>('/api/auth/users'),
   create: (data: { name: string; email: string; password: string; phone?: string; role: string; packageId?: string }) =>
