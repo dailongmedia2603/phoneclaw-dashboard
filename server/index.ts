@@ -7,7 +7,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 import { config } from './config';
-import { startHealthChecks, stopHealthChecks } from './services/device-manager';
+import { startDeviceMonitor, stopDeviceMonitor } from './services/device-manager';
 import { startScheduler, stopScheduler } from './services/scheduler';
 import { stopAllProxies } from './services/vnc-proxy';
 import { readCollection, writeCollection, generateId, readUserCollection, writeUserCollection } from './store';
@@ -26,6 +26,7 @@ import customNodesRoutes from './routes/custom-nodes';
 import sharedScriptsRoutes from './routes/shared-scripts';
 import proxyRoutes from './routes/proxy';
 import packagesRoutes from './routes/packages';
+import heartbeatRoutes from './routes/heartbeat';
 import { migrateToTenantStructure } from './migration';
 
 import type { Notification, WsMessage } from '../src/types';
@@ -94,6 +95,7 @@ app.use((_req, res, next) => {
 
 // --- Auth ---
 app.use('/api/auth', authRoutes);
+app.use('/api/heartbeat', heartbeatRoutes); // Before auth — phones use Tailscale network auth
 app.use(authMiddleware);
 
 // --- API Routes ---
@@ -127,7 +129,7 @@ app.get('*', (_req, res) => {
 migrateToTenantStructure();
 
 // --- Start Services ---
-startHealthChecks((device) => {
+startDeviceMonitor((device) => {
   broadcast({
     type: 'device:status',
     payload: device,
@@ -156,7 +158,7 @@ startScheduler((execution) => {
 // --- Graceful Shutdown ---
 function shutdown() {
   console.log('Shutting down...');
-  stopHealthChecks();
+  stopDeviceMonitor();
   stopScheduler();
   stopAllProxies();
   server.close();

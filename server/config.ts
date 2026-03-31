@@ -12,6 +12,13 @@ export const config = {
   // Device HTTP API timeout (ms)
   deviceApiTimeout: parseInt(process.env.DEVICE_API_TIMEOUT || '10000'),
 
+  // Heartbeat staleness threshold: mark offline if no heartbeat received within this time (ms)
+  // Must be > 2x phone heartbeat interval (phone sends every 30s → threshold 90s)
+  heartbeatStaleThreshold: parseInt(process.env.HEARTBEAT_STALE_THRESHOLD || '90000'),
+
+  // Staleness checker interval: how often to scan for stale devices (ms)
+  stalenessCheckInterval: parseInt(process.env.STALENESS_CHECK_INTERVAL || '30000'),
+
   // Screenshots directory
   screenshotsDir: process.env.SCREENSHOTS_DIR || './server/data/screenshots',
 

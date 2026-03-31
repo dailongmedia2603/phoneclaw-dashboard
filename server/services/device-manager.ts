@@ -125,6 +125,9 @@ export function createDeviceForTenant(userId: string, data: Omit<Device, 'id' | 
   devices.push(device);
   writeUserCollection(userId, 'devices', devices);
 
+  // Register in IP lookup map
+  ipDeviceMap.set(device.tailscaleIp, { deviceId: device.id, tenantId: userId });
+
   // Trigger immediate health check (logic giữ nguyên)
   checkDeviceHealth(device).then(result => {
     const updates: Partial<Device> = {
@@ -142,6 +145,13 @@ export function updateDeviceForTenant(userId: string, id: string, data: Partial<
   const devices = readUserCollection<Device>(userId, 'devices');
   const idx = devices.findIndex(d => d.id === id);
   if (idx === -1) return null;
+
+  // Update IP lookup map if tailscaleIp changed
+  if (data.tailscaleIp && data.tailscaleIp !== devices[idx].tailscaleIp) {
+    ipDeviceMap.delete(devices[idx].tailscaleIp);
+    ipDeviceMap.set(data.tailscaleIp, { deviceId: id, tenantId: userId });
+  }
+
   devices[idx] = { ...devices[idx], ...data };
   writeUserCollection(userId, 'devices', devices);
   return devices[idx];
@@ -149,9 +159,16 @@ export function updateDeviceForTenant(userId: string, id: string, data: Partial<
 
 export function deleteDeviceForTenant(userId: string, id: string): boolean {
   const devices = readUserCollection<Device>(userId, 'devices');
+  const device = devices.find(d => d.id === id);
   const filtered = devices.filter(d => d.id !== id);
   if (filtered.length === devices.length) return false;
   writeUserCollection(userId, 'devices', filtered);
+
+  // Remove from IP lookup map
+  if (device) {
+    ipDeviceMap.delete(device.tailscaleIp);
+  }
+
   return true;
 }
 
@@ -194,7 +211,30 @@ export function findDeviceGlobal(id: string): { device: Device; tenantId: string
   return null;
 }
 
-// --- Health Check ---
+// ============================================================
+// IP Lookup Map — O(1) device resolution for heartbeat
+// ============================================================
+
+/**
+ * In-memory map: tailscaleIp → { deviceId, tenantId }
+ * Built on server start via rebuildIpMap(), updated on device create/delete/update.
+ */
+const ipDeviceMap = new Map<string, { deviceId: string; tenantId: string }>();
+
+export function rebuildIpMap(): void {
+  ipDeviceMap.clear();
+  for (const tenantId of getAllTenantIds()) {
+    const devices = readUserCollection<Device>(tenantId, 'devices');
+    for (const device of devices) {
+      ipDeviceMap.set(device.tailscaleIp, { deviceId: device.id, tenantId });
+    }
+  }
+  console.log(`[DeviceMonitor] IP map built: ${ipDeviceMap.size} devices`);
+}
+
+// ============================================================
+// Initial Health Check — used ONLY for new device creation
+// ============================================================
 
 async function checkDeviceHealth(device: Device): Promise<{ status: 'online' | 'offline'; info?: Record<string, unknown> }> {
   const apiPort = device.httpPort + 1;
@@ -219,70 +259,166 @@ async function checkDeviceHealth(device: Device): Promise<{ status: 'online' | '
   return { status: 'offline' };
 }
 
-async function runHealthChecks() {
-  // Scan TẤT CẢ tenants — health check là system-level, monitor mọi device
-  const tenantIds = getAllTenantIds();
-  for (const tenantId of tenantIds) {
+// ============================================================
+// Heartbeat Handler — receives push from phone
+// ============================================================
+
+interface HeartbeatPayload {
+  tailscaleIp: string;
+  systemVersion?: string;
+  model?: string;
+  proxyStatus?: string;
+  battery?: number;
+}
+
+/**
+ * Process heartbeat from phone.
+ *
+ * Preserves ALL existing features:
+ * 1. Status transition (offline→online, connecting→online)
+ * 2. Device info update (iosVersion, model, battery)
+ * 3. proxyStatus monitoring
+ * 4. Auto-apply proxy on offline→online
+ * 5. WebSocket broadcast via statusChangeCallback
+ * 6. lastSeen update
+ * 7. Does NOT override 'running' status (script in progress)
+ */
+export function handleHeartbeat(payload: HeartbeatPayload): Device | null {
+  // 1. O(1) lookup by IP
+  const mapping = ipDeviceMap.get(payload.tailscaleIp);
+  if (!mapping) return null;
+
+  const { deviceId, tenantId } = mapping;
+
+  // 2. Read current device from disk
+  const devices = readUserCollection<Device>(tenantId, 'devices');
+  const device = devices.find(d => d.id === deviceId);
+  if (!device) return null;
+
+  // 3. Do NOT override 'running' status — script-engine manages this
+  // Equivalent to old line 228: device.currentScript ? null : await checkDeviceHealth()
+  if (device.currentScript) {
+    // Only update lastSeen, keep status as 'running'
+    updateDeviceForTenant(tenantId, deviceId, { lastSeen: new Date().toISOString() });
+    return device;
+  }
+
+  // 4. Capture previous status for transition detection
+  const previousStatus = device.status;
+
+  // 5. Build update payload — equivalent to old lines 232-251
+  const updateData: Partial<Device> = {
+    status: 'online',
+    lastSeen: new Date().toISOString(),
+  };
+
+  // Update device info from heartbeat payload
+  if (payload.systemVersion) updateData.iosVersion = String(payload.systemVersion);
+  if (payload.model) updateData.model = String(payload.model);
+  if (payload.battery !== undefined) updateData.battery = payload.battery;
+
+  // Update proxy status — equivalent to old lines 246-251
+  if (payload.proxyStatus === 'running' || payload.proxyStatus === 'stopped') {
+    updateData.proxyStatus = payload.proxyStatus;
+  }
+
+  // 6. Write to disk
+  const updated = updateDeviceForTenant(tenantId, deviceId, updateData);
+
+  // 7. Broadcast if status changed — equivalent to old lines 255-257
+  if (updated && statusChangeCallback && previousStatus !== 'online') {
+    statusChangeCallback(updated);
+  }
+
+  // 8. Auto-apply proxy on offline→online — equivalent to old lines 260-264
+  if (previousStatus === 'offline' && device.proxyConfig?.enabled) {
+    autoApplyProxy(device, tenantId).catch(err => {
+      console.log(`[Heartbeat] Auto-apply proxy failed for ${device.name}:`, err);
+    });
+  }
+
+  return updated;
+}
+
+// ============================================================
+// Staleness Checker — lightweight replacement for polling loop
+// ============================================================
+
+/**
+ * Scan all devices, mark offline if no heartbeat received within threshold.
+ *
+ * Old runHealthChecks(): N HTTP requests + N disk reads + N disk writes every 15s
+ * New runStalenessCheck(): N disk reads + ZERO HTTP + writes only on status change
+ */
+function runStalenessCheck() {
+  const threshold = config.heartbeatStaleThreshold;
+  const now = Date.now();
+
+  for (const tenantId of getAllTenantIds()) {
     const devices = readUserCollection<Device>(tenantId, 'devices');
+
     for (const device of devices) {
-      const healthResult = device.currentScript ? null : await checkDeviceHealth(device);
-      const newStatus: Device['status'] = device.currentScript ? 'running' : (healthResult?.status || 'offline');
+      // Skip already offline devices
+      if (device.status === 'offline') continue;
 
-      // Build update payload
-      const updateData: Partial<Device> = {
-        status: newStatus,
-        lastSeen: newStatus !== 'offline' ? new Date().toISOString() : device.lastSeen,
-      };
+      // Skip devices running scripts — script-engine manages their lifecycle
+      // Equivalent to old line 228: device.currentScript ? null : ...
+      if (device.currentScript) continue;
 
-      // Update device info only if not yet known
-      const needsInfo = !device.iosVersion || device.iosVersion === 'Unknown' || !device.model || device.model === 'iPhone';
-      if (needsInfo && healthResult?.info) {
-        const info = healthResult.info;
-        if (info.systemVersion) updateData.iosVersion = String(info.systemVersion);
-        if (info.model) updateData.model = String(info.model);
-      }
+      // Check staleness
+      const lastSeenTime = new Date(device.lastSeen).getTime();
+      const isStale = (now - lastSeenTime) > threshold;
 
-      // Update proxy status from device response
-      if (healthResult?.info?.proxyStatus) {
-        const ps = String(healthResult.info.proxyStatus);
-        if (ps === 'running' || ps === 'stopped') {
-          updateData.proxyStatus = ps;
-        }
-      }
+      if (isStale) {
+        const updated = updateDeviceForTenant(tenantId, device.id, { status: 'offline' });
 
-      if (newStatus !== device.status || updateData.iosVersion || updateData.model || updateData.proxyStatus !== device.proxyStatus) {
-        const updated = updateDeviceForTenant(tenantId, device.id, updateData);
-        if (updated && statusChangeCallback && newStatus !== device.status) {
+        if (updated && statusChangeCallback) {
           statusChangeCallback(updated);
         }
 
-        // Auto-apply proxy when device comes online with enabled proxy config
-        if (device.status === 'offline' && newStatus === 'online' && device.proxyConfig?.enabled) {
-          autoApplyProxy(device, tenantId).catch(err => {
-            console.log(`[HealthCheck] Auto-apply proxy failed for ${device.name}:`, err);
-          });
-        }
-      } else if (newStatus !== 'offline') {
-        updateDeviceForTenant(tenantId, device.id, { lastSeen: new Date().toISOString() });
+        console.log(
+          `[StalenessCheck] ${device.name} marked offline ` +
+          `(last seen ${Math.round((now - lastSeenTime) / 1000)}s ago)`
+        );
       }
     }
   }
 }
 
-export function startHealthChecks(onStatusChange?: (device: Device) => void) {
+// ============================================================
+// Device Monitor — start/stop (replaces old health check loop)
+// ============================================================
+
+export function startDeviceMonitor(onStatusChange?: (device: Device) => void) {
   if (onStatusChange) statusChangeCallback = onStatusChange;
   if (healthCheckTimer) clearInterval(healthCheckTimer);
-  // Run immediately, then on interval
-  runHealthChecks();
-  healthCheckTimer = setInterval(runHealthChecks, config.healthCheckInterval);
+
+  // Build IP map for heartbeat lookups
+  rebuildIpMap();
+
+  // Run staleness check immediately (equivalent to old line 276)
+  runStalenessCheck();
+
+  // Start staleness checker interval
+  healthCheckTimer = setInterval(runStalenessCheck, config.stalenessCheckInterval);
+
+  console.log(
+    `[DeviceMonitor] Started — staleness check every ${config.stalenessCheckInterval / 1000}s, ` +
+    `stale threshold ${config.heartbeatStaleThreshold / 1000}s`
+  );
 }
 
-export function stopHealthChecks() {
+export function stopDeviceMonitor() {
   if (healthCheckTimer) {
     clearInterval(healthCheckTimer);
     healthCheckTimer = null;
   }
+  console.log('[DeviceMonitor] Stopped');
 }
+
+// Backward-compatible aliases for index.ts
+export const startHealthChecks = startDeviceMonitor;
+export const stopHealthChecks = stopDeviceMonitor;
 
 // --- Proxy Auto-Apply ---
 
