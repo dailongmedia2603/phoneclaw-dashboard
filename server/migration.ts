@@ -14,7 +14,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { readCollection, writeUserCollection } from './store';
+import { readCollection, readUserCollection, writeUserCollection, ensureTenantDir } from './store';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -123,5 +123,33 @@ export function migrateToTenantStructure(): void {
 
   if (totalMigrated > 0) {
     console.log(`[Migration] Hoàn tất — ${totalMigrated} items đã migrate. Files cũ backup thành .bak`);
+  }
+
+  // Đảm bảo MỌI user đều có tenant dir (kể cả user chưa có data)
+  for (const user of users) {
+    ensureTenantDir(user.id);
+  }
+
+  // Recovery: nếu có .bak files nhưng tenant trống → khôi phục
+  for (const col of TENANT_COLLECTIONS) {
+    const bakPath = path.join(DATA_DIR, `${col}.json.bak`);
+    if (!fs.existsSync(bakPath)) continue;
+
+    // Kiểm tra xem tenant admin đã có data chưa
+    const adminData = readUserCollection<OwnedItem>(admin.id, col);
+    if (adminData.length > 0) continue; // Đã có data, bỏ qua
+
+    // Tenant trống nhưng .bak có data → khôi phục vào admin tenant
+    try {
+      const bakContent = fs.readFileSync(bakPath, 'utf-8').trim();
+      if (bakContent === '[]' || bakContent === '') continue;
+      const bakData = JSON.parse(bakContent) as OwnedItem[];
+      if (!Array.isArray(bakData) || bakData.length === 0) continue;
+
+      writeUserCollection(admin.id, col, bakData);
+      console.log(`[Migration] Recovery: ${col} — ${bakData.length} items từ .bak → admin tenant`);
+    } catch {
+      // Bỏ qua file corrupt
+    }
   }
 }
