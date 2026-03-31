@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Server, MonitorPlay, Network, Users, Bell, Cloud,
   Cpu, HardDrive, Activity, CheckCircle2, AlertCircle, Shield, Key,
-  Save, Smartphone, Loader2, Package
+  Save, Smartphone, Loader2, Package, Eye, EyeOff
 } from 'lucide-react';
 import { settings as settingsApi, devices as devicesApi } from '../services/api';
 import { useApi } from '../hooks/useApi';
@@ -75,6 +75,26 @@ export default function Settings() {
     telegramChatId: cfg.notifications.telegramChatId || '',
     webhookUrl: cfg.notifications.webhookUrl || '',
   });
+  const [showBotToken, setShowBotToken] = useState(false);
+
+  // Sync form state khi settings load xong từ API
+  useEffect(() => {
+    if (appSettings) {
+      setVncForm({
+        port: appSettings.vncDefaults.port,
+        password: appSettings.vncDefaults.password,
+        scale: appSettings.vncDefaults.scale,
+        fps: appSettings.vncDefaults.fps,
+      });
+      setNotifForm({
+        alertOnDeviceOffline: appSettings.notifications.alertOnDeviceOffline,
+        alertOnScriptError: appSettings.notifications.alertOnScriptError,
+        telegramBotToken: appSettings.notifications.telegramBotToken || '',
+        telegramChatId: appSettings.notifications.telegramChatId || '',
+        webhookUrl: appSettings.notifications.webhookUrl || '',
+      });
+    }
+  }, [appSettings]);
 
   const handleSaveVnc = async () => {
     setSaving(true);
@@ -428,7 +448,12 @@ export default function Settings() {
                   <div className="grid grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1.5">Bot Token</label>
-                      <input type="text" value={notifForm.telegramBotToken} onChange={e => setNotifForm(p => ({ ...p, telegramBotToken: e.target.value }))} placeholder="123456789:ABCdefGHI..." className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                      <div className="relative">
+                        <input type={showBotToken ? 'text' : 'password'} value={notifForm.telegramBotToken} onChange={e => setNotifForm(p => ({ ...p, telegramBotToken: e.target.value }))} placeholder="123456789:ABCdefGHI..." className="w-full px-4 py-2 pr-10 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                        <button type="button" onClick={() => setShowBotToken(!showBotToken)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                          {showBotToken ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1.5">Chat ID</label>
