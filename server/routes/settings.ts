@@ -1,12 +1,19 @@
 import { Router } from 'express';
 import os from 'os';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { S3Client, ListObjectsV2Command } from '@aws-sdk/client-s3';
-import { readSingleton, writeSingleton } from '../store';
+import { readSingleton, writeSingleton, readCollection, readUserCollection, writeUserCollection, getAllTenantIds, ensureTenantDir } from '../store';
 import { getActiveProxies, startProxy, stopProxy } from '../services/vnc-proxy';
 import { findDeviceGlobal } from '../services/device-manager';
 import { getAuthUserId, isAdmin } from '../helpers/get-user';
 import { adminOnly } from './auth';
 import type { AppSettings, VpsStatus } from '../../src/types';
+
+const __filename2 = fileURLToPath(import.meta.url);
+const __dirname2 = path.dirname(__filename2);
+const DATA_DIR = path.join(__dirname2, '..', 'data');
 
 const router = Router();
 
@@ -168,6 +175,107 @@ router.post('/test-telegram', async (req, res) => {
     const msg = err instanceof Error ? err.message : 'Kết nối thất bại';
     res.json({ success: false, error: msg });
   }
+});
+
+// GET /api/settings/diagnose — chẩn đoán data migration (admin only)
+router.get('/diagnose', adminOnly, (_req, res) => {
+  const COLLECTIONS = ['devices', 'device-groups', 'scripts', 'schedules', 'execution-history', 'activity-logs', 'screenshots', 'videos', 'custom-nodes', 'notifications'];
+  const result: Record<string, unknown> = {};
+
+  // Check .bak files
+  const bakFiles: Record<string, number> = {};
+  for (const col of COLLECTIONS) {
+    const bakPath = path.join(DATA_DIR, `${col}.json.bak`);
+    if (fs.existsSync(bakPath)) {
+      try {
+        const data = JSON.parse(fs.readFileSync(bakPath, 'utf-8'));
+        bakFiles[col] = Array.isArray(data) ? data.length : 0;
+      } catch { bakFiles[col] = -1; }
+    }
+  }
+  result.bakFiles = bakFiles;
+
+  // Check legacy files (chưa migrate)
+  const legacyFiles: Record<string, number> = {};
+  for (const col of COLLECTIONS) {
+    const fp = path.join(DATA_DIR, `${col}.json`);
+    if (fs.existsSync(fp)) {
+      try {
+        const data = JSON.parse(fs.readFileSync(fp, 'utf-8'));
+        legacyFiles[col] = Array.isArray(data) ? data.length : 0;
+      } catch { legacyFiles[col] = -1; }
+    }
+  }
+  result.legacyFiles = legacyFiles;
+
+  // Check tenant dirs
+  const tenants: Record<string, Record<string, number>> = {};
+  const tenantIds = getAllTenantIds();
+  for (const tid of tenantIds) {
+    tenants[tid] = {};
+    for (const col of COLLECTIONS) {
+      const data = readUserCollection(tid, col);
+      if (data.length > 0) tenants[tid][col] = data.length;
+    }
+  }
+  result.tenants = tenants;
+  result.tenantIds = tenantIds;
+
+  // Users info
+  const users = readCollection<{ id: string; name: string; role: string }>('users');
+  result.users = users.map(u => ({ id: u.id, name: u.name, role: u.role }));
+
+  res.json({ success: true, data: result });
+});
+
+// POST /api/settings/force-recovery — khôi phục data từ .bak vào admin tenant (admin only)
+router.post('/force-recovery', adminOnly, (_req, res) => {
+  const COLLECTIONS = ['devices', 'device-groups', 'scripts', 'schedules', 'execution-history', 'activity-logs', 'screenshots', 'videos', 'custom-nodes', 'notifications'];
+
+  const users = readCollection<{ id: string; role: string }>('users');
+  const admin = users.find(u => u.role === 'admin');
+  if (!admin) return res.json({ success: false, error: 'Không tìm thấy admin' });
+
+  ensureTenantDir(admin.id);
+  const recovered: Record<string, number> = {};
+
+  for (const col of COLLECTIONS) {
+    // Source 1: .bak file
+    const bakPath = path.join(DATA_DIR, `${col}.json.bak`);
+    // Source 2: legacy file vẫn còn
+    const legacyPath = path.join(DATA_DIR, `${col}.json`);
+
+    let sourceData: unknown[] = [];
+    let source = '';
+
+    if (fs.existsSync(bakPath)) {
+      try {
+        const data = JSON.parse(fs.readFileSync(bakPath, 'utf-8'));
+        if (Array.isArray(data) && data.length > 0) { sourceData = data; source = '.bak'; }
+      } catch {}
+    }
+
+    if (sourceData.length === 0 && fs.existsSync(legacyPath)) {
+      try {
+        const data = JSON.parse(fs.readFileSync(legacyPath, 'utf-8'));
+        if (Array.isArray(data) && data.length > 0) { sourceData = data; source = 'legacy'; }
+      } catch {}
+    }
+
+    if (sourceData.length === 0) continue;
+
+    // Merge với existing tenant data (không ghi đè)
+    const existing = readUserCollection<Record<string, unknown>>(admin.id, col);
+    const existingIds = new Set(existing.map(item => (item as any).id));
+    const newItems = sourceData.filter((item: any) => !existingIds.has(item.id));
+
+    if (newItems.length > 0) {
+      writeUserCollection(admin.id, col, [...existing, ...newItems]);
+      recovered[col] = newItems.length;
+    }
+  }
+
+  res.json({ success: true, data: { adminId: admin.id, recovered } });
 });
 
 export default router;
