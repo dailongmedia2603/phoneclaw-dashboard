@@ -78,16 +78,21 @@ export default function Settings() {
 
   const handleSaveVnc = async () => {
     setSaving(true);
-    await settingsApi.update({
+    const res = await settingsApi.update({
       vncDefaults: { ...cfg.vncDefaults, ...vncForm },
     });
     setSaving(false);
-    refreshSettings();
+    if (res.success) {
+      showToast('success', 'Đã lưu cấu hình VNC');
+      refreshSettings();
+    } else {
+      showToast('error', res.error || 'Lưu cấu hình thất bại');
+    }
   };
 
   const handleSaveNotifications = async () => {
     setSaving(true);
-    await settingsApi.update({
+    const res = await settingsApi.update({
       notifications: {
         ...cfg.notifications,
         alertOnDeviceOffline: notifForm.alertOnDeviceOffline,
@@ -98,7 +103,12 @@ export default function Settings() {
       },
     });
     setSaving(false);
-    refreshSettings();
+    if (res.success) {
+      showToast('success', 'Đã lưu cấu hình thông báo');
+      refreshSettings();
+    } else {
+      showToast('error', res.error || 'Lưu cấu hình thất bại');
+    }
   };
 
   const handleChangePassword = async () => {
