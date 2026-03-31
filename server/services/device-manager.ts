@@ -137,6 +137,11 @@ export function createDeviceForTenant(userId: string, data: Omit<Device, 'id' | 
     if (result.info?.systemVersion) updates.iosVersion = String(result.info.systemVersion);
     if (result.info?.model) updates.model = String(result.info.model);
     updateDeviceForTenant(userId, device.id, updates);
+
+    // Push heartbeat config to phone so it starts sending heartbeats
+    if (result.status === 'online') {
+      pushHeartbeatConfig(device.id);
+    }
   });
   return device;
 }
@@ -419,6 +424,24 @@ export function stopDeviceMonitor() {
 // Backward-compatible aliases for index.ts
 export const startHealthChecks = startDeviceMonitor;
 export const stopHealthChecks = stopDeviceMonitor;
+
+// --- Heartbeat Config Push ---
+
+/**
+ * Push heartbeat URL to phone so it starts sending heartbeats to VPS.
+ * Called once after device creation when initial health check succeeds.
+ */
+async function pushHeartbeatConfig(deviceId: string) {
+  if (!config.heartbeatUrl) return;
+  const result = await callDeviceApi(deviceId, 'POST', '/api/heartbeat/config', {
+    url: config.heartbeatUrl,
+  });
+  if (result.ok) {
+    console.log(`[Heartbeat] Config pushed to device ${deviceId}: ${config.heartbeatUrl}`);
+  } else {
+    console.log(`[Heartbeat] Failed to push config to device ${deviceId}: ${result.error}`);
+  }
+}
 
 // --- Proxy Auto-Apply ---
 

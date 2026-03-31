@@ -19,6 +19,10 @@ export const config = {
   // Staleness checker interval: how often to scan for stale devices (ms)
   stalenessCheckInterval: parseInt(process.env.STALENESS_CHECK_INTERVAL || '30000'),
 
+  // VPS heartbeat URL — phones will POST heartbeats to this URL
+  // Set to your VPS Tailscale IP, e.g. "http://100.64.0.1:9000/api/heartbeat"
+  heartbeatUrl: process.env.HEARTBEAT_URL || '',
+
   // Screenshots directory
   screenshotsDir: process.env.SCREENSHOTS_DIR || './server/data/screenshots',
 
