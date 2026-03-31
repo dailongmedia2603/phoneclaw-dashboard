@@ -73,6 +73,11 @@ export function migrateToTenantStructure(): void {
     }
   }
 
+  // Đảm bảo MỌI user đều có tenant dir (LUÔN chạy, bất kể có migration hay không)
+  for (const user of users) {
+    ensureTenantDir(user.id);
+  }
+
   if (!needsMigration) {
     return; // Không có data cũ, hoặc đã migrate rồi
   }
