@@ -282,8 +282,8 @@ async function executeStep(
         trashDeleteY: Number(p.trashDeleteY) || 0.53,
       });
       if (!res.ok) throw new Error(`Clear photos failed: ${res.error}`);
-      // Đợi xoá hoàn tất: bước 1 (2s popup + tap) + bước 2 (3s sync + 2s popup + tap)
-      await new Promise(r => setTimeout(r, 15000));
+      // Đợi xoá hoàn tất: bước 1 (2s popup + tap) + bước 2 (5s sync + 2s popup + tap)
+      await new Promise(r => setTimeout(r, 18000));
       break;
     }
     case 'swipe': {

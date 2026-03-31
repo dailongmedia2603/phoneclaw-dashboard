@@ -262,6 +262,15 @@ export default function ScriptEditorPage({ appTab, apiType = 'scripts' }: Script
       } else if (fieldPrefix === 'fallback') {
         updatedParams.fallbackX = x;
         updatedParams.fallbackY = y;
+      } else if (fieldPrefix === 'delete') {
+        updatedParams.deleteX = x;
+        updatedParams.deleteY = y;
+      } else if (fieldPrefix === 'trashDelete') {
+        updatedParams.trashDeleteX = x;
+        updatedParams.trashDeleteY = y;
+      } else if (fieldPrefix === 'tap') {
+        updatedParams.tapX = x;
+        updatedParams.tapY = y;
       }
 
       return { ...n, data: { ...data, params: updatedParams } };
@@ -276,6 +285,9 @@ export default function ScriptEditorPage({ appTab, apiType = 'scripts' }: Script
       else if (fieldPrefix === 'from') { updatedParams.fromX = x; updatedParams.fromY = y; }
       else if (fieldPrefix === 'to') { updatedParams.toX = x; updatedParams.toY = y; }
       else if (fieldPrefix === 'fallback') { updatedParams.fallbackX = x; updatedParams.fallbackY = y; }
+      else if (fieldPrefix === 'delete') { updatedParams.deleteX = x; updatedParams.deleteY = y; }
+      else if (fieldPrefix === 'trashDelete') { updatedParams.trashDeleteX = x; updatedParams.trashDeleteY = y; }
+      else if (fieldPrefix === 'tap') { updatedParams.tapX = x; updatedParams.tapY = y; }
       return { ...prev, data: { ...data, params: updatedParams } };
     });
 

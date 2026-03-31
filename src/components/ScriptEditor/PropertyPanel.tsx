@@ -37,6 +37,19 @@ function getPickableFields(nodeType: string, extraDefs?: Record<string, NodeDef>
     result.push({ prefix: 'to', label: 'Chọn điểm kết thúc' });
   }
 
+  // Clear photos: deleteX/deleteY + trashDeleteX/trashDeleteY
+  if (keys.includes('deleteX') && keys.includes('deleteY')) {
+    result.push({ prefix: 'delete', label: 'Chọn vị trí nút Delete' });
+  }
+  if (keys.includes('trashDeleteX') && keys.includes('trashDeleteY')) {
+    result.push({ prefix: 'trashDelete', label: 'Chọn vị trí nút Delete thùng rác' });
+  }
+
+  // TapX/TapY pattern
+  if (keys.includes('tapX') && keys.includes('tapY')) {
+    result.push({ prefix: 'tap', label: 'Chọn vị trí tap' });
+  }
+
   return result;
 }
 
