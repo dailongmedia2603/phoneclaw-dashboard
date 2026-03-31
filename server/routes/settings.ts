@@ -140,4 +140,34 @@ router.post('/test-r2', async (req, res) => {
   }
 });
 
+// POST /api/settings/test-telegram — gửi tin nhắn thử qua Telegram Bot
+router.post('/test-telegram', async (req, res) => {
+  const { botToken, chatId } = req.body;
+  if (!botToken || !chatId) {
+    return res.json({ success: false, error: 'Vui lòng nhập Bot Token và Chat ID' });
+  }
+
+  try {
+    const apiUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: 'PhoneClaw Dashboard: Kết nối Telegram thành công!',
+        parse_mode: 'HTML',
+      }),
+    });
+    const data = await response.json();
+    if (data.ok) {
+      res.json({ success: true });
+    } else {
+      res.json({ success: false, error: data.description || 'Gửi tin nhắn thất bại' });
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Kết nối thất bại';
+    res.json({ success: false, error: msg });
+  }
+});
+
 export default router;

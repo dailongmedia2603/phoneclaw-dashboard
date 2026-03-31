@@ -148,6 +148,8 @@ export const settings = {
   stopVncProxy: (deviceId: string) => post('/api/settings/vnc-proxy/stop', { deviceId }),
   testR2: (config: { accountId: string; accessKeyId: string; secretAccessKey: string; bucketName: string }) =>
     post('/api/settings/test-r2', config),
+  testTelegram: (botToken: string, chatId: string) =>
+    post<void>('/api/settings/test-telegram', { botToken, chatId }),
 };
 
 // ============================================================

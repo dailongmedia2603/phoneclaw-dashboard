@@ -445,7 +445,7 @@ export default function Settings() {
 
                 <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
                   <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4">Telegram Bot</h4>
-                  <div className="grid grid-cols-2 gap-6">
+                  <div className="grid grid-cols-2 gap-6 mb-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1.5">Bot Token</label>
                       <div className="relative">
@@ -460,14 +460,27 @@ export default function Settings() {
                       <input type="text" value={notifForm.telegramChatId} onChange={e => setNotifForm(p => ({ ...p, telegramChatId: e.target.value }))} placeholder="-100123456789" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                     </div>
                   </div>
-                </div>
-
-                <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
-                  <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4">Webhook (Tùy chọn)</h4>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Webhook URL</label>
-                    <input type="url" value={notifForm.webhookUrl} onChange={e => setNotifForm(p => ({ ...p, webhookUrl: e.target.value }))} placeholder="https://your-api.com/webhook" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
-                  </div>
+                  <button
+                    onClick={async () => {
+                      if (!notifForm.telegramBotToken || !notifForm.telegramChatId) {
+                        showToast('error', 'Vui lòng nhập Bot Token và Chat ID');
+                        return;
+                      }
+                      setSaving(true);
+                      const res = await settingsApi.testTelegram(notifForm.telegramBotToken, notifForm.telegramChatId);
+                      setSaving(false);
+                      if (res.success) {
+                        showToast('success', 'Kết nối Telegram thành công! Kiểm tra tin nhắn trong chat.');
+                      } else {
+                        showToast('error', res.error || 'Kết nối Telegram thất bại');
+                      }
+                    }}
+                    disabled={saving}
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 shadow-sm transition-colors disabled:opacity-50"
+                  >
+                    {saving ? <Loader2 size={16} className="animate-spin" /> : <Activity size={16} />}
+                    Kiểm tra kết nối
+                  </button>
                 </div>
 
                 <div className="flex justify-end">
