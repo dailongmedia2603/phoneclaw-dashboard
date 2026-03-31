@@ -3,6 +3,9 @@ import os from 'os';
 import { S3Client, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import { readSingleton, writeSingleton } from '../store';
 import { getActiveProxies, startProxy, stopProxy } from '../services/vnc-proxy';
+import { findDeviceGlobal } from '../services/device-manager';
+import { getAuthUserId, isAdmin } from '../helpers/get-user';
+import { adminOnly } from './auth';
 import type { AppSettings, VpsStatus } from '../../src/types';
 
 const router = Router();
@@ -33,8 +36,8 @@ router.get('/', (_req, res) => {
   res.json({ success: true, data: settings });
 });
 
-// PUT /api/settings
-router.put('/', (req, res) => {
+// PUT /api/settings (admin only)
+router.put('/', adminOnly, (req, res) => {
   const current = readSingleton<AppSettings>('settings', DEFAULT_SETTINGS);
   const updated = { ...current, ...req.body };
   writeSingleton('settings', updated);
@@ -78,6 +81,14 @@ router.get('/vnc-proxies', (_req, res) => {
 router.post('/vnc-proxy/start', (req, res) => {
   const { deviceId } = req.body;
   if (!deviceId) return res.status(400).json({ success: false, error: 'deviceId is required' });
+
+  // Device ownership check
+  const userId = getAuthUserId(req);
+  const found = findDeviceGlobal(deviceId);
+  if (found && !isAdmin(req) && found.tenantId !== userId) {
+    return res.status(403).json({ success: false, error: 'Không có quyền truy cập thiết bị này' });
+  }
+
   const proxy = startProxy(deviceId);
   if (!proxy) return res.status(500).json({ success: false, error: 'Failed to start VNC proxy' });
   res.json({ success: true, data: proxy });
@@ -87,6 +98,14 @@ router.post('/vnc-proxy/start', (req, res) => {
 router.post('/vnc-proxy/stop', (req, res) => {
   const { deviceId } = req.body;
   if (!deviceId) return res.status(400).json({ success: false, error: 'deviceId is required' });
+
+  // Device ownership check
+  const userId = getAuthUserId(req);
+  const found = findDeviceGlobal(deviceId);
+  if (found && !isAdmin(req) && found.tenantId !== userId) {
+    return res.status(403).json({ success: false, error: 'Không có quyền truy cập thiết bị này' });
+  }
+
   stopProxy(deviceId);
   res.json({ success: true });
 });

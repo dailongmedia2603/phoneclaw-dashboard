@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { readCollection, writeCollection, generateId } from '../store';
+import { readCollection, writeCollection, generateId, ensureTenantDir } from '../store';
 
 const router = Router();
 
@@ -46,7 +46,7 @@ function getAuthUser(req: Request): { id: string; email: string; role: string } 
 }
 
 /** Admin-only guard */
-function adminOnly(req: Request, res: Response, next: NextFunction) {
+export function adminOnly(req: Request, res: Response, next: NextFunction) {
   const user = getAuthUser(req);
   if (!user || user.role !== 'admin') {
     return res.status(403).json({ success: false, error: 'Không có quyền truy cập' });
@@ -185,6 +185,10 @@ router.post('/users', adminOnly, async (req: Request, res: Response) => {
 
   users.push(user);
   saveUsers(users);
+
+  // Tạo tenant directory cho user mới
+  ensureTenantDir(user.id);
+
   res.json({ success: true, data: sanitizeUser(user) });
 });
 

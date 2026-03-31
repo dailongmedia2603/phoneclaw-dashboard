@@ -1,5 +1,5 @@
-import { readCollection, writeCollection, generateId } from '../store';
-import { callDeviceApi, updateDevice, getDevice } from './device-manager';
+import { readCollection, writeCollection, generateId, readUserCollection, writeUserCollection, readAllTenantsCollection } from '../store';
+import { callDeviceApi, updateDevice, getDevice, updateDeviceForTenant, findDeviceGlobal } from './device-manager';
 // vncTap no longer needed — PhoneAgent HTTP API now uses VNC coordinate transform
 import type { Script, ScriptStep, ScheduleHistory, ExecutionStep } from '../../src/types';
 
@@ -45,10 +45,57 @@ export function deleteScript(id: string): boolean {
   return true;
 }
 
+// ============================================================
+// Tenant-scoped Script CRUD
+// ============================================================
+
+export function getScriptsForTenant(tenantId?: string): Script[] {
+  if (!tenantId) return readAllTenantsCollection<Script>('scripts');
+  return readUserCollection<Script>(tenantId, 'scripts');
+}
+
+export function createScriptForTenant(userId: string, data: Pick<Script, 'name' | 'description' | 'steps'> & Record<string, unknown>): Script {
+  const scripts = readUserCollection<Script>(userId, 'scripts');
+  const script: Script = {
+    ...data,
+    id: generateId(),
+    ownerId: userId,
+    status: 'draft',
+    runCount: 0,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  scripts.push(script);
+  writeUserCollection(userId, 'scripts', scripts);
+  return script;
+}
+
+export function updateScriptForTenant(userId: string, id: string, data: Partial<Script>): Script | null {
+  const scripts = readUserCollection<Script>(userId, 'scripts');
+  const idx = scripts.findIndex(s => s.id === id);
+  if (idx === -1) return null;
+  scripts[idx] = { ...scripts[idx], ...data, updatedAt: new Date().toISOString() };
+  writeUserCollection(userId, 'scripts', scripts);
+  return scripts[idx];
+}
+
+export function deleteScriptForTenant(userId: string, id: string): boolean {
+  const scripts = readUserCollection<Script>(userId, 'scripts');
+  const filtered = scripts.filter(s => s.id !== id);
+  if (filtered.length === scripts.length) return false;
+  writeUserCollection(userId, 'scripts', filtered);
+  return true;
+}
+
 // --- Execution History ---
 
 export function getExecutionHistory(): ScheduleHistory[] {
   return readCollection<ScheduleHistory>('execution-history');
+}
+
+export function getExecutionHistoryForTenant(tenantId?: string): ScheduleHistory[] {
+  if (!tenantId) return readAllTenantsCollection<ScheduleHistory>('execution-history');
+  return readUserCollection<ScheduleHistory>(tenantId, 'execution-history');
 }
 
 function saveExecution(execution: ScheduleHistory) {
@@ -62,6 +109,19 @@ function saveExecution(execution: ScheduleHistory) {
   // Keep last 500 entries
   if (history.length > 500) history.splice(0, history.length - 500);
   writeCollection('execution-history', history);
+}
+
+function saveExecutionForTenant(userId: string, execution: ScheduleHistory) {
+  const history = readUserCollection<ScheduleHistory>(userId, 'execution-history');
+  const idx = history.findIndex(h => h.id === execution.id);
+  if (idx >= 0) {
+    history[idx] = execution;
+  } else {
+    history.push(execution);
+  }
+  // Keep last 500 entries per user
+  if (history.length > 500) history.splice(0, history.length - 500);
+  writeUserCollection(userId, 'execution-history', history);
 }
 
 // --- Active Executions ---
@@ -86,30 +146,39 @@ export async function executeScriptDirect(
   script: Script,
   deviceId: string,
   scheduleName: string,
-  onProgress?: ProgressCallback
+  onProgress?: ProgressCallback,
+  tenantId?: string
 ): Promise<ScheduleHistory> {
-  return _executeScript(script, deviceId, scheduleName, onProgress);
+  return _executeScript(script, deviceId, scheduleName, onProgress, tenantId);
 }
 
 export async function executeScript(
   scriptId: string,
   deviceId: string,
   scheduleName: string,
-  onProgress?: ProgressCallback
+  onProgress?: ProgressCallback,
+  tenantId?: string
 ): Promise<ScheduleHistory> {
-  const script = getScript(scriptId);
+  // Tìm script từ tenant nếu có, fallback legacy
+  const script = tenantId
+    ? readUserCollection<Script>(tenantId, 'scripts').find(s => s.id === scriptId)
+    : getScript(scriptId);
   if (!script) throw new Error('Script not found');
-  return _executeScript(script, deviceId, scheduleName, onProgress);
+  return _executeScript(script, deviceId, scheduleName, onProgress, tenantId);
 }
 
 async function _executeScript(
   script: Script,
   deviceId: string,
   scheduleName: string,
-  onProgress?: ProgressCallback
+  onProgress?: ProgressCallback,
+  tenantId?: string
 ): Promise<ScheduleHistory> {
 
-  const device = getDevice(deviceId);
+  // Tìm device: tenant storage trước, fallback legacy
+  const found = findDeviceGlobal(deviceId);
+  const device = found?.device ?? getDevice(deviceId);
+  const deviceTenantId = found?.tenantId ?? tenantId;
   if (!device) throw new Error('Device not found');
 
   const executionId = generateId();
@@ -117,7 +186,11 @@ async function _executeScript(
   activeExecutions.set(executionId, ctrl);
 
   // Mark device as running
-  updateDevice(deviceId, { status: 'running', currentScript: script.name });
+  if (deviceTenantId) {
+    updateDeviceForTenant(deviceTenantId, deviceId, { status: 'running', currentScript: script.name });
+  } else {
+    updateDevice(deviceId, { status: 'running', currentScript: script.name });
+  }
 
   const execution: ScheduleHistory = {
     id: executionId,
@@ -128,28 +201,42 @@ async function _executeScript(
     startedAt: new Date().toISOString(),
     status: 'running',
     steps: [],
+    ownerId: tenantId,
   };
-  saveExecution(execution);
+  const saveFn = tenantId
+    ? () => saveExecutionForTenant(tenantId, execution)
+    : () => saveExecution(execution);
+  saveFn();
 
   try {
-    await executeSteps(script.steps, deviceId, execution, ctrl, onProgress);
+    await executeSteps(script.steps, deviceId, execution, ctrl, onProgress, tenantId);
     execution.status = 'success';
   } catch (err) {
     execution.status = 'error';
     execution.error = err instanceof Error ? err.message : 'Unknown error';
   } finally {
     execution.finishedAt = new Date().toISOString();
-    saveExecution(execution);
+    saveFn();
     activeExecutions.delete(executionId);
-    updateDevice(deviceId, { status: 'online', currentScript: undefined });
 
-    // Update script stats (only for scripts in main collection)
+    if (deviceTenantId) {
+      updateDeviceForTenant(deviceTenantId, deviceId, { status: 'online', currentScript: undefined });
+    } else {
+      updateDevice(deviceId, { status: 'online', currentScript: undefined });
+    }
+
+    // Update script stats
     if (script.id) {
-      updateScript(script.id, {
+      const scriptUpdate = {
         lastRun: new Date().toISOString(),
         runCount: (script.runCount || 0) + 1,
-        status: 'active',
-      });
+        status: 'active' as const,
+      };
+      if (tenantId) {
+        updateScriptForTenant(tenantId, script.id, scriptUpdate);
+      } else {
+        updateScript(script.id, scriptUpdate);
+      }
     }
 
     onProgress?.(execution);
@@ -163,8 +250,13 @@ async function executeSteps(
   deviceId: string,
   execution: ScheduleHistory,
   ctrl: { abort: boolean },
-  onProgress?: ProgressCallback
+  onProgress?: ProgressCallback,
+  tenantId?: string
 ) {
+  const saveFn = tenantId
+    ? () => saveExecutionForTenant(tenantId, execution)
+    : () => saveExecution(execution);
+
   for (const step of steps) {
     if (ctrl.abort) throw new Error('Execution aborted');
 
@@ -179,7 +271,7 @@ async function executeSteps(
     onProgress?.(execution);
 
     try {
-      await executeStep(step, deviceId, execution, ctrl, onProgress);
+      await executeStep(step, deviceId, execution, ctrl, onProgress, tenantId);
       execStep.status = 'success';
       execStep.finishedAt = new Date().toISOString();
     } catch (err) {
@@ -194,7 +286,7 @@ async function executeSteps(
       // Non-fatal: log error but continue
     }
 
-    saveExecution(execution);
+    saveFn();
     onProgress?.(execution);
   }
 }
@@ -204,7 +296,8 @@ async function executeStep(
   deviceId: string,
   execution: ScheduleHistory,
   ctrl: { abort: boolean },
-  onProgress?: ProgressCallback
+  onProgress?: ProgressCallback,
+  tenantId?: string
 ) {
   const p = step.params;
 
@@ -232,13 +325,16 @@ async function executeStep(
       const videoId = String(p.videoId || '');
       if (!videoId) throw new Error('No video selected');
 
-      // Get video URL from collection
-      const videos = readCollection<{ id: string; url: string; name: string }>('videos');
+      // Get video URL from tenant collection or legacy
+      const videos = tenantId
+        ? readUserCollection<{ id: string; url: string; name: string }>(tenantId, 'videos')
+        : readCollection<{ id: string; url: string; name: string }>('videos');
       const video = videos.find(v => v.id === videoId);
       if (!video) throw new Error(`Video not found: ${videoId}`);
 
       // Send to device — PhoneAgent will download + save to Photos
-      const device = getDevice(deviceId);
+      const foundDev = findDeviceGlobal(deviceId);
+      const device = foundDev?.device ?? getDevice(deviceId);
       if (!device) throw new Error('Device not found');
       const apiPort = device.httpPort + 1;
       const apiUrl = `http://${device.tailscaleIp}:${apiPort}/api/save-to-photos`;
@@ -343,7 +439,7 @@ async function executeStep(
       for (let i = 0; i < count; i++) {
         if (ctrl.abort) throw new Error('Execution aborted');
         if (step.children) {
-          await executeSteps(step.children, deviceId, execution, ctrl, onProgress);
+          await executeSteps(step.children, deviceId, execution, ctrl, onProgress, tenantId);
         }
       }
       break;
@@ -351,7 +447,7 @@ async function executeStep(
     case 'repeat_forever': {
       while (!ctrl.abort) {
         if (step.children) {
-          await executeSteps(step.children, deviceId, execution, ctrl, onProgress);
+          await executeSteps(step.children, deviceId, execution, ctrl, onProgress, tenantId);
         }
       }
       break;

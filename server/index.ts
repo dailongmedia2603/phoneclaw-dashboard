@@ -10,7 +10,7 @@ import { config } from './config';
 import { startHealthChecks, stopHealthChecks } from './services/device-manager';
 import { startScheduler, stopScheduler } from './services/scheduler';
 import { stopAllProxies } from './services/vnc-proxy';
-import { readCollection, writeCollection, generateId } from './store';
+import { readCollection, writeCollection, generateId, readUserCollection, writeUserCollection } from './store';
 
 import authRoutes, { authMiddleware } from './routes/auth';
 import dashboardRoutes from './routes/dashboard';
@@ -26,6 +26,7 @@ import customNodesRoutes from './routes/custom-nodes';
 import sharedScriptsRoutes from './routes/shared-scripts';
 import proxyRoutes from './routes/proxy';
 import packagesRoutes from './routes/packages';
+import { migrateToTenantStructure } from './migration';
 
 import type { Notification, WsMessage } from '../src/types';
 
@@ -51,8 +52,7 @@ function broadcast(message: WsMessage) {
   }
 }
 
-function addNotification(type: Notification['type'], title: string, message: string) {
-  const notifications = readCollection<Notification>('notifications');
+function addNotification(type: Notification['type'], title: string, message: string, userId?: string) {
   const notification: Notification = {
     id: generateId(),
     type,
@@ -60,10 +60,23 @@ function addNotification(type: Notification['type'], title: string, message: str
     message,
     read: false,
     timestamp: new Date().toISOString(),
+    userId,
   };
-  notifications.push(notification);
-  if (notifications.length > 200) notifications.splice(0, notifications.length - 200);
-  writeCollection('notifications', notifications);
+
+  if (userId) {
+    // User-specific notification → tenant file
+    const notifications = readUserCollection<Notification>(userId, 'notifications');
+    notifications.push(notification);
+    if (notifications.length > 200) notifications.splice(0, notifications.length - 200);
+    writeUserCollection(userId, 'notifications', notifications);
+  } else {
+    // System notification → shared file
+    const notifications = readCollection<Notification>('notifications');
+    notifications.push(notification);
+    if (notifications.length > 200) notifications.splice(0, notifications.length - 200);
+    writeCollection('notifications', notifications);
+  }
+
   broadcast({ type: 'notification', payload: notification, timestamp: notification.timestamp });
 }
 
@@ -110,6 +123,9 @@ app.get('*', (_req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });
 
+// --- Migrate data cũ sang tenant structure (chạy 1 lần) ---
+migrateToTenantStructure();
+
 // --- Start Services ---
 startHealthChecks((device) => {
   broadcast({
@@ -119,7 +135,7 @@ startHealthChecks((device) => {
   });
 
   if (device.status === 'offline') {
-    addNotification('warning', 'Device Offline', `${device.name} (${device.tailscaleIp}) went offline`);
+    addNotification('warning', 'Device Offline', `${device.name} (${device.tailscaleIp}) went offline`, device.ownerId);
   }
 });
 
@@ -131,9 +147,9 @@ startScheduler((execution) => {
   });
 
   if (execution.status === 'error') {
-    addNotification('error', 'Script Failed', `${execution.scriptName} failed on ${execution.targetName}: ${execution.error}`);
+    addNotification('error', 'Script Failed', `${execution.scriptName} failed on ${execution.targetName}: ${execution.error}`, execution.ownerId);
   } else if (execution.status === 'success') {
-    addNotification('success', 'Script Complete', `${execution.scriptName} completed on ${execution.targetName}`);
+    addNotification('success', 'Script Complete', `${execution.scriptName} completed on ${execution.targetName}`, execution.ownerId);
   }
 });
 

@@ -1,6 +1,6 @@
-import { readCollection, writeCollection, generateId } from '../store';
+import { readCollection, writeCollection, generateId, readUserCollection, writeUserCollection, readAllTenantsCollection, getAllTenantIds } from '../store';
 import { executeScript } from './script-engine';
-import { getAllDevices, getAllGroups } from './device-manager';
+import { getAllDevices, getAllGroups, getDevicesForTenant, getGroupsForTenant } from './device-manager';
 import type { Schedule, ScheduleHistory } from '../../src/types';
 
 let schedulerTimer: ReturnType<typeof setInterval> | null = null;
@@ -42,6 +42,44 @@ export function deleteSchedule(id: string): boolean {
   const filtered = schedules.filter(s => s.id !== id);
   if (filtered.length === schedules.length) return false;
   writeCollection('schedules', filtered);
+  return true;
+}
+
+// ============================================================
+// Tenant-scoped Schedule CRUD
+// ============================================================
+
+export function getSchedulesForTenant(tenantId?: string): Schedule[] {
+  if (!tenantId) return readAllTenantsCollection<Schedule>('schedules');
+  return readUserCollection<Schedule>(tenantId, 'schedules');
+}
+
+export function createScheduleForTenant(userId: string, data: Omit<Schedule, 'id' | 'createdAt'>): Schedule {
+  const schedules = readUserCollection<Schedule>(userId, 'schedules');
+  const schedule: Schedule = {
+    ...data,
+    id: generateId(),
+    createdAt: new Date().toISOString(),
+  };
+  schedules.push(schedule);
+  writeUserCollection(userId, 'schedules', schedules);
+  return schedule;
+}
+
+export function updateScheduleForTenant(userId: string, id: string, data: Partial<Schedule>): Schedule | null {
+  const schedules = readUserCollection<Schedule>(userId, 'schedules');
+  const idx = schedules.findIndex(s => s.id === id);
+  if (idx === -1) return null;
+  schedules[idx] = { ...schedules[idx], ...data };
+  writeUserCollection(userId, 'schedules', schedules);
+  return schedules[idx];
+}
+
+export function deleteScheduleForTenant(userId: string, id: string): boolean {
+  const schedules = readUserCollection<Schedule>(userId, 'schedules');
+  const filtered = schedules.filter(s => s.id !== id);
+  if (filtered.length === schedules.length) return false;
+  writeUserCollection(userId, 'schedules', filtered);
   return true;
 }
 
@@ -117,44 +155,51 @@ export function getNextRun(cronExpr: string): string | undefined {
 // --- Scheduler Loop ---
 
 async function checkSchedules() {
-  const schedules = getAllSchedules();
   const now = new Date();
 
-  for (const schedule of schedules) {
-    if (!schedule.enabled) continue;
+  // Scan từng tenant — mỗi tenant có schedules riêng
+  for (const tenantId of getAllTenantIds()) {
+    const schedules = readUserCollection<Schedule>(tenantId, 'schedules');
 
-    const cron = parseCron(schedule.cron);
-    if (!cron || !matchesCron(cron, now)) continue;
+    for (const schedule of schedules) {
+      if (!schedule.enabled) continue;
 
-    // Get target device(s)
-    let deviceIds: string[] = [];
-    if (schedule.targetType === 'device') {
-      deviceIds = [schedule.targetId];
-    } else {
-      const group = getAllGroups().find(g => g.id === schedule.targetId);
-      if (group) deviceIds = group.deviceIds;
-    }
+      const cron = parseCron(schedule.cron);
+      if (!cron || !matchesCron(cron, now)) continue;
 
-    // Execute on each device
-    for (const deviceId of deviceIds) {
-      const device = getAllDevices().find(d => d.id === deviceId);
-      if (!device || device.status === 'offline') continue;
+      // Get target device(s) từ đúng tenant
+      let deviceIds: string[] = [];
+      if (schedule.targetType === 'device') {
+        deviceIds = [schedule.targetId];
+      } else {
+        const groups = readUserCollection<{ id: string; deviceIds: string[] }>(tenantId, 'device-groups');
+        const group = groups.find(g => g.id === schedule.targetId);
+        if (group) deviceIds = group.deviceIds;
+      }
 
-      executeScript(
-        schedule.scriptId,
-        deviceId,
-        schedule.name,
-        onExecutionUpdate || undefined
-      ).catch(err => {
-        console.error(`Schedule ${schedule.name} failed on ${device.name}:`, err);
+      // Execute on each device (trong tenant)
+      const tenantDevices = readUserCollection<{ id: string; name: string; status: string }>(tenantId, 'devices');
+      for (const deviceId of deviceIds) {
+        const device = tenantDevices.find(d => d.id === deviceId);
+        if (!device || device.status === 'offline') continue;
+
+        executeScript(
+          schedule.scriptId,
+          deviceId,
+          schedule.name,
+          onExecutionUpdate || undefined,
+          tenantId  // Truyền tenantId để execution history lưu đúng tenant
+        ).catch(err => {
+          console.error(`Schedule ${schedule.name} failed on ${device.name}:`, err);
+        });
+      }
+
+      // Update lastRun and nextRun trong tenant
+      updateScheduleForTenant(tenantId, schedule.id, {
+        lastRun: now.toISOString(),
+        nextRun: getNextRun(schedule.cron),
       });
     }
-
-    // Update lastRun and nextRun
-    updateSchedule(schedule.id, {
-      lastRun: now.toISOString(),
-      nextRun: getNextRun(schedule.cron),
-    });
   }
 }
 

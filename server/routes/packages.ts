@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { readCollection, writeCollection, generateId } from '../store';
+import { adminOnly } from './auth';
 import type { Notification } from '../../src/types';
 
 const router = Router();
@@ -25,7 +26,7 @@ router.get('/', (_req: Request, res: Response) => {
 });
 
 // POST /api/packages — create package
-router.post('/', (req: Request, res: Response) => {
+router.post('/', adminOnly, (req: Request, res: Response) => {
   const { name, maxDevices } = req.body;
   if (!name?.trim() || !maxDevices || maxDevices < 1) {
     return res.status(400).json({ success: false, error: 'Tên gói và số lượng thiết bị tối đa là bắt buộc' });
@@ -45,7 +46,7 @@ router.post('/', (req: Request, res: Response) => {
 });
 
 // PUT /api/packages/:id — update package
-router.put('/:id', (req: Request, res: Response) => {
+router.put('/:id', adminOnly, (req: Request, res: Response) => {
   const { name, maxDevices } = req.body;
   const packages = getPackages();
   const idx = packages.findIndex(p => p.id === req.params.id);
@@ -59,7 +60,7 @@ router.put('/:id', (req: Request, res: Response) => {
 });
 
 // DELETE /api/packages/:id — delete package (check no users assigned)
-router.delete('/:id', (req: Request, res: Response) => {
+router.delete('/:id', adminOnly, (req: Request, res: Response) => {
   const packages = getPackages();
   const pkg = packages.find(p => p.id === req.params.id);
   if (!pkg) return res.status(404).json({ success: false, error: 'Gói không tồn tại' });

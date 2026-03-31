@@ -64,6 +64,7 @@ export interface DeviceGroup {
   name: string;
   color: string;
   deviceIds: string[];
+  ownerId?: string;
 }
 
 // --- Script ---
@@ -92,6 +93,7 @@ export interface Script {
   runCount: number;
   createdAt: string;
   updatedAt: string;
+  ownerId?: string;
 }
 
 // --- Schedule ---
@@ -108,6 +110,7 @@ export interface Schedule {
   nextRun?: string;
   lastRun?: string;
   createdAt: string;
+  ownerId?: string;
 }
 
 export interface ScheduleHistory {
@@ -121,6 +124,7 @@ export interface ScheduleHistory {
   status: 'running' | 'success' | 'error';
   error?: string;
   steps: ExecutionStep[];
+  ownerId?: string;
 }
 
 export interface ExecutionStep {
@@ -155,6 +159,7 @@ export interface ScreenshotLog {
   scriptName?: string;
   step?: number;
   timestamp: string;
+  ownerId?: string;
 }
 
 // --- Settings ---
@@ -202,6 +207,7 @@ export interface Video {
   size: number;
   mimeType: string;
   uploadedAt: string;
+  ownerId?: string;
 }
 
 export interface AppSettings {
@@ -222,6 +228,7 @@ export interface Notification {
   message: string;
   read: boolean;
   timestamp: string;
+  userId?: string;
 }
 
 // --- Dashboard Stats ---

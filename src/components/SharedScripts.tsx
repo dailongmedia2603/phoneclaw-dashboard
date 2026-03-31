@@ -99,6 +99,7 @@ export default function SharedScripts({ userRole = 'user' }: SharedScriptsProps)
           <h1 className="text-2xl font-bold text-slate-900 mb-1">Kho kịch bản</h1>
           <p className="text-sm text-slate-500">Kịch bản mẫu có sẵn, chia sẻ cho tất cả người dùng</p>
         </div>
+        {isAdmin && (
         <div className="flex items-center gap-3">
           <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 shadow-sm transition-colors">
             <Upload size={18} className="text-slate-400" />
@@ -116,6 +117,7 @@ export default function SharedScripts({ userRole = 'user' }: SharedScriptsProps)
             Tạo kịch bản
           </button>
         </div>
+        )}
       </div>
 
       {/* App Tabs */}
@@ -224,20 +226,24 @@ export default function SharedScripts({ userRole = 'user' }: SharedScriptsProps)
                         <Play size={14} fill="currentColor" /> Chạy
                       </button>
                     )}
-                    <button
-                      onClick={() => navigate(`/kho-kich-ban/${script.id}`)}
-                      className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                      title="Chỉnh sửa"
-                    >
-                      <Edit size={16} />
-                    </button>
-                    <button
-                      onClick={() => setDeleteConfirm(script.id)}
-                      className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Xóa"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    {isAdmin && (
+                      <button
+                        onClick={() => navigate(`/kho-kich-ban/${script.id}`)}
+                        className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        title="Chỉnh sửa"
+                      >
+                        <Edit size={16} />
+                      </button>
+                    )}
+                    {isAdmin && (
+                      <button
+                        onClick={() => setDeleteConfirm(script.id)}
+                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Xóa"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>

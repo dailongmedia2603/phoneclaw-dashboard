@@ -1,12 +1,20 @@
 import { Router } from 'express';
-import { getDevice } from '../services/device-manager';
+import { getDevice, findDeviceGlobal } from '../services/device-manager';
+import { getAuthUserId, isAdmin } from '../helpers/get-user';
 
 const router = Router();
 
 // GET /api/vnc-viewer/:deviceId — returns HTML that auto-connects noVNC with password
 router.get('/:deviceId', (req, res) => {
-  const device = getDevice(req.params.deviceId);
+  // Tìm device + kiểm tra ownership
+  const userId = getAuthUserId(req);
+  const found = findDeviceGlobal(req.params.deviceId);
+  const device = found?.device ?? getDevice(req.params.deviceId);
   if (!device) return res.status(404).json({ success: false, error: 'Device not found' });
+
+  if (found && !isAdmin(req) && found.tenantId !== userId) {
+    return res.status(403).json({ success: false, error: 'Không có quyền truy cập thiết bị này' });
+  }
 
   const vncPath = `vnc/${device.id}/websockify`;
   const password = device.vncPassword || '';

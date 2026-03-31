@@ -1,6 +1,9 @@
 import { Router } from 'express';
 import { readCollection, writeCollection, generateId } from '../store';
 import { executeScriptDirect } from '../services/script-engine';
+import { findDeviceGlobal } from '../services/device-manager';
+import { adminOnly } from './auth';
+import { getAuthUserId } from '../helpers/get-user';
 import type { Script } from '../../src/types';
 
 const router = Router();
@@ -19,8 +22,8 @@ router.get('/:id', (req, res) => {
   res.json({ success: true, data: script });
 });
 
-// POST /api/shared-scripts
-router.post('/', (req, res) => {
+// POST /api/shared-scripts (admin only)
+router.post('/', adminOnly, (req, res) => {
   const scripts = readCollection<Script>('shared-scripts');
   const script: Script = {
     ...req.body,
@@ -34,8 +37,8 @@ router.post('/', (req, res) => {
   res.json({ success: true, data: script });
 });
 
-// PUT /api/shared-scripts/:id
-router.put('/:id', (req, res) => {
+// PUT /api/shared-scripts/:id (admin only)
+router.put('/:id', adminOnly, (req, res) => {
   const scripts = readCollection<Script>('shared-scripts');
   const idx = scripts.findIndex(s => s.id === req.params.id);
   if (idx === -1) return res.status(404).json({ success: false, error: 'Not found' });
@@ -44,8 +47,8 @@ router.put('/:id', (req, res) => {
   res.json({ success: true, data: scripts[idx] });
 });
 
-// DELETE /api/shared-scripts/:id
-router.delete('/:id', (req, res) => {
+// DELETE /api/shared-scripts/:id (admin only)
+router.delete('/:id', adminOnly, (req, res) => {
   const scripts = readCollection<Script>('shared-scripts');
   const filtered = scripts.filter(s => s.id !== req.params.id);
   if (filtered.length === scripts.length) return res.status(404).json({ success: false, error: 'Not found' });
@@ -68,7 +71,11 @@ router.post('/:id/run', async (req, res) => {
   const script = scripts.find(s => s.id === req.params.id);
   if (!script) return res.status(404).json({ success: false, error: 'Script not found' });
 
-  executeScriptDirect(script, deviceId, 'Shared: ' + script.name).catch(err => {
+  // Tìm device owner để lưu execution history vào đúng tenant
+  const found = findDeviceGlobal(deviceId);
+  const tenantId = found?.tenantId || getAuthUserId(req);
+
+  executeScriptDirect(script, deviceId, 'Shared: ' + script.name, undefined, tenantId).catch(err => {
     console.error('Shared script execution error:', err);
   });
 

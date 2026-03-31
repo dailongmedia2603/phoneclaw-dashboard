@@ -1,26 +1,25 @@
 import { Router } from 'express';
-import { getAllDevices } from '../services/device-manager';
-import { getExecutionHistory } from '../services/script-engine';
-import { readCollection } from '../store';
+import { getDevicesForTenant } from '../services/device-manager';
+import { getExecutionHistoryForTenant } from '../services/script-engine';
+import { readCollection, writeCollection, readUserCollection, writeUserCollection, readAllTenantsCollection } from '../store';
+import { getTenantId, getAuthUserId, isAdmin } from '../helpers/get-user';
 import type { DashboardStats, Notification } from '../../src/types';
 
 const router = Router();
 
 // GET /api/dashboard/stats
-router.get('/stats', (_req, res) => {
-  const devices = getAllDevices();
-  const history = getExecutionHistory();
+router.get('/stats', (req, res) => {
+  const tenantId = getTenantId(req);
+  const devices = getDevicesForTenant(tenantId);
+  const history = getExecutionHistoryForTenant(tenantId);
 
   const now = new Date();
-  const oneDayAgo = new Date(now.getTime() - 86400000);
-  const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000);
 
   // Online history (last 24h, hourly)
   const onlineHistory: { time: string; count: number }[] = [];
   for (let i = 23; i >= 0; i--) {
     const hour = new Date(now.getTime() - i * 3600000);
     const hourStr = `${hour.getHours().toString().padStart(2, '0')}:00`;
-    // Count devices that were seen in that hour
     const count = devices.filter(d => {
       const lastSeen = new Date(d.lastSeen);
       return lastSeen >= new Date(hour.getTime() - 3600000) && lastSeen <= hour;
@@ -51,8 +50,22 @@ router.get('/stats', (_req, res) => {
 
 // GET /api/dashboard/notifications
 router.get('/notifications', (req, res) => {
-  const notifications = readCollection<Notification>('notifications');
+  const tenantId = getTenantId(req);
   const limit = parseInt(req.query.limit as string) || 20;
+
+  let notifications: Notification[];
+  if (tenantId) {
+    // User: đọc từ tenant + shared notifications
+    const userNotifs = readUserCollection<Notification>(tenantId, 'notifications');
+    const sharedNotifs = readCollection<Notification>('notifications');
+    notifications = [...userNotifs, ...sharedNotifs];
+  } else {
+    // Admin: đọc tất cả tenant notifications + shared
+    const allTenantNotifs = readAllTenantsCollection<Notification>('notifications') as Notification[];
+    const sharedNotifs = readCollection<Notification>('notifications');
+    notifications = [...allTenantNotifs, ...sharedNotifs];
+  }
+
   const sorted = notifications
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
     .slice(0, limit);
@@ -61,13 +74,28 @@ router.get('/notifications', (req, res) => {
 
 // PUT /api/dashboard/notifications/:id/read
 router.put('/notifications/:id/read', (req, res) => {
-  const notifications = readCollection<Notification>('notifications');
-  const idx = notifications.findIndex(n => n.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ success: false, error: 'Notification not found' });
-  notifications[idx].read = true;
-  const { writeCollection } = require('../store');
-  writeCollection('notifications', notifications);
-  res.json({ success: true });
+  const userId = getAuthUserId(req);
+  if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+  // Tìm notification trong tenant user trước
+  const tenantNotifs = readUserCollection<Notification>(userId, 'notifications');
+  const tenantIdx = tenantNotifs.findIndex(n => n.id === req.params.id);
+  if (tenantIdx !== -1) {
+    tenantNotifs[tenantIdx].read = true;
+    writeUserCollection(userId, 'notifications', tenantNotifs);
+    return res.json({ success: true });
+  }
+
+  // Fallback: tìm trong shared notifications
+  const sharedNotifs = readCollection<Notification>('notifications');
+  const sharedIdx = sharedNotifs.findIndex(n => n.id === req.params.id);
+  if (sharedIdx !== -1) {
+    sharedNotifs[sharedIdx].read = true;
+    writeCollection('notifications', sharedNotifs);
+    return res.json({ success: true });
+  }
+
+  res.status(404).json({ success: false, error: 'Notification not found' });
 });
 
 export default router;
