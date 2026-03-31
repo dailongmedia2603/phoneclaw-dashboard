@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import {
   Search, Plus, Smartphone, Battery, BatteryMedium, BatteryLow,
   Wifi, WifiOff, CheckSquare, Square, Play, Camera, FolderPlus, X,
-  MonitorPlay, TerminalSquare, Loader2, Edit, Trash2
+  MonitorPlay, TerminalSquare, Loader2, Edit, Trash2, ArrowUpCircle
 } from 'lucide-react';
-import { devices as devicesApi, control } from '../services/api';
+import { devices as devicesApi, control, packages as packagesApi } from '../services/api';
 import { useApi } from '../hooks/useApi';
+import { useAuth } from '../hooks/useAuth';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { showToast } from './Toast';
-import type { Device, DeviceGroup } from '../types';
+import type { Device, DeviceGroup, Package } from '../types';
 import CustomSelect from './CustomSelect';
 
 export default function Devices() {
@@ -28,9 +29,17 @@ export default function Devices() {
   const [newGroupName, setNewGroupName] = useState('');
   const [addingGroup, setAddingGroup] = useState(false);
 
+  const { user: authUser } = useAuth();
   const { data: deviceList, refresh: refreshDevices } = useApi<Device[]>(() => devicesApi.getAll(), []);
   const { data: groupList, refresh: refreshGroups } = useApi<DeviceGroup[]>(() => devicesApi.getGroups(), []);
+  const { data: packageList } = useApi<Package[]>(() => packagesApi.getAll(), []);
   const { on } = useWebSocket();
+
+  const allPackages = packageList || [];
+  const currentPkg = authUser?.packageId ? allPackages.find(p => p.id === authUser.packageId) : null;
+  const isNonAdmin = authUser?.role !== 'admin';
+  const userDeviceCount = authUser ? (deviceList || []).filter(d => d.ownerId === authUser.id).length : 0;
+  const isAtLimit = !!(currentPkg && userDeviceCount >= currentPkg.maxDevices);
 
   useEffect(() => {
     const unsub = on('device:status', () => refreshDevices());
@@ -181,6 +190,36 @@ export default function Devices() {
           Thêm thiết bị
         </button>
       </div>
+
+      {/* Quota Banner (non-admin with package) */}
+      {isNonAdmin && currentPkg && (
+        <div className="px-6 py-3 border-b border-blue-100 bg-blue-50/80 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div>
+              <p className="text-sm font-medium text-blue-700">{currentPkg.name} — {currentPkg.maxDevices} thiết bị</p>
+              <p className="text-xs text-blue-500">Đã kết nối: {userDeviceCount}/{currentPkg.maxDevices}</p>
+            </div>
+            <div className="w-24 bg-blue-200 rounded-full h-2">
+              <div
+                className={`h-2 rounded-full ${isAtLimit ? 'bg-red-500' : 'bg-blue-600'}`}
+                style={{ width: `${Math.min(Math.round((userDeviceCount / currentPkg.maxDevices) * 100), 100)}%` }}
+              />
+            </div>
+          </div>
+          {isAtLimit && (
+            <button
+              onClick={async () => {
+                const res = await packagesApi.requestUpgrade();
+                if (res.success) showToast('success', 'Đã gửi yêu cầu nâng cấp tới admin');
+                else showToast('error', 'Gửi yêu cầu thất bại');
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition-colors"
+            >
+              <ArrowUpCircle size={14} /> Yêu cầu nâng cấp
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Toolbar */}
       <div className="px-6 py-4 flex items-center justify-between border-b border-slate-100 bg-slate-50/50">

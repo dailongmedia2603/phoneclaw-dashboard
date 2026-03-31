@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import * as dm from '../services/device-manager';
+import { readCollection } from '../store';
 
 const router = Router();
 
@@ -21,6 +22,28 @@ router.post('/', (req, res) => {
   if (!name || !tailscaleIp) {
     return res.status(400).json({ success: false, error: 'name and tailscaleIp are required' });
   }
+
+  // Enforce device limit for non-admin users
+  const authUser = (req as any).user;
+  if (authUser && authUser.role !== 'admin') {
+    const users = readCollection<{ id: string; packageId?: string }>('users');
+    const user = users.find(u => u.id === authUser.id);
+    if (user?.packageId) {
+      const packages = readCollection<{ id: string; name: string; maxDevices: number }>('packages');
+      const pkg = packages.find(p => p.id === user.packageId);
+      if (pkg) {
+        const allDevices = dm.getAllDevices();
+        const userDeviceCount = allDevices.filter(d => d.ownerId === authUser.id).length;
+        if (userDeviceCount >= pkg.maxDevices) {
+          return res.status(403).json({
+            success: false,
+            error: `Đã đạt giới hạn ${pkg.maxDevices} thiết bị (gói ${pkg.name})`,
+          });
+        }
+      }
+    }
+  }
+
   const device = dm.createDevice({
     name,
     tailscaleIp,
@@ -31,6 +54,7 @@ router.post('/', (req, res) => {
     group: group || '',
     battery: battery || 0,
     vncPassword: vncPassword || '',
+    ownerId: authUser?.id,
   });
   res.status(201).json({ success: true, data: device });
 });

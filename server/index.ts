@@ -25,6 +25,7 @@ import videosRoutes from './routes/videos';
 import customNodesRoutes from './routes/custom-nodes';
 import sharedScriptsRoutes from './routes/shared-scripts';
 import proxyRoutes from './routes/proxy';
+import packagesRoutes from './routes/packages';
 
 import type { Notification, WsMessage } from '../src/types';
 
@@ -95,6 +96,7 @@ app.use('/api/videos', videosRoutes);
 app.use('/api/custom-nodes', customNodesRoutes);
 app.use('/api/shared-scripts', sharedScriptsRoutes);
 app.use('/api/proxy', proxyRoutes);
+app.use('/api/packages', packagesRoutes);
 
 // Health check endpoint
 app.get('/api/health', (_req, res) => {

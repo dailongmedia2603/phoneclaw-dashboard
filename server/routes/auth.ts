@@ -15,6 +15,7 @@ interface User {
   name: string;
   phone?: string;
   role: 'admin' | 'user';
+  packageId?: string;
   createdAt: string;
 }
 
@@ -30,7 +31,7 @@ function saveUsers(users: User[]) {
 
 /** Strip password from user before sending to client */
 function sanitizeUser(user: User) {
-  return { id: user.id, email: user.email, name: user.name, phone: user.phone || '', role: user.role, createdAt: user.createdAt };
+  return { id: user.id, email: user.email, name: user.name, phone: user.phone || '', role: user.role, packageId: user.packageId, createdAt: user.createdAt };
 }
 
 /** Get authenticated user from request */
@@ -153,7 +154,7 @@ router.get('/users', adminOnly, (_req: Request, res: Response) => {
 
 // POST /api/auth/users — create new user
 router.post('/users', adminOnly, async (req: Request, res: Response) => {
-  const { name, email, password, phone, role } = req.body;
+  const { name, email, password, phone, role, packageId } = req.body;
 
   if (!name?.trim() || !email?.trim() || !password) {
     return res.status(400).json({ success: false, error: 'Tên, email và mật khẩu là bắt buộc' });
@@ -178,6 +179,7 @@ router.post('/users', adminOnly, async (req: Request, res: Response) => {
     name: name.trim(),
     phone: phone?.trim() || '',
     role,
+    packageId: packageId || undefined,
     createdAt: new Date().toISOString(),
   };
 
@@ -188,7 +190,7 @@ router.post('/users', adminOnly, async (req: Request, res: Response) => {
 
 // PUT /api/auth/users/:id — update user
 router.put('/users/:id', adminOnly, async (req: Request, res: Response) => {
-  const { name, email, phone, role, password } = req.body;
+  const { name, email, phone, role, password, packageId } = req.body;
   const users = getUsers();
   const idx = users.findIndex(u => u.id === req.params.id);
   if (idx === -1) return res.status(404).json({ success: false, error: 'Người dùng không tồn tại' });
@@ -212,6 +214,9 @@ router.put('/users/:id', adminOnly, async (req: Request, res: Response) => {
   if (role && ['admin', 'user'].includes(role)) users[idx].role = role;
   if (password && password.length >= 6) {
     users[idx].password = await bcrypt.hash(password, 10);
+  }
+  if (packageId !== undefined) {
+    users[idx].packageId = packageId || undefined;
   }
 
   saveUsers(users);

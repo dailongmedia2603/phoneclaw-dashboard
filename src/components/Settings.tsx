@@ -2,16 +2,19 @@ import { useState } from 'react';
 import {
   Server, MonitorPlay, Network, Users, Bell, DatabaseBackup, Palette, Cloud,
   Cpu, HardDrive, Activity, CheckCircle2, AlertCircle, Shield,
-  Plus, Edit, Trash2, Save, Upload, Download, Smartphone, Check, X, Loader2
+  Plus, Edit, Trash2, Save, Upload, Download, Smartphone, Check, X, Loader2,
+  Package
 } from 'lucide-react';
 import { settings as settingsApi, devices as devicesApi } from '../services/api';
 import { useApi } from '../hooks/useApi';
+import PackageSettings from './PackageSettings';
 import type { AppSettings, VpsStatus, Device } from '../types';
 
 const SETTINGS_TABS = [
   { id: 'vps', label: 'Máy chủ (VPS)', icon: Server },
   { id: 'vnc', label: 'VNC Mặc định', icon: MonitorPlay },
   { id: 'tailscale', label: 'Tailscale', icon: Network },
+  { id: 'packages', label: 'Gói phần mềm', icon: Package },
   { id: 'account', label: 'Tài khoản', icon: Users },
   { id: 'notifications', label: 'Thông báo', icon: Bell },
   { id: 'r2', label: 'Cloudflare R2', icon: Cloud },
@@ -297,6 +300,9 @@ export default function Settings() {
               </div>
             </div>
           )}
+
+          {/* PACKAGES TAB */}
+          {activeTab === 'packages' && <PackageSettings />}
 
           {/* ACCOUNT TAB */}
           {activeTab === 'account' && (

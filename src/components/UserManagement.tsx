@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Users, Plus, Edit, Trash2, X, Loader2, Shield, User } from 'lucide-react';
-import { users as usersApi } from '../services/api';
+import { users as usersApi, packages as packagesApi, devices as devicesApi } from '../services/api';
 import { useApi } from '../hooks/useApi';
 import { showToast } from './Toast';
 import CustomSelect from './CustomSelect';
-import type { AppUser } from '../types';
+import type { AppUser, Package, Device } from '../types';
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -12,10 +12,15 @@ function formatDate(iso: string): string {
   return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
 }
 
-const EMPTY_FORM = { name: '', email: '', password: '', phone: '', role: 'user' };
+const EMPTY_FORM = { name: '', email: '', password: '', phone: '', role: 'user', packageId: '' };
 
 export default function UserManagement() {
   const { data: userList, loading, refresh } = useApi<AppUser[]>(() => usersApi.getAll(), []);
+  const { data: packageList } = useApi<Package[]>(() => packagesApi.getAll(), []);
+  const { data: deviceList } = useApi<Device[]>(() => devicesApi.getAll(), []);
+
+  const pkgs = packageList || [];
+  const allDevices = deviceList || [];
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<AppUser | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -32,8 +37,14 @@ export default function UserManagement() {
 
   const openEdit = (user: AppUser) => {
     setEditingUser(user);
-    setForm({ name: user.name, email: user.email, password: '', phone: user.phone || '', role: user.role });
+    setForm({ name: user.name, email: user.email, password: '', phone: user.phone || '', role: user.role, packageId: user.packageId || '' });
     setShowModal(true);
+  };
+
+  const getUserDeviceCount = (userId: string) => allDevices.filter(d => d.ownerId === userId).length;
+  const getPackageName = (packageId?: string) => {
+    if (!packageId) return null;
+    return pkgs.find(p => p.id === packageId) || null;
   };
 
   const handleSave = async () => {
@@ -53,13 +64,13 @@ export default function UserManagement() {
     setSaving(true);
     try {
       if (editingUser) {
-        const data: any = { name: form.name, email: form.email, phone: form.phone, role: form.role };
+        const data: any = { name: form.name, email: form.email, phone: form.phone, role: form.role, packageId: form.packageId || '' };
         if (form.password) data.password = form.password;
         const res = await usersApi.update(editingUser.id, data);
         if (!res.success) { showToast('error', res.error || 'Lỗi'); setSaving(false); return; }
         showToast('success', 'Cập nhật thành công');
       } else {
-        const res = await usersApi.create(form);
+        const res = await usersApi.create({ ...form, packageId: form.packageId || undefined });
         if (!res.success) { showToast('error', res.error || 'Lỗi'); setSaving(false); return; }
         showToast('success', 'Tạo tài khoản thành công');
       }
@@ -106,6 +117,7 @@ export default function UserManagement() {
               <th className="py-3 px-6">Người dùng</th>
               <th className="py-3 px-4">Email</th>
               <th className="py-3 px-4">Số điện thoại</th>
+              <th className="py-3 px-4">Gói</th>
               <th className="py-3 px-4">Quyền</th>
               <th className="py-3 px-4">Ngày tạo</th>
               <th className="py-3 px-4 text-right">Thao tác</th>
@@ -113,7 +125,7 @@ export default function UserManagement() {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {users.length === 0 && (
-              <tr><td colSpan={6} className="text-center py-16 text-slate-400"><Users size={32} className="mx-auto mb-2" /><p className="text-sm">Chưa có người dùng</p></td></tr>
+              <tr><td colSpan={7} className="text-center py-16 text-slate-400"><Users size={32} className="mx-auto mb-2" /><p className="text-sm">Chưa có người dùng</p></td></tr>
             )}
             {users.map(user => (
               <tr key={user.id} className="hover:bg-slate-50 transition-colors">
@@ -127,6 +139,24 @@ export default function UserManagement() {
                 </td>
                 <td className="py-4 px-4 text-sm text-slate-600">{user.email}</td>
                 <td className="py-4 px-4 text-sm text-slate-600">{user.phone || '-'}</td>
+                <td className="py-4 px-4">
+                  {(() => {
+                    const pkg = getPackageName(user.packageId);
+                    if (!pkg) return <span className="text-xs text-slate-400">-</span>;
+                    const used = getUserDeviceCount(user.id);
+                    const pct = Math.round((used / pkg.maxDevices) * 100);
+                    return (
+                      <div>
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                          {pkg.name} ({used}/{pkg.maxDevices})
+                        </span>
+                        <div className="w-20 bg-slate-100 rounded-full h-1 mt-1.5">
+                          <div className={`h-1 rounded-full ${pct >= 100 ? 'bg-red-500' : pct >= 80 ? 'bg-amber-500' : 'bg-indigo-500'}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </td>
                 <td className="py-4 px-4">
                   <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border ${
                     user.role === 'admin'
@@ -191,6 +221,17 @@ export default function UserManagement() {
                   options={[
                     { value: 'admin', label: 'Admin (Toàn quyền)' },
                     { value: 'user', label: 'Người dùng (Giới hạn)' },
+                  ]}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Gói phần mềm</label>
+                <CustomSelect
+                  value={form.packageId}
+                  onChange={v => setForm(p => ({...p, packageId: v}))}
+                  options={[
+                    { value: '', label: 'Không giới hạn' },
+                    ...pkgs.map(p => ({ value: p.id, label: `${p.name} (${p.maxDevices} phone)` })),
                   ]}
                 />
               </div>

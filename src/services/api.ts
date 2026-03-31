@@ -1,7 +1,7 @@
 import type {
   Device, DeviceGroup, Script, Schedule, ScheduleHistory,
   ActivityLog, ScreenshotLog, DashboardStats, Notification,
-  AppSettings, VpsStatus, VncProxy, ApiResponse, Video, AppUser,
+  AppSettings, VpsStatus, VncProxy, ApiResponse, Video, AppUser, Package,
 } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -199,13 +199,24 @@ export const proxy = {
 };
 
 // ============================================================
+// Packages
+// ============================================================
+export const packages = {
+  getAll: () => get<Package[]>('/api/packages'),
+  create: (data: { name: string; maxDevices: number }) => post<Package>('/api/packages', data),
+  update: (id: string, data: Partial<Package>) => put<Package>(`/api/packages/${id}`, data),
+  remove: (id: string) => del<void>(`/api/packages/${id}`),
+  requestUpgrade: () => post<void>('/api/packages/upgrade-request'),
+};
+
+// ============================================================
 // Users (Admin Only)
 // ============================================================
 export const users = {
   getAll: () => get<AppUser[]>('/api/auth/users'),
-  create: (data: { name: string; email: string; password: string; phone?: string; role: string }) =>
+  create: (data: { name: string; email: string; password: string; phone?: string; role: string; packageId?: string }) =>
     post<AppUser>('/api/auth/users', data),
-  update: (id: string, data: Partial<{ name: string; email: string; phone: string; role: string; password: string }>) =>
+  update: (id: string, data: Partial<{ name: string; email: string; phone: string; role: string; password: string; packageId: string }>) =>
     put<AppUser>(`/api/auth/users/${id}`, data),
   remove: (id: string) => del<void>(`/api/auth/users/${id}`),
 };

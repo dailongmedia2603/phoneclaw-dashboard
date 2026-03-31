@@ -18,6 +18,14 @@ export interface ProxyConfig {
   longitude?: number;      // GPS spoof (only used when mode=us)
 }
 
+// --- Package ---
+export interface Package {
+  id: string;
+  name: string;
+  maxDevices: number;
+  createdAt: string;
+}
+
 // --- Device ---
 export interface AppUser {
   id: string;
@@ -25,6 +33,7 @@ export interface AppUser {
   name: string;
   phone: string;
   role: 'admin' | 'user';
+  packageId?: string;
   createdAt: string;
 }
 
@@ -47,6 +56,7 @@ export interface Device {
   createdAt: string;
   proxyConfig?: ProxyConfig;
   proxyStatus?: 'running' | 'stopped' | 'error';
+  ownerId?: string;
 }
 
 export interface DeviceGroup {

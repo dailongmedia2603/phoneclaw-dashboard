@@ -5,6 +5,7 @@ interface AuthUser {
   email: string;
   name: string;
   role: string;
+  packageId?: string;
 }
 
 interface AuthState {
