@@ -18,7 +18,7 @@ import CoordinatePicker from './CoordinatePicker';
 import { graphToScriptSteps, scriptStepsToGraph } from './graphConverter';
 import { scripts as scriptsApi, sharedScripts as sharedScriptsApi, devices as devicesApi } from '../../services/api';
 import { showToast } from '../Toast';
-import { ArrowLeft, Save, Loader2, ChevronDown, Music, Globe, Facebook, Smartphone, LayoutGrid, Sparkles } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, ChevronDown, Music, Globe, Facebook, Smartphone, LayoutGrid, Sparkles, AlertTriangle } from 'lucide-react';
 import { layoutProfessional, layoutCreative } from './autoLayout';
 import type { Script, Device } from '../../types';
 
@@ -42,9 +42,11 @@ export default function ScriptEditorPage({ appTab, apiType = 'scripts' }: Script
   const api = apiType === 'shared' ? sharedScriptsApi : scriptsApi;
   const backPath = apiType === 'shared' ? '/kho-kich-ban' : '/kich-ban';
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
   const onBack = () => {
     if (hasUnsavedChanges) {
-      if (!window.confirm('Kịch bản chưa được lưu. Bạn có muốn thoát không?')) return;
+      setShowExitConfirm(true);
+      return;
     }
     navigate(backPath);
   };
@@ -462,6 +464,35 @@ export default function ScriptEditorPage({ appTab, apiType = 'scripts' }: Script
           onPick={handleCoordinatePicked}
           onClose={() => setPickerTarget(null)}
         />
+      )}
+
+      {/* Unsaved Changes Confirm Modal */}
+      {showExitConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-[360px] overflow-hidden animate-in fade-in zoom-in-95">
+            <div className="p-6 text-center">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-amber-50 flex items-center justify-center">
+                <AlertTriangle size={24} className="text-amber-500" />
+              </div>
+              <h3 className="text-base font-semibold text-slate-800 mb-1">Chưa lưu kịch bản</h3>
+              <p className="text-sm text-slate-500">Bạn có thay đổi chưa được lưu. Thoát sẽ mất các thay đổi này.</p>
+            </div>
+            <div className="flex border-t border-slate-100">
+              <button
+                onClick={() => setShowExitConfirm(false)}
+                className="flex-1 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                Ở lại chỉnh sửa
+              </button>
+              <button
+                onClick={() => { setShowExitConfirm(false); setHasUnsavedChanges(false); navigate(backPath); }}
+                className="flex-1 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors border-l border-slate-100"
+              >
+                Thoát không lưu
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
