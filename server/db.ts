@@ -651,7 +651,7 @@ const TABLE_MAP: Record<string, string> = {
  */
 function mapRow(table: string, row: Record<string, unknown>): unknown {
   switch (table) {
-    case 'users': return rowToUser(row);
+    case 'users': return rowToUserWithPassword(row);
     case 'packages': return rowToJs(row);
     case 'devices': return rowToDevice(row);
     case 'scripts':

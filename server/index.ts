@@ -13,7 +13,7 @@ import { startScheduler, stopScheduler } from './services/scheduler';
 import { stopAllProxies } from './services/vnc-proxy';
 import { readCollection, writeCollection, generateId, readUserCollection, writeUserCollection, initDb, closeDb } from './store';
 
-import authRoutes, { authMiddleware } from './routes/auth';
+import authRoutes, { authMiddleware, seedDefaultAdmin } from './routes/auth';
 import dashboardRoutes from './routes/dashboard';
 import devicesRoutes from './routes/devices';
 import controlRoutes from './routes/control';
@@ -190,7 +190,10 @@ async function main() {
   // 1. Initialize database (no-op if USE_POSTGRES=false)
   await initDb();
 
-  // 2. Migrate data cũ sang tenant structure (chạy 1 lần, skip khi PG mode)
+  // 2. Seed default admin if no users exist
+  await seedDefaultAdmin();
+
+  // 3. Migrate data cũ sang tenant structure (chạy 1 lần, skip khi PG mode)
   await migrateToTenantStructure();
 
   // 3. Start Services

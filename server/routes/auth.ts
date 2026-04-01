@@ -55,7 +55,8 @@ export function adminOnly(req: Request, res: Response, next: NextFunction) {
 }
 
 // --- Seed default admin if no users exist ---
-(async () => {
+// Exported as function — called from index.ts AFTER initDb()
+export async function seedDefaultAdmin() {
   const users = await getUsers();
   if (users.length === 0) {
     const hash = await bcrypt.hash('dailongmedia@123', 10);
@@ -70,7 +71,7 @@ export function adminOnly(req: Request, res: Response, next: NextFunction) {
     await saveUsers([admin]);
     console.log('[Auth] Default admin account created: long@dailongmedia.io.vn');
   }
-})();
+}
 
 // --- POST /api/auth/login ---
 router.post('/login', async (req: Request, res: Response) => {
