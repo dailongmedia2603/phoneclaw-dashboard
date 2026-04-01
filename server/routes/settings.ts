@@ -38,16 +38,16 @@ const DEFAULT_SETTINGS: AppSettings = {
 };
 
 // GET /api/settings
-router.get('/', (_req, res) => {
-  const settings = readSingleton<AppSettings>('settings', DEFAULT_SETTINGS);
+router.get('/', async (_req, res) => {
+  const settings = await readSingleton<AppSettings>('settings', DEFAULT_SETTINGS);
   res.json({ success: true, data: settings });
 });
 
 // PUT /api/settings (admin only)
-router.put('/', adminOnly, (req, res) => {
-  const current = readSingleton<AppSettings>('settings', DEFAULT_SETTINGS);
+router.put('/', adminOnly, async (req, res) => {
+  const current = await readSingleton<AppSettings>('settings', DEFAULT_SETTINGS);
   const updated = { ...current, ...req.body };
-  writeSingleton('settings', updated);
+  await writeSingleton('settings', updated);
   res.json({ success: true, data: updated });
 });
 
@@ -85,13 +85,13 @@ router.get('/vnc-proxies', (_req, res) => {
 });
 
 // POST /api/settings/vnc-proxy/start
-router.post('/vnc-proxy/start', (req, res) => {
+router.post('/vnc-proxy/start', async (req, res) => {
   const { deviceId } = req.body;
   if (!deviceId) return res.status(400).json({ success: false, error: 'deviceId is required' });
 
   // Device ownership check
   const userId = getAuthUserId(req);
-  const found = findDeviceGlobal(deviceId);
+  const found = await findDeviceGlobal(deviceId);
   if (found && !isAdmin(req) && found.tenantId !== userId) {
     return res.status(403).json({ success: false, error: 'Không có quyền truy cập thiết bị này' });
   }
@@ -102,13 +102,13 @@ router.post('/vnc-proxy/start', (req, res) => {
 });
 
 // POST /api/settings/vnc-proxy/stop
-router.post('/vnc-proxy/stop', (req, res) => {
+router.post('/vnc-proxy/stop', async (req, res) => {
   const { deviceId } = req.body;
   if (!deviceId) return res.status(400).json({ success: false, error: 'deviceId is required' });
 
   // Device ownership check
   const userId = getAuthUserId(req);
-  const found = findDeviceGlobal(deviceId);
+  const found = await findDeviceGlobal(deviceId);
   if (found && !isAdmin(req) && found.tenantId !== userId) {
     return res.status(403).json({ success: false, error: 'Không có quyền truy cập thiết bị này' });
   }
@@ -178,7 +178,7 @@ router.post('/test-telegram', async (req, res) => {
 });
 
 // GET /api/settings/diagnose — chẩn đoán data migration (admin only)
-router.get('/diagnose', adminOnly, (_req, res) => {
+router.get('/diagnose', adminOnly, async (_req, res) => {
   const COLLECTIONS = ['devices', 'device-groups', 'scripts', 'schedules', 'execution-history', 'activity-logs', 'screenshots', 'videos', 'custom-nodes', 'notifications'];
   const result: Record<string, unknown> = {};
 
@@ -210,11 +210,11 @@ router.get('/diagnose', adminOnly, (_req, res) => {
 
   // Check tenant dirs
   const tenants: Record<string, Record<string, number>> = {};
-  const tenantIds = getAllTenantIds();
+  const tenantIds = await getAllTenantIds();
   for (const tid of tenantIds) {
     tenants[tid] = {};
     for (const col of COLLECTIONS) {
-      const data = readUserCollection(tid, col);
+      const data = await readUserCollection(tid, col);
       if (data.length > 0) tenants[tid][col] = data.length;
     }
   }
@@ -222,17 +222,17 @@ router.get('/diagnose', adminOnly, (_req, res) => {
   result.tenantIds = tenantIds;
 
   // Users info
-  const users = readCollection<{ id: string; name: string; role: string }>('users');
+  const users = await readCollection<{ id: string; name: string; role: string }>('users');
   result.users = users.map(u => ({ id: u.id, name: u.name, role: u.role }));
 
   res.json({ success: true, data: result });
 });
 
 // POST /api/settings/force-recovery — khôi phục data từ .bak vào admin tenant (admin only)
-router.post('/force-recovery', adminOnly, (_req, res) => {
+router.post('/force-recovery', adminOnly, async (_req, res) => {
   const COLLECTIONS = ['devices', 'device-groups', 'scripts', 'schedules', 'execution-history', 'activity-logs', 'screenshots', 'videos', 'custom-nodes', 'notifications'];
 
-  const users = readCollection<{ id: string; role: string }>('users');
+  const users = await readCollection<{ id: string; role: string }>('users');
   const admin = users.find(u => u.role === 'admin');
   if (!admin) return res.json({ success: false, error: 'Không tìm thấy admin' });
 
@@ -265,12 +265,12 @@ router.post('/force-recovery', adminOnly, (_req, res) => {
     if (sourceData.length === 0) continue;
 
     // Merge với existing tenant data (không ghi đè)
-    const existing = readUserCollection<Record<string, unknown>>(admin.id, col);
+    const existing = await readUserCollection<Record<string, unknown>>(admin.id, col);
     const existingIds = new Set(existing.map(item => (item as any).id));
     const newItems = sourceData.filter((item: any) => !existingIds.has(item.id));
 
     if (newItems.length > 0) {
-      writeUserCollection(admin.id, col, [...existing, ...newItems]);
+      await writeUserCollection(admin.id, col, [...existing, ...newItems]);
       recovered[col] = newItems.length;
     }
   }

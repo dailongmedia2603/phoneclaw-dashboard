@@ -10,7 +10,7 @@ const router = Router();
  * No JWT required — phone authenticates via Tailscale network.
  * Registered BEFORE authMiddleware in index.ts.
  */
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const { tailscaleIp, systemVersion, model, proxyStatus, battery } = req.body;
 
   if (!tailscaleIp || typeof tailscaleIp !== 'string') {
@@ -20,7 +20,7 @@ router.post('/', (req, res) => {
     });
   }
 
-  const result = handleHeartbeat({
+  const result = await handleHeartbeat({
     tailscaleIp: tailscaleIp.trim(),
     systemVersion,
     model,

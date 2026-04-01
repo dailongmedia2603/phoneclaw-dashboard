@@ -11,9 +11,9 @@ const router = Router();
  * - Admin: luôn được phép
  * - User: chỉ được truy cập device trong tenant của mình
  */
-function verifyDeviceAccess(req: Request, res: Response, next: NextFunction) {
+async function verifyDeviceAccess(req: Request, res: Response, next: NextFunction) {
   const userId = getAuthUserId(req);
-  const found = findDeviceGlobal(req.params.deviceId);
+  const found = await findDeviceGlobal(req.params.deviceId);
 
   if (!found) {
     return res.status(404).json({ success: false, error: 'Device not found' });

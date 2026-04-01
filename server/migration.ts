@@ -9,12 +9,14 @@
  * - File cũ được backup thành .bak trước khi xoá
  * - Data không có ownerId → gán cho admin đầu tiên
  * - Nếu không tìm thấy admin → bỏ qua (chưa có user)
+ *
+ * NOTE: Khi USE_POSTGRES=true, migration này KHÔNG chạy (PG dùng migrate-json-to-pg.ts)
  */
 
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { readCollection, readUserCollection, writeUserCollection, ensureTenantDir } from './store';
+import { readCollection, readUserCollection, writeUserCollection, ensureTenantDir, isPostgresMode } from './store';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -45,9 +47,15 @@ interface OwnedItem {
   [key: string]: unknown;
 }
 
-export function migrateToTenantStructure(): void {
+export async function migrateToTenantStructure(): Promise<void> {
+  // Skip khi dùng PostgreSQL — PG có migration script riêng
+  if (isPostgresMode) {
+    console.log('[Migration] Skipped — using PostgreSQL mode');
+    return;
+  }
+
   // Tìm admin đầu tiên — nếu chưa có user, bỏ qua
-  const users = readCollection<MinimalUser>('users');
+  const users = await readCollection<MinimalUser>('users');
   const admin = users.find(u => u.role === 'admin');
   if (!admin) {
     return; // Chưa có user nào, không cần migrate
@@ -110,7 +118,7 @@ export function migrateToTenantStructure(): void {
       // Ghi vào từng tenant directory
       for (const [userId, items] of Object.entries(grouped)) {
         // Merge với data có thể đã tồn tại trong tenant (phòng trường hợp migrate lại)
-        writeUserCollection(userId, col, items);
+        await writeUserCollection(userId, col, items);
       }
 
       // Backup file cũ
@@ -141,7 +149,7 @@ export function migrateToTenantStructure(): void {
     if (!fs.existsSync(bakPath)) continue;
 
     // Kiểm tra xem tenant admin đã có data chưa
-    const adminData = readUserCollection<OwnedItem>(admin.id, col);
+    const adminData = await readUserCollection<OwnedItem>(admin.id, col);
     if (adminData.length > 0) continue; // Đã có data, bỏ qua
 
     // Tenant trống nhưng .bak có data → khôi phục vào admin tenant
@@ -151,7 +159,7 @@ export function migrateToTenantStructure(): void {
       const bakData = JSON.parse(bakContent) as OwnedItem[];
       if (!Array.isArray(bakData) || bakData.length === 0) continue;
 
-      writeUserCollection(admin.id, col, bakData);
+      await writeUserCollection(admin.id, col, bakData);
       console.log(`[Migration] Recovery: ${col} — ${bakData.length} items từ .bak → admin tenant`);
     } catch {
       // Bỏ qua file corrupt

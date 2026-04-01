@@ -20,8 +20,8 @@ export interface MatchResult {
 /**
  * Capture screenshot via VNC (vncdotool) — works even when API screenshot returns black
  */
-export function captureVncScreenshot(deviceId: string): string | null {
-  const device = getDevice(deviceId);
+export async function captureVncScreenshot(deviceId: string): Promise<string | null> {
+  const device = await getDevice(deviceId);
   if (!device) return null;
 
   const tmpFile = `/tmp/phoneclaw-vnc-${deviceId}.png`;

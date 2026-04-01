@@ -8,10 +8,10 @@ import type { DashboardStats, Notification } from '../../src/types';
 const router = Router();
 
 // GET /api/dashboard/stats
-router.get('/stats', (req, res) => {
+router.get('/stats', async (req, res) => {
   const tenantId = getTenantId(req);
-  const devices = getDevicesForTenant(tenantId);
-  const history = getExecutionHistoryForTenant(tenantId);
+  const devices = await getDevicesForTenant(tenantId);
+  const history = await getExecutionHistoryForTenant(tenantId);
 
   const now = new Date();
 
@@ -49,20 +49,20 @@ router.get('/stats', (req, res) => {
 });
 
 // GET /api/dashboard/notifications
-router.get('/notifications', (req, res) => {
+router.get('/notifications', async (req, res) => {
   const tenantId = getTenantId(req);
   const limit = parseInt(req.query.limit as string) || 20;
 
   let notifications: Notification[];
   if (tenantId) {
     // User: đọc từ tenant + shared notifications
-    const userNotifs = readUserCollection<Notification>(tenantId, 'notifications');
-    const sharedNotifs = readCollection<Notification>('notifications');
+    const userNotifs = await readUserCollection<Notification>(tenantId, 'notifications');
+    const sharedNotifs = await readCollection<Notification>('notifications');
     notifications = [...userNotifs, ...sharedNotifs];
   } else {
     // Admin: đọc tất cả tenant notifications + shared
-    const allTenantNotifs = readAllTenantsCollection<Notification>('notifications') as Notification[];
-    const sharedNotifs = readCollection<Notification>('notifications');
+    const allTenantNotifs = await readAllTenantsCollection<Notification>('notifications') as Notification[];
+    const sharedNotifs = await readCollection<Notification>('notifications');
     notifications = [...allTenantNotifs, ...sharedNotifs];
   }
 
@@ -73,25 +73,25 @@ router.get('/notifications', (req, res) => {
 });
 
 // PUT /api/dashboard/notifications/:id/read
-router.put('/notifications/:id/read', (req, res) => {
+router.put('/notifications/:id/read', async (req, res) => {
   const userId = getAuthUserId(req);
   if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
   // Tìm notification trong tenant user trước
-  const tenantNotifs = readUserCollection<Notification>(userId, 'notifications');
+  const tenantNotifs = await readUserCollection<Notification>(userId, 'notifications');
   const tenantIdx = tenantNotifs.findIndex(n => n.id === req.params.id);
   if (tenantIdx !== -1) {
     tenantNotifs[tenantIdx].read = true;
-    writeUserCollection(userId, 'notifications', tenantNotifs);
+    await writeUserCollection(userId, 'notifications', tenantNotifs);
     return res.json({ success: true });
   }
 
   // Fallback: tìm trong shared notifications
-  const sharedNotifs = readCollection<Notification>('notifications');
+  const sharedNotifs = await readCollection<Notification>('notifications');
   const sharedIdx = sharedNotifs.findIndex(n => n.id === req.params.id);
   if (sharedIdx !== -1) {
     sharedNotifs[sharedIdx].read = true;
-    writeCollection('notifications', sharedNotifs);
+    await writeCollection('notifications', sharedNotifs);
     return res.json({ success: true });
   }
 

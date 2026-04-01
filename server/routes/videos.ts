@@ -21,11 +21,11 @@ const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 500 * 1024 * 1024 } }); // 500MB max
 
 // GET /api/videos — list videos for tenant
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const tenantId = getTenantId(req);
   const videos = tenantId
-    ? readUserCollection<Video>(tenantId, 'videos')
-    : readAllTenantsCollection<Video>('videos');
+    ? await readUserCollection<Video>(tenantId, 'videos')
+    : await readAllTenantsCollection<Video>('videos');
   (videos as Video[]).sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
   res.json({ success: true, data: videos });
 });
@@ -58,9 +58,9 @@ router.post('/upload', upload.single('video'), async (req, res) => {
       ownerId: userId,
     };
 
-    const videos = readUserCollection<Video>(userId, 'videos');
+    const videos = await readUserCollection<Video>(userId, 'videos');
     videos.push(video);
-    writeUserCollection(userId, 'videos', videos);
+    await writeUserCollection(userId, 'videos', videos);
 
     res.json({ success: true, data: video });
   } catch (err) {
@@ -76,23 +76,23 @@ router.delete('/:id', async (req, res) => {
 
   if (isAdmin(req)) {
     // Admin: tìm trong tất cả tenants
-    const all = readAllTenantsCollection<Video>('videos');
+    const all = await readAllTenantsCollection<Video>('videos');
     const target = all.find(v => v.id === req.params.id);
     if (!target) return res.json({ success: false, error: 'Video không tồn tại' });
     const tid = (target as any).__tenantId;
     try { await deleteFromR2(target.r2Key); } catch { /* ignore */ }
-    const videos = readUserCollection<Video>(tid, 'videos');
-    writeUserCollection(tid, 'videos', videos.filter(v => v.id !== req.params.id));
+    const videos = await readUserCollection<Video>(tid, 'videos');
+    await writeUserCollection(tid, 'videos', videos.filter(v => v.id !== req.params.id));
     return res.json({ success: true });
   }
 
   // User: chỉ xoá trong tenant mình
-  const videos = readUserCollection<Video>(userId, 'videos');
+  const videos = await readUserCollection<Video>(userId, 'videos');
   const video = videos.find(v => v.id === req.params.id);
   if (!video) return res.json({ success: false, error: 'Video không tồn tại' });
 
   try { await deleteFromR2(video.r2Key); } catch { /* ignore */ }
-  writeUserCollection(userId, 'videos', videos.filter(v => v.id !== req.params.id));
+  await writeUserCollection(userId, 'videos', videos.filter(v => v.id !== req.params.id));
   res.json({ success: true });
 });
 
@@ -107,13 +107,13 @@ router.post('/:id/send-to-device', async (req, res) => {
   // Check video ownership
   const tenantId = isAdmin(req) ? undefined : userId;
   const videos = tenantId
-    ? readUserCollection<Video>(tenantId, 'videos')
-    : readAllTenantsCollection<Video>('videos');
+    ? await readUserCollection<Video>(tenantId, 'videos')
+    : await readAllTenantsCollection<Video>('videos');
   const video = (videos as Video[]).find(v => v.id === req.params.id);
   if (!video) return res.json({ success: false, error: 'Video không tồn tại' });
 
   // Check device ownership
-  const found = findDeviceGlobal(deviceId);
+  const found = await findDeviceGlobal(deviceId);
   if (!found) return res.json({ success: false, error: 'Thiết bị không tìm thấy' });
   if (!isAdmin(req) && found.tenantId !== userId) {
     return res.status(403).json({ success: false, error: 'Không có quyền truy cập thiết bị này' });

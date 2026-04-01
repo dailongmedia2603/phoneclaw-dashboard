@@ -21,12 +21,12 @@ interface User {
 
 // --- Helpers ---
 
-function getUsers(): User[] {
-  return readCollection<User>('users');
+async function getUsers(): Promise<User[]> {
+  return await readCollection<User>('users');
 }
 
-function saveUsers(users: User[]) {
-  writeCollection('users', users);
+async function saveUsers(users: User[]) {
+  await writeCollection('users', users);
 }
 
 /** Strip password from user before sending to client */
@@ -56,7 +56,7 @@ export function adminOnly(req: Request, res: Response, next: NextFunction) {
 
 // --- Seed default admin if no users exist ---
 (async () => {
-  const users = getUsers();
+  const users = await getUsers();
   if (users.length === 0) {
     const hash = await bcrypt.hash('dailongmedia@123', 10);
     const admin: User = {
@@ -67,7 +67,7 @@ export function adminOnly(req: Request, res: Response, next: NextFunction) {
       role: 'admin',
       createdAt: new Date().toISOString(),
     };
-    saveUsers([admin]);
+    await saveUsers([admin]);
     console.log('[Auth] Default admin account created: long@dailongmedia.io.vn');
   }
 })();
@@ -79,7 +79,7 @@ router.post('/login', async (req: Request, res: Response) => {
     return res.status(400).json({ success: false, error: 'Email và mật khẩu là bắt buộc' });
   }
 
-  const users = getUsers();
+  const users = await getUsers();
   // Use constant-time comparison to prevent timing attacks
   const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
   if (!user) {
@@ -109,11 +109,11 @@ router.post('/login', async (req: Request, res: Response) => {
 });
 
 // --- GET /api/auth/me ---
-router.get('/me', (req: Request, res: Response) => {
+router.get('/me', async (req: Request, res: Response) => {
   const authUser = getAuthUser(req);
   if (!authUser) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
-  const users = getUsers();
+  const users = await getUsers();
   const user = users.find(u => u.id === authUser.id);
   if (!user) return res.status(401).json({ success: false, error: 'User not found' });
 
@@ -130,7 +130,7 @@ router.post('/change-password', async (req: Request, res: Response) => {
     return res.status(400).json({ success: false, error: 'Mật khẩu mới phải ít nhất 6 ký tự' });
   }
 
-  const users = getUsers();
+  const users = await getUsers();
   const user = users.find(u => u.id === authUser.id);
   if (!user) return res.status(401).json({ success: false, error: 'User not found' });
 
@@ -138,7 +138,7 @@ router.post('/change-password', async (req: Request, res: Response) => {
   if (!valid) return res.status(400).json({ success: false, error: 'Mật khẩu hiện tại không đúng' });
 
   user.password = await bcrypt.hash(newPassword, 10);
-  saveUsers(users);
+  await saveUsers(users);
   res.json({ success: true });
 });
 
@@ -147,8 +147,8 @@ router.post('/change-password', async (req: Request, res: Response) => {
 // ============================================================
 
 // GET /api/auth/users — list all users
-router.get('/users', adminOnly, (_req: Request, res: Response) => {
-  const users = getUsers();
+router.get('/users', adminOnly, async (_req: Request, res: Response) => {
+  const users = await getUsers();
   res.json({ success: true, data: users.map(sanitizeUser) });
 });
 
@@ -166,7 +166,7 @@ router.post('/users', adminOnly, async (req: Request, res: Response) => {
     return res.status(400).json({ success: false, error: 'Quyền không hợp lệ' });
   }
 
-  const users = getUsers();
+  const users = await getUsers();
   if (users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
     return res.status(400).json({ success: false, error: 'Email đã tồn tại' });
   }
@@ -184,7 +184,7 @@ router.post('/users', adminOnly, async (req: Request, res: Response) => {
   };
 
   users.push(user);
-  saveUsers(users);
+  await saveUsers(users);
 
   // Tạo tenant directory cho user mới
   ensureTenantDir(user.id);
@@ -195,7 +195,7 @@ router.post('/users', adminOnly, async (req: Request, res: Response) => {
 // PUT /api/auth/users/:id — update user
 router.put('/users/:id', adminOnly, async (req: Request, res: Response) => {
   const { name, email, phone, role, password, packageId } = req.body;
-  const users = getUsers();
+  const users = await getUsers();
   const idx = users.findIndex(u => u.id === req.params.id);
   if (idx === -1) return res.status(404).json({ success: false, error: 'Người dùng không tồn tại' });
 
@@ -223,14 +223,14 @@ router.put('/users/:id', adminOnly, async (req: Request, res: Response) => {
     users[idx].packageId = packageId || undefined;
   }
 
-  saveUsers(users);
+  await saveUsers(users);
   res.json({ success: true, data: sanitizeUser(users[idx]) });
 });
 
 // DELETE /api/auth/users/:id — delete user
-router.delete('/users/:id', adminOnly, (req: Request, res: Response) => {
+router.delete('/users/:id', adminOnly, async (req: Request, res: Response) => {
   const authUser = getAuthUser(req);
-  const users = getUsers();
+  const users = await getUsers();
   const user = users.find(u => u.id === req.params.id);
   if (!user) return res.status(404).json({ success: false, error: 'Người dùng không tồn tại' });
 
@@ -248,7 +248,7 @@ router.delete('/users/:id', adminOnly, (req: Request, res: Response) => {
   }
 
   const filtered = users.filter(u => u.id !== req.params.id);
-  saveUsers(filtered);
+  await saveUsers(filtered);
   res.json({ success: true });
 });
 

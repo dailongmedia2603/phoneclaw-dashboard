@@ -6,75 +6,75 @@ import { getTenantId, getAuthUserId, isAdmin } from '../helpers/get-user';
 const router = Router();
 
 // GET /api/scripts
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const tenantId = getTenantId(req);
-  res.json({ success: true, data: se.getScriptsForTenant(tenantId) });
+  res.json({ success: true, data: await se.getScriptsForTenant(tenantId) });
 });
 
 // GET /api/scripts/:id
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   const tenantId = getTenantId(req);
-  const scripts = se.getScriptsForTenant(tenantId);
+  const scripts = await se.getScriptsForTenant(tenantId);
   const script = scripts.find(s => s.id === req.params.id);
   if (!script) return res.status(404).json({ success: false, error: 'Script not found' });
   res.json({ success: true, data: script });
 });
 
 // POST /api/scripts
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const userId = getAuthUserId(req);
   if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
   const { name, description, steps, channel, graphData } = req.body;
   if (!name) return res.status(400).json({ success: false, error: 'name is required' });
-  const script = se.createScriptForTenant(userId, { name, description: description || '', steps: steps || [], channel, graphData });
+  const script = await se.createScriptForTenant(userId, { name, description: description || '', steps: steps || [], channel, graphData });
   res.status(201).json({ success: true, data: script });
 });
 
 // PUT /api/scripts/:id
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   const userId = getAuthUserId(req);
   if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
   // Ownership check: tìm script trong tenant user hoặc admin xem tất cả
   if (isAdmin(req)) {
     // Admin: tìm trong tất cả tenants
-    const allScripts = se.getScriptsForTenant(undefined);
+    const allScripts = await se.getScriptsForTenant(undefined);
     const target = allScripts.find(s => s.id === req.params.id);
     if (!target) return res.status(404).json({ success: false, error: 'Script not found' });
     const tid = (target as any).__tenantId || userId;
-    const script = se.updateScriptForTenant(tid, req.params.id, req.body);
+    const script = await se.updateScriptForTenant(tid, req.params.id, req.body);
     if (!script) return res.status(404).json({ success: false, error: 'Script not found' });
     return res.json({ success: true, data: script });
   }
 
-  const script = se.updateScriptForTenant(userId, req.params.id, req.body);
+  const script = await se.updateScriptForTenant(userId, req.params.id, req.body);
   if (!script) return res.status(404).json({ success: false, error: 'Script not found' });
   res.json({ success: true, data: script });
 });
 
 // DELETE /api/scripts/:id
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   const userId = getAuthUserId(req);
   if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
   if (isAdmin(req)) {
-    const allScripts = se.getScriptsForTenant(undefined);
+    const allScripts = await se.getScriptsForTenant(undefined);
     const target = allScripts.find(s => s.id === req.params.id);
     if (!target) return res.status(404).json({ success: false, error: 'Script not found' });
     const tid = (target as any).__tenantId || userId;
-    const ok = se.deleteScriptForTenant(tid, req.params.id);
+    const ok = await se.deleteScriptForTenant(tid, req.params.id);
     if (!ok) return res.status(404).json({ success: false, error: 'Script not found' });
     return res.json({ success: true });
   }
 
-  const ok = se.deleteScriptForTenant(userId, req.params.id);
+  const ok = await se.deleteScriptForTenant(userId, req.params.id);
   if (!ok) return res.status(404).json({ success: false, error: 'Script not found' });
   res.json({ success: true });
 });
 
 // POST /api/scripts/:id/run — run script on a device
-router.post('/:id/run', (req, res) => {
+router.post('/:id/run', async (req, res) => {
   const userId = getAuthUserId(req);
   if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
@@ -82,12 +82,12 @@ router.post('/:id/run', (req, res) => {
   if (!deviceId) return res.status(400).json({ success: false, error: 'deviceId is required' });
 
   // Check script ownership: script phải thuộc tenant user
-  const userScripts = se.getScriptsForTenant(isAdmin(req) ? undefined : userId);
+  const userScripts = await se.getScriptsForTenant(isAdmin(req) ? undefined : userId);
   const script = userScripts.find(s => s.id === req.params.id);
   if (!script) return res.status(403).json({ success: false, error: 'Không có quyền chạy script này' });
 
   // Check device ownership: device phải thuộc tenant user
-  const found = findDeviceGlobal(deviceId);
+  const found = await findDeviceGlobal(deviceId);
   if (!found) return res.status(404).json({ success: false, error: 'Device not found' });
   if (!isAdmin(req) && found.tenantId !== userId) {
     return res.status(403).json({ success: false, error: 'Không có quyền truy cập thiết bị này' });
@@ -102,9 +102,9 @@ router.post('/:id/run', (req, res) => {
 });
 
 // GET /api/scripts/executions/latest — get latest execution status
-router.get('/executions/latest', (req, res) => {
+router.get('/executions/latest', async (req, res) => {
   const tenantId = getTenantId(req);
-  const history = se.getExecutionHistoryForTenant(tenantId);
+  const history = await se.getExecutionHistoryForTenant(tenantId);
   const latest = history.length > 0 ? history[history.length - 1] : null;
   res.json({ success: true, data: latest });
 });
@@ -118,9 +118,9 @@ router.post('/:id/stop', (req, res) => {
 });
 
 // GET /api/scripts/history/all
-router.get('/history/all', (req, res) => {
+router.get('/history/all', async (req, res) => {
   const tenantId = getTenantId(req);
-  res.json({ success: true, data: se.getExecutionHistoryForTenant(tenantId) });
+  res.json({ success: true, data: await se.getExecutionHistoryForTenant(tenantId) });
 });
 
 export default router;

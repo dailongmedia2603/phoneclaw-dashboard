@@ -7,16 +7,17 @@ let statusChangeCallback: ((device: Device) => void) | null = null;
 
 // --- Device CRUD ---
 
-export function getAllDevices(): Device[] {
+export async function getAllDevices(): Promise<Device[]> {
   return readCollection<Device>('devices');
 }
 
-export function getDevice(id: string): Device | undefined {
-  return getAllDevices().find(d => d.id === id);
+export async function getDevice(id: string): Promise<Device | undefined> {
+  const all = await getAllDevices();
+  return all.find(d => d.id === id);
 }
 
-export function createDevice(data: Omit<Device, 'id' | 'status' | 'uptime' | 'lastSeen' | 'createdAt'>): Device {
-  const devices = getAllDevices();
+export async function createDevice(data: Omit<Device, 'id' | 'status' | 'uptime' | 'lastSeen' | 'createdAt'>): Promise<Device> {
+  const devices = await getAllDevices();
   const device: Device = {
     ...data,
     id: generateId(),
@@ -26,65 +27,65 @@ export function createDevice(data: Omit<Device, 'id' | 'status' | 'uptime' | 'la
     createdAt: new Date().toISOString(),
   };
   devices.push(device);
-  writeCollection('devices', devices);
+  await writeCollection('devices', devices);
   // Trigger immediate health check for new device
-  checkDeviceHealth(device).then(result => {
+  checkDeviceHealth(device).then(async result => {
     const updates: Partial<Device> = {
       status: result.status,
       lastSeen: result.status !== 'offline' ? new Date().toISOString() : device.lastSeen,
     };
     if (result.info?.systemVersion) updates.iosVersion = String(result.info.systemVersion);
     if (result.info?.model) updates.model = String(result.info.model);
-    updateDevice(device.id, updates);
+    await updateDevice(device.id, updates);
   });
   return device;
 }
 
-export function updateDevice(id: string, data: Partial<Device>): Device | null {
-  const devices = getAllDevices();
+export async function updateDevice(id: string, data: Partial<Device>): Promise<Device | null> {
+  const devices = await getAllDevices();
   const idx = devices.findIndex(d => d.id === id);
   if (idx === -1) return null;
   devices[idx] = { ...devices[idx], ...data };
-  writeCollection('devices', devices);
+  await writeCollection('devices', devices);
   return devices[idx];
 }
 
-export function deleteDevice(id: string): boolean {
-  const devices = getAllDevices();
+export async function deleteDevice(id: string): Promise<boolean> {
+  const devices = await getAllDevices();
   const filtered = devices.filter(d => d.id !== id);
   if (filtered.length === devices.length) return false;
-  writeCollection('devices', filtered);
+  await writeCollection('devices', filtered);
   return true;
 }
 
 // --- Device Groups ---
 
-export function getAllGroups(): DeviceGroup[] {
+export async function getAllGroups(): Promise<DeviceGroup[]> {
   return readCollection<DeviceGroup>('device-groups');
 }
 
-export function createGroup(name: string, color: string): DeviceGroup {
-  const groups = getAllGroups();
+export async function createGroup(name: string, color: string): Promise<DeviceGroup> {
+  const groups = await getAllGroups();
   const group: DeviceGroup = { id: generateId(), name, color, deviceIds: [] };
   groups.push(group);
-  writeCollection('device-groups', groups);
+  await writeCollection('device-groups', groups);
   return group;
 }
 
-export function updateGroup(id: string, data: Partial<DeviceGroup>): DeviceGroup | null {
-  const groups = getAllGroups();
+export async function updateGroup(id: string, data: Partial<DeviceGroup>): Promise<DeviceGroup | null> {
+  const groups = await getAllGroups();
   const idx = groups.findIndex(g => g.id === id);
   if (idx === -1) return null;
   groups[idx] = { ...groups[idx], ...data };
-  writeCollection('device-groups', groups);
+  await writeCollection('device-groups', groups);
   return groups[idx];
 }
 
-export function deleteGroup(id: string): boolean {
-  const groups = getAllGroups();
+export async function deleteGroup(id: string): Promise<boolean> {
+  const groups = await getAllGroups();
   const filtered = groups.filter(g => g.id !== id);
   if (filtered.length === groups.length) return false;
-  writeCollection('device-groups', filtered);
+  await writeCollection('device-groups', filtered);
   return true;
 }
 
@@ -92,27 +93,22 @@ export function deleteGroup(id: string): boolean {
 // Tenant-scoped CRUD — per-user data isolation
 // ============================================================
 
-/**
- * Lấy devices cho 1 tenant hoặc TẤT CẢ (admin).
- * tenantId = undefined → admin → aggregate tất cả tenants
- * tenantId = string → user cụ thể
- */
-export function getDevicesForTenant(tenantId?: string): Device[] {
+export async function getDevicesForTenant(tenantId?: string): Promise<Device[]> {
   if (!tenantId) {
     return readAllTenantsCollection<Device>('devices');
   }
   return readUserCollection<Device>(tenantId, 'devices');
 }
 
-export function getGroupsForTenant(tenantId?: string): DeviceGroup[] {
+export async function getGroupsForTenant(tenantId?: string): Promise<DeviceGroup[]> {
   if (!tenantId) {
     return readAllTenantsCollection<DeviceGroup>('device-groups');
   }
   return readUserCollection<DeviceGroup>(tenantId, 'device-groups');
 }
 
-export function createDeviceForTenant(userId: string, data: Omit<Device, 'id' | 'status' | 'uptime' | 'lastSeen' | 'createdAt'>): Device {
-  const devices = readUserCollection<Device>(userId, 'devices');
+export async function createDeviceForTenant(userId: string, data: Omit<Device, 'id' | 'status' | 'uptime' | 'lastSeen' | 'createdAt'>): Promise<Device> {
+  const devices = await readUserCollection<Device>(userId, 'devices');
   const device: Device = {
     ...data,
     id: generateId(),
@@ -123,20 +119,20 @@ export function createDeviceForTenant(userId: string, data: Omit<Device, 'id' | 
     createdAt: new Date().toISOString(),
   };
   devices.push(device);
-  writeUserCollection(userId, 'devices', devices);
+  await writeUserCollection(userId, 'devices', devices);
 
   // Register in IP lookup map
   ipDeviceMap.set(device.tailscaleIp, { deviceId: device.id, tenantId: userId });
 
   // Trigger immediate health check (logic giữ nguyên)
-  checkDeviceHealth(device).then(result => {
+  checkDeviceHealth(device).then(async result => {
     const updates: Partial<Device> = {
       status: result.status,
       lastSeen: result.status !== 'offline' ? new Date().toISOString() : device.lastSeen,
     };
     if (result.info?.systemVersion) updates.iosVersion = String(result.info.systemVersion);
     if (result.info?.model) updates.model = String(result.info.model);
-    updateDeviceForTenant(userId, device.id, updates);
+    await updateDeviceForTenant(userId, device.id, updates);
 
     // Push heartbeat config to phone so it starts sending heartbeats
     if (result.status === 'online') {
@@ -146,8 +142,8 @@ export function createDeviceForTenant(userId: string, data: Omit<Device, 'id' | 
   return device;
 }
 
-export function updateDeviceForTenant(userId: string, id: string, data: Partial<Device>): Device | null {
-  const devices = readUserCollection<Device>(userId, 'devices');
+export async function updateDeviceForTenant(userId: string, id: string, data: Partial<Device>): Promise<Device | null> {
+  const devices = await readUserCollection<Device>(userId, 'devices');
   const idx = devices.findIndex(d => d.id === id);
   if (idx === -1) return null;
 
@@ -158,16 +154,16 @@ export function updateDeviceForTenant(userId: string, id: string, data: Partial<
   }
 
   devices[idx] = { ...devices[idx], ...data };
-  writeUserCollection(userId, 'devices', devices);
+  await writeUserCollection(userId, 'devices', devices);
   return devices[idx];
 }
 
-export function deleteDeviceForTenant(userId: string, id: string): boolean {
-  const devices = readUserCollection<Device>(userId, 'devices');
+export async function deleteDeviceForTenant(userId: string, id: string): Promise<boolean> {
+  const devices = await readUserCollection<Device>(userId, 'devices');
   const device = devices.find(d => d.id === id);
   const filtered = devices.filter(d => d.id !== id);
   if (filtered.length === devices.length) return false;
-  writeUserCollection(userId, 'devices', filtered);
+  await writeUserCollection(userId, 'devices', filtered);
 
   // Remove from IP lookup map
   if (device) {
@@ -177,39 +173,39 @@ export function deleteDeviceForTenant(userId: string, id: string): boolean {
   return true;
 }
 
-export function createGroupForTenant(userId: string, name: string, color: string): DeviceGroup {
-  const groups = readUserCollection<DeviceGroup>(userId, 'device-groups');
+export async function createGroupForTenant(userId: string, name: string, color: string): Promise<DeviceGroup> {
+  const groups = await readUserCollection<DeviceGroup>(userId, 'device-groups');
   const group: DeviceGroup = { id: generateId(), name, color, deviceIds: [] };
   groups.push(group);
-  writeUserCollection(userId, 'device-groups', groups);
+  await writeUserCollection(userId, 'device-groups', groups);
   return group;
 }
 
-export function updateGroupForTenant(userId: string, id: string, data: Partial<DeviceGroup>): DeviceGroup | null {
-  const groups = readUserCollection<DeviceGroup>(userId, 'device-groups');
+export async function updateGroupForTenant(userId: string, id: string, data: Partial<DeviceGroup>): Promise<DeviceGroup | null> {
+  const groups = await readUserCollection<DeviceGroup>(userId, 'device-groups');
   const idx = groups.findIndex(g => g.id === id);
   if (idx === -1) return null;
   groups[idx] = { ...groups[idx], ...data };
-  writeUserCollection(userId, 'device-groups', groups);
+  await writeUserCollection(userId, 'device-groups', groups);
   return groups[idx];
 }
 
-export function deleteGroupForTenant(userId: string, id: string): boolean {
-  const groups = readUserCollection<DeviceGroup>(userId, 'device-groups');
+export async function deleteGroupForTenant(userId: string, id: string): Promise<boolean> {
+  const groups = await readUserCollection<DeviceGroup>(userId, 'device-groups');
   const filtered = groups.filter(g => g.id !== id);
   if (filtered.length === groups.length) return false;
-  writeUserCollection(userId, 'device-groups', filtered);
+  await writeUserCollection(userId, 'device-groups', filtered);
   return true;
 }
 
 /**
  * Tìm device theo ID — scan tất cả tenants.
  * Trả về { device, tenantId } để biết device thuộc user nào.
- * Dùng cho ownership verification và cross-tenant lookups.
  */
-export function findDeviceGlobal(id: string): { device: Device; tenantId: string } | null {
-  for (const tid of getAllTenantIds()) {
-    const devices = readUserCollection<Device>(tid, 'devices');
+export async function findDeviceGlobal(id: string): Promise<{ device: Device; tenantId: string } | null> {
+  const tenantIds = await getAllTenantIds();
+  for (const tid of tenantIds) {
+    const devices = await readUserCollection<Device>(tid, 'devices');
     const device = devices.find(d => d.id === id);
     if (device) return { device, tenantId: tid };
   }
@@ -220,16 +216,13 @@ export function findDeviceGlobal(id: string): { device: Device; tenantId: string
 // IP Lookup Map — O(1) device resolution for heartbeat
 // ============================================================
 
-/**
- * In-memory map: tailscaleIp → { deviceId, tenantId }
- * Built on server start via rebuildIpMap(), updated on device create/delete/update.
- */
 const ipDeviceMap = new Map<string, { deviceId: string; tenantId: string }>();
 
-export function rebuildIpMap(): void {
+export async function rebuildIpMap(): Promise<void> {
   ipDeviceMap.clear();
-  for (const tenantId of getAllTenantIds()) {
-    const devices = readUserCollection<Device>(tenantId, 'devices');
+  const tenantIds = await getAllTenantIds();
+  for (const tenantId of tenantIds) {
+    const devices = await readUserCollection<Device>(tenantId, 'devices');
     for (const device of devices) {
       ipDeviceMap.set(device.tailscaleIp, { deviceId: device.id, tenantId });
     }
@@ -276,19 +269,7 @@ interface HeartbeatPayload {
   battery?: number;
 }
 
-/**
- * Process heartbeat from phone.
- *
- * Preserves ALL existing features:
- * 1. Status transition (offline→online, connecting→online)
- * 2. Device info update (iosVersion, model, battery)
- * 3. proxyStatus monitoring
- * 4. Auto-apply proxy on offline→online
- * 5. WebSocket broadcast via statusChangeCallback
- * 6. lastSeen update
- * 7. Does NOT override 'running' status (script in progress)
- */
-export function handleHeartbeat(payload: HeartbeatPayload): Device | null {
+export async function handleHeartbeat(payload: HeartbeatPayload): Promise<Device | null> {
   // 1. O(1) lookup by IP
   const mapping = ipDeviceMap.get(payload.tailscaleIp);
   if (!mapping) return null;
@@ -296,53 +277,48 @@ export function handleHeartbeat(payload: HeartbeatPayload): Device | null {
   const { deviceId, tenantId } = mapping;
 
   // 2. Read current device from disk
-  const devices = readUserCollection<Device>(tenantId, 'devices');
+  const devices = await readUserCollection<Device>(tenantId, 'devices');
   const device = devices.find(d => d.id === deviceId);
   if (!device) return null;
 
   // 3. Do NOT override 'running' status — script-engine manages this
-  // Equivalent to old line 228: device.currentScript ? null : await checkDeviceHealth()
   if (device.currentScript) {
-    // Only update lastSeen, keep status as 'running'
-    updateDeviceForTenant(tenantId, deviceId, { lastSeen: new Date().toISOString() });
+    await updateDeviceForTenant(tenantId, deviceId, { lastSeen: new Date().toISOString() });
     return device;
   }
 
   // 4. Capture previous status for transition detection
   const previousStatus = device.status;
 
-  // 5. Build update payload — equivalent to old lines 232-251
+  // 5. Build update payload
   const updateData: Partial<Device> = {
     status: 'online',
     lastSeen: new Date().toISOString(),
   };
 
-  // Update device info from heartbeat payload
   if (payload.systemVersion) updateData.iosVersion = String(payload.systemVersion);
   if (payload.model) updateData.model = String(payload.model);
   if (payload.battery !== undefined) updateData.battery = payload.battery;
 
-  // Update proxy status — equivalent to old lines 246-251
   if (payload.proxyStatus === 'running' || payload.proxyStatus === 'stopped') {
     updateData.proxyStatus = payload.proxyStatus;
   }
 
   // 6. Write to disk
-  const updated = updateDeviceForTenant(tenantId, deviceId, updateData);
+  const updated = await updateDeviceForTenant(tenantId, deviceId, updateData);
 
-  // Log every heartbeat for monitoring
   console.log(
     `[Heartbeat] ← ${device.name} (${payload.tailscaleIp}) | ` +
     `status=${previousStatus}→online | battery=${payload.battery ?? '?'}% | ` +
     `proxy=${payload.proxyStatus ?? '?'} | iOS=${payload.systemVersion ?? '?'}`
   );
 
-  // 7. Broadcast if status changed — equivalent to old lines 255-257
+  // 7. Broadcast if status changed
   if (updated && statusChangeCallback && previousStatus !== 'online') {
     statusChangeCallback(updated);
   }
 
-  // 8. Auto-apply proxy on offline→online — equivalent to old lines 260-264
+  // 8. Auto-apply proxy on offline→online
   if (previousStatus === 'offline' && device.proxyConfig?.enabled) {
     autoApplyProxy(device, tenantId).catch(err => {
       console.log(`[Heartbeat] Auto-apply proxy failed for ${device.name}:`, err);
@@ -350,11 +326,10 @@ export function handleHeartbeat(payload: HeartbeatPayload): Device | null {
   }
 
   // 9. Auto-push heartbeat URL nếu phone chưa được cấu hình
-  // Chỉ chạy 1 lần — khi push thành công, set heartbeatConfigured = true
   if (!device.heartbeatConfigured && config.heartbeatUrl) {
-    pushHeartbeatConfig(device.id).then(ok => {
+    pushHeartbeatConfig(device.id).then(async ok => {
       if (ok) {
-        updateDeviceForTenant(tenantId, deviceId, { heartbeatConfigured: true });
+        await updateDeviceForTenant(tenantId, deviceId, { heartbeatConfigured: true });
         console.log(`[Heartbeat] Auto-configured ${device.name} — sẽ không push lại nữa`);
       }
     }).catch(() => {});
@@ -364,36 +339,26 @@ export function handleHeartbeat(payload: HeartbeatPayload): Device | null {
 }
 
 // ============================================================
-// Staleness Checker — lightweight replacement for polling loop
+// Staleness Checker
 // ============================================================
 
-/**
- * Scan all devices, mark offline if no heartbeat received within threshold.
- *
- * Old runHealthChecks(): N HTTP requests + N disk reads + N disk writes every 15s
- * New runStalenessCheck(): N disk reads + ZERO HTTP + writes only on status change
- */
-function runStalenessCheck() {
+async function runStalenessCheck() {
   const threshold = config.heartbeatStaleThreshold;
   const now = Date.now();
 
-  for (const tenantId of getAllTenantIds()) {
-    const devices = readUserCollection<Device>(tenantId, 'devices');
+  const tenantIds = await getAllTenantIds();
+  for (const tenantId of tenantIds) {
+    const devices = await readUserCollection<Device>(tenantId, 'devices');
 
     for (const device of devices) {
-      // Skip already offline devices
       if (device.status === 'offline') continue;
-
-      // Skip devices running scripts — script-engine manages their lifecycle
-      // Equivalent to old line 228: device.currentScript ? null : ...
       if (device.currentScript) continue;
 
-      // Check staleness
       const lastSeenTime = new Date(device.lastSeen).getTime();
       const isStale = (now - lastSeenTime) > threshold;
 
       if (isStale) {
-        const updated = updateDeviceForTenant(tenantId, device.id, { status: 'offline' });
+        const updated = await updateDeviceForTenant(tenantId, device.id, { status: 'offline' });
 
         if (updated && statusChangeCallback) {
           statusChangeCallback(updated);
@@ -409,21 +374,23 @@ function runStalenessCheck() {
 }
 
 // ============================================================
-// Device Monitor — start/stop (replaces old health check loop)
+// Device Monitor — start/stop
 // ============================================================
 
-export function startDeviceMonitor(onStatusChange?: (device: Device) => void) {
+export async function startDeviceMonitor(onStatusChange?: (device: Device) => void) {
   if (onStatusChange) statusChangeCallback = onStatusChange;
   if (healthCheckTimer) clearInterval(healthCheckTimer);
 
   // Build IP map for heartbeat lookups
-  rebuildIpMap();
+  await rebuildIpMap();
 
-  // Run staleness check immediately (equivalent to old line 276)
-  runStalenessCheck();
+  // Run staleness check immediately
+  await runStalenessCheck();
 
   // Start staleness checker interval
-  healthCheckTimer = setInterval(runStalenessCheck, config.stalenessCheckInterval);
+  healthCheckTimer = setInterval(() => {
+    runStalenessCheck().catch(err => console.error('[StalenessCheck] Error:', err));
+  }, config.stalenessCheckInterval);
 
   console.log(
     `[DeviceMonitor] Started — staleness check every ${config.stalenessCheckInterval / 1000}s, ` +
@@ -445,11 +412,6 @@ export const stopHealthChecks = stopDeviceMonitor;
 
 // --- Heartbeat Config Push ---
 
-/**
- * Push heartbeat URL tới phone để phone bắt đầu gửi heartbeat về VPS.
- * Trả về true nếu push thành công, false nếu thất bại.
- * Chỉ cần gọi 1 lần — phone lưu URL vào NSUserDefaults vĩnh viễn.
- */
 async function pushHeartbeatConfig(deviceId: string): Promise<boolean> {
   if (!config.heartbeatUrl) return false;
   const result = await callDeviceApi(deviceId, 'POST', '/api/heartbeat/config', {
@@ -469,12 +431,10 @@ async function autoApplyProxy(device: Device, tenantId?: string) {
   if (!device.proxyConfig) return;
   const { ip, port, username, password, mode, timezone, locale, latitude, longitude } = device.proxyConfig;
 
-  // Skip if mode is "none"
   if (!mode || mode === 'none') return;
 
   console.log(`[HealthCheck] Auto-applying proxy for ${device.name} (mode=${mode})`);
 
-  // Step 1: Push proxy config (include mode)
   const configResult = await callDeviceApi(device.id, 'POST', '/api/proxy/config', {
     ip, port, username, password, mode,
   });
@@ -483,13 +443,12 @@ async function autoApplyProxy(device: Device, tenantId?: string) {
     return;
   }
 
-  // Step 2: Start proxy tunnel
   const startResult = await callDeviceApi(device.id, 'POST', '/api/proxy/start');
   if (startResult.ok) {
     if (tenantId) {
-      updateDeviceForTenant(tenantId, device.id, { proxyStatus: 'running' });
+      await updateDeviceForTenant(tenantId, device.id, { proxyStatus: 'running' });
     } else {
-      updateDevice(device.id, { proxyStatus: 'running' });
+      await updateDevice(device.id, { proxyStatus: 'running' });
     }
     console.log(`[HealthCheck] Proxy auto-started on ${device.name}`);
   } else {
@@ -497,10 +456,8 @@ async function autoApplyProxy(device: Device, tenantId?: string) {
     return;
   }
 
-  // Step 3: Apply spoof based on mode
   const spoofParams: Record<string, unknown> = { mode };
   if (mode === 'us') {
-    // US mode: apply full spoofing
     if (timezone) spoofParams.timezone = timezone;
     if (locale) spoofParams.locale = locale;
     if (latitude !== undefined && longitude !== undefined) {
@@ -508,7 +465,6 @@ async function autoApplyProxy(device: Device, tenantId?: string) {
       spoofParams.longitude = longitude;
     }
   }
-  // For "vn" mode: spoofParams only has mode="vn" → device will disable all spoofing
   await callDeviceApi(device.id, 'POST', '/api/proxy/spoof', spoofParams);
   console.log(`[HealthCheck] Spoof settings applied to ${device.name} (mode=${mode})`);
 }
@@ -522,14 +478,13 @@ export async function callDeviceApi(
   body?: Record<string, unknown>
 ): Promise<{ ok: boolean; data?: unknown; error?: string }> {
   // Tìm device từ tenant storage trước, fallback sang legacy storage
-  const found = findDeviceGlobal(deviceId);
-  const device = found?.device ?? getDevice(deviceId);
+  const found = await findDeviceGlobal(deviceId);
+  const device = found?.device ?? await getDevice(deviceId);
   if (!device) return { ok: false, error: 'Device not found' };
 
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), config.deviceApiTimeout);
-    // API runs on httpPort + 1 (default 8081)
     const apiPort = device.httpPort + 1;
     const url = `http://${device.tailscaleIp}:${apiPort}${endpoint}`;
 
@@ -555,9 +510,6 @@ export async function callDeviceApi(
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unknown error';
-    // Only treat connection-closed-early as success for quick action endpoints
-    // (tap/swipe/key/launch/type) where the device received the command but closed before responding.
-    // For proxy/config endpoints, connection errors ARE real failures.
     const actionEndpoints = ['/api/tap', '/api/swipe', '/api/key', '/api/launch', '/api/type'];
     const isAction = actionEndpoints.some(a => endpoint.startsWith(a));
     if (isAction && (msg.includes('terminated') || msg.includes('ECONNRESET') || msg.includes('empty'))) {

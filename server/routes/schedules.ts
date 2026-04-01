@@ -7,22 +7,22 @@ import { getTenantId, getAuthUserId, isAdmin } from '../helpers/get-user';
 const router = Router();
 
 // GET /api/schedules
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const tenantId = getTenantId(req);
-  res.json({ success: true, data: sched.getSchedulesForTenant(tenantId) });
+  res.json({ success: true, data: await sched.getSchedulesForTenant(tenantId) });
 });
 
 // GET /api/schedules/:id
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   const tenantId = getTenantId(req);
-  const schedules = sched.getSchedulesForTenant(tenantId);
+  const schedules = await sched.getSchedulesForTenant(tenantId);
   const schedule = schedules.find(s => s.id === req.params.id);
   if (!schedule) return res.status(404).json({ success: false, error: 'Schedule not found' });
   res.json({ success: true, data: schedule });
 });
 
 // POST /api/schedules
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const userId = getAuthUserId(req);
   if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
@@ -33,26 +33,26 @@ router.post('/', (req, res) => {
 
   // Verify scriptId thuộc user
   if (!isAdmin(req)) {
-    const userScripts = getScriptsForTenant(userId);
+    const userScripts = await getScriptsForTenant(userId);
     if (!userScripts.find(s => s.id === scriptId)) {
       return res.status(403).json({ success: false, error: 'Script không thuộc về bạn' });
     }
 
     // Verify targetId thuộc user
     if (targetType === 'device') {
-      const found = findDeviceGlobal(targetId);
+      const found = await findDeviceGlobal(targetId);
       if (!found || found.tenantId !== userId) {
         return res.status(403).json({ success: false, error: 'Thiết bị không thuộc về bạn' });
       }
     } else if (targetType === 'group') {
-      const userGroups = getGroupsForTenant(userId);
+      const userGroups = await getGroupsForTenant(userId);
       if (!userGroups.find(g => g.id === targetId)) {
         return res.status(403).json({ success: false, error: 'Nhóm thiết bị không thuộc về bạn' });
       }
     }
   }
 
-  const schedule = sched.createScheduleForTenant(userId, {
+  const schedule = await sched.createScheduleForTenant(userId, {
     name,
     scriptId,
     scriptName: scriptName || '',
@@ -67,7 +67,7 @@ router.post('/', (req, res) => {
 });
 
 // PUT /api/schedules/:id
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   const userId = getAuthUserId(req);
   if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
@@ -78,58 +78,58 @@ router.put('/:id', (req, res) => {
 
   if (isAdmin(req)) {
     // Admin: tìm trong tất cả tenants
-    const all = sched.getSchedulesForTenant(undefined);
+    const all = await sched.getSchedulesForTenant(undefined);
     const target = all.find(s => s.id === req.params.id);
     if (!target) return res.status(404).json({ success: false, error: 'Schedule not found' });
     const tid = (target as any).__tenantId || userId;
-    const schedule = sched.updateScheduleForTenant(tid, req.params.id, data);
+    const schedule = await sched.updateScheduleForTenant(tid, req.params.id, data);
     if (!schedule) return res.status(404).json({ success: false, error: 'Schedule not found' });
     return res.json({ success: true, data: schedule });
   }
 
-  const schedule = sched.updateScheduleForTenant(userId, req.params.id, data);
+  const schedule = await sched.updateScheduleForTenant(userId, req.params.id, data);
   if (!schedule) return res.status(404).json({ success: false, error: 'Schedule not found' });
   res.json({ success: true, data: schedule });
 });
 
 // DELETE /api/schedules/:id
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   const userId = getAuthUserId(req);
   if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
   if (isAdmin(req)) {
-    const all = sched.getSchedulesForTenant(undefined);
+    const all = await sched.getSchedulesForTenant(undefined);
     const target = all.find(s => s.id === req.params.id);
     if (!target) return res.status(404).json({ success: false, error: 'Schedule not found' });
     const tid = (target as any).__tenantId || userId;
-    const ok = sched.deleteScheduleForTenant(tid, req.params.id);
+    const ok = await sched.deleteScheduleForTenant(tid, req.params.id);
     if (!ok) return res.status(404).json({ success: false, error: 'Schedule not found' });
     return res.json({ success: true });
   }
 
-  const ok = sched.deleteScheduleForTenant(userId, req.params.id);
+  const ok = await sched.deleteScheduleForTenant(userId, req.params.id);
   if (!ok) return res.status(404).json({ success: false, error: 'Schedule not found' });
   res.json({ success: true });
 });
 
 // PUT /api/schedules/:id/toggle
-router.put('/:id/toggle', (req, res) => {
+router.put('/:id/toggle', async (req, res) => {
   const userId = getAuthUserId(req);
   if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
   if (isAdmin(req)) {
-    const all = sched.getSchedulesForTenant(undefined);
+    const all = await sched.getSchedulesForTenant(undefined);
     const target = all.find(s => s.id === req.params.id);
     if (!target) return res.status(404).json({ success: false, error: 'Schedule not found' });
     const tid = (target as any).__tenantId || userId;
-    const updated = sched.updateScheduleForTenant(tid, req.params.id, { enabled: !target.enabled });
+    const updated = await sched.updateScheduleForTenant(tid, req.params.id, { enabled: !target.enabled });
     return res.json({ success: true, data: updated });
   }
 
-  const schedules = sched.getSchedulesForTenant(userId);
+  const schedules = await sched.getSchedulesForTenant(userId);
   const schedule = schedules.find(s => s.id === req.params.id);
   if (!schedule) return res.status(404).json({ success: false, error: 'Schedule not found' });
-  const updated = sched.updateScheduleForTenant(userId, req.params.id, { enabled: !schedule.enabled });
+  const updated = await sched.updateScheduleForTenant(userId, req.params.id, { enabled: !schedule.enabled });
   res.json({ success: true, data: updated });
 });
 

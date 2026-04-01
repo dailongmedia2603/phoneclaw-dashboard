@@ -6,8 +6,8 @@ import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client
 import { readSingleton } from '../store';
 import type { AppSettings } from '../../src/types';
 
-function getR2Client(): { client: S3Client; bucketName: string; publicUrl: string } {
-  const settings = readSingleton<AppSettings>('settings', {} as AppSettings);
+async function getR2Client(): Promise<{ client: S3Client; bucketName: string; publicUrl: string }> {
+  const settings = await readSingleton<AppSettings>('settings', {} as AppSettings);
   const r2 = settings.r2;
   if (!r2?.accountId || !r2?.accessKeyId || !r2?.secretAccessKey || !r2?.bucketName) {
     throw new Error('Cloudflare R2 chưa được cấu hình. Vào Cài đặt → Cloudflare R2 để thiết lập.');
@@ -30,7 +30,7 @@ export async function uploadToR2(
   key: string,
   contentType: string
 ): Promise<string> {
-  const { client, bucketName, publicUrl } = getR2Client();
+  const { client, bucketName, publicUrl } = await getR2Client();
 
   await client.send(new PutObjectCommand({
     Bucket: bucketName,
@@ -39,7 +39,6 @@ export async function uploadToR2(
     ContentType: contentType,
   }));
 
-  // Return public URL if configured, otherwise construct R2 URL
   if (publicUrl) {
     return `${publicUrl.replace(/\/$/, '')}/${key}`;
   }
@@ -47,7 +46,7 @@ export async function uploadToR2(
 }
 
 export async function deleteFromR2(key: string): Promise<void> {
-  const { client, bucketName } = getR2Client();
+  const { client, bucketName } = await getR2Client();
 
   await client.send(new DeleteObjectCommand({
     Bucket: bucketName,

@@ -106,7 +106,7 @@ function vncHandshake(ip: string, port: number, password?: string): Promise<{ so
  * Uses the same code path as the Live VNC viewer (ptrAddEvent → vncPointToDevicePoint).
  */
 export async function vncTap(deviceId: string, x: number, y: number): Promise<void> {
-  const device = getDevice(deviceId);
+  const device = await getDevice(deviceId);
   if (!device) throw new Error('Device not found');
 
   const { socket, fbWidth, fbHeight } = await vncHandshake(
@@ -138,7 +138,7 @@ export async function vncTap(deviceId: string, x: number, y: number): Promise<vo
  * Trigger a VNC framebuffer capture (for screenshot refresh).
  */
 export async function triggerVncCapture(deviceId: string): Promise<void> {
-  const device = getDevice(deviceId);
+  const device = await getDevice(deviceId);
   if (!device) return;
 
   try {

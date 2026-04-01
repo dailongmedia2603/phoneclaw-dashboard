@@ -20,9 +20,9 @@ async function verifyProxyRunning(deviceId: string): Promise<{ running: boolean;
 /**
  * Middleware: kiểm tra user có quyền truy cập device không.
  */
-function verifyDeviceAccess(req: Request, res: Response, next: NextFunction) {
+async function verifyDeviceAccess(req: Request, res: Response, next: NextFunction) {
   const userId = getAuthUserId(req);
-  const found = findDeviceGlobal(req.params.deviceId);
+  const found = await findDeviceGlobal(req.params.deviceId);
 
   if (!found) {
     return res.status(404).json({ success: false, error: 'Device not found' });
@@ -41,13 +41,13 @@ function verifyDeviceAccess(req: Request, res: Response, next: NextFunction) {
  * Helper: verify tất cả deviceIds thuộc user. Trả về map deviceId → tenantId.
  * Nếu bất kỳ device nào không thuộc user → trả null.
  */
-function verifyBatchOwnership(req: Request, deviceIds: string[]): Record<string, string> | null {
+async function verifyBatchOwnership(req: Request, deviceIds: string[]): Promise<Record<string, string> | null> {
   const userId = getAuthUserId(req);
   const admin = isAdmin(req);
   const map: Record<string, string> = {};
 
   for (const deviceId of deviceIds) {
-    const found = findDeviceGlobal(deviceId);
+    const found = await findDeviceGlobal(deviceId);
     if (!found) return null; // Device not found
     if (!admin && found.tenantId !== userId) return null; // Không thuộc user
     map[deviceId] = found.tenantId;
@@ -66,7 +66,7 @@ router.post('/batch/config', async (req, res) => {
     return res.json({ success: false, error: 'Missing deviceIds, ip, or port' });
   }
 
-  const ownerMap = verifyBatchOwnership(req, deviceIds);
+  const ownerMap = await verifyBatchOwnership(req, deviceIds);
   if (!ownerMap) {
     return res.status(403).json({ success: false, error: 'Không có quyền truy cập một hoặc nhiều thiết bị' });
   }
@@ -77,7 +77,7 @@ router.post('/batch/config', async (req, res) => {
       ip, port: Number(port), username: username || '', password: password || '',
       enabled: false, mode: mode || 'none',
     };
-    updateDeviceForTenant(ownerMap[deviceId], deviceId, { proxyConfig });
+    await updateDeviceForTenant(ownerMap[deviceId], deviceId, { proxyConfig });
 
     const result = await callDeviceApi(deviceId, 'POST', '/api/proxy/config', {
       ip, port: Number(port), username: username || '', password: password || '', mode: mode || 'none',
@@ -95,7 +95,7 @@ router.post('/batch/start', async (req, res) => {
     return res.json({ success: false, error: 'Missing deviceIds' });
   }
 
-  const ownerMap = verifyBatchOwnership(req, deviceIds);
+  const ownerMap = await verifyBatchOwnership(req, deviceIds);
   if (!ownerMap) {
     return res.status(403).json({ success: false, error: 'Không có quyền truy cập một hoặc nhiều thiết bị' });
   }
@@ -107,16 +107,16 @@ router.post('/batch/start', async (req, res) => {
     if (result.ok) {
       const verify = await verifyProxyRunning(deviceId);
       if (verify.running) {
-        const found = findDeviceGlobal(deviceId);
+        const found = await findDeviceGlobal(deviceId);
         if (found?.device.proxyConfig) {
-          updateDeviceForTenant(tid, deviceId, {
+          await updateDeviceForTenant(tid, deviceId, {
             proxyConfig: { ...found.device.proxyConfig, enabled: true },
             proxyStatus: 'running',
           });
         }
         results[deviceId] = { ok: true };
       } else {
-        updateDeviceForTenant(tid, deviceId, { proxyStatus: 'stopped' });
+        await updateDeviceForTenant(tid, deviceId, { proxyStatus: 'stopped' });
         results[deviceId] = { ok: false, error: 'sing-box crashed — kiểm tra binary/TUN trên iPhone' };
       }
     } else {
@@ -134,7 +134,7 @@ router.post('/batch/stop', async (req, res) => {
     return res.json({ success: false, error: 'Missing deviceIds' });
   }
 
-  const ownerMap = verifyBatchOwnership(req, deviceIds);
+  const ownerMap = await verifyBatchOwnership(req, deviceIds);
   if (!ownerMap) {
     return res.status(403).json({ success: false, error: 'Không có quyền truy cập một hoặc nhiều thiết bị' });
   }
@@ -144,9 +144,9 @@ router.post('/batch/stop', async (req, res) => {
     const tid = ownerMap[deviceId];
     const result = await callDeviceApi(deviceId, 'POST', '/api/proxy/stop');
     if (result.ok) {
-      const found = findDeviceGlobal(deviceId);
+      const found = await findDeviceGlobal(deviceId);
       if (found?.device.proxyConfig) {
-        updateDeviceForTenant(tid, deviceId, {
+        await updateDeviceForTenant(tid, deviceId, {
           proxyConfig: { ...found.device.proxyConfig, enabled: false },
           proxyStatus: 'stopped',
         });
@@ -193,7 +193,7 @@ router.post('/:deviceId/config', verifyDeviceAccess, async (req, res) => {
     return res.json({ success: false, error: 'Missing ip or port' });
   }
 
-  const found = findDeviceGlobal(req.params.deviceId);
+  const found = await findDeviceGlobal(req.params.deviceId);
   if (!found) return res.json({ success: false, error: 'Device not found' });
   const device = found.device;
 
@@ -206,7 +206,7 @@ router.post('/:deviceId/config', verifyDeviceAccess, async (req, res) => {
     latitude: req.body.latitude ?? device.proxyConfig?.latitude,
     longitude: req.body.longitude ?? device.proxyConfig?.longitude,
   };
-  updateDeviceForTenant(tid, device.id, { proxyConfig });
+  await updateDeviceForTenant(tid, device.id, { proxyConfig });
 
   const result = await callDeviceApi(req.params.deviceId, 'POST', '/api/proxy/config', {
     ip, port: Number(port), username: username || '', password: password || '', mode: mode || 'none',
@@ -221,18 +221,18 @@ router.post('/:deviceId/start', verifyDeviceAccess, async (req, res) => {
   if (result.ok) {
     const verify = await verifyProxyRunning(req.params.deviceId);
     if (verify.running) {
-      const found = findDeviceGlobal(req.params.deviceId);
+      const found = await findDeviceGlobal(req.params.deviceId);
       if (found?.device.proxyConfig) {
-        updateDeviceForTenant(tid, req.params.deviceId, {
+        await updateDeviceForTenant(tid, req.params.deviceId, {
           proxyConfig: { ...found.device.proxyConfig, enabled: true },
           proxyStatus: 'running',
         });
       } else {
-        updateDeviceForTenant(tid, req.params.deviceId, { proxyStatus: 'running' });
+        await updateDeviceForTenant(tid, req.params.deviceId, { proxyStatus: 'running' });
       }
       res.json({ success: true, data: result.data });
     } else {
-      updateDeviceForTenant(tid, req.params.deviceId, { proxyStatus: 'stopped' });
+      await updateDeviceForTenant(tid, req.params.deviceId, { proxyStatus: 'stopped' });
       console.log(`[Proxy] sing-box crashed on ${req.params.deviceId}. Start response:`, result.data, 'Status:', verify.detail);
       res.json({ success: false, error: 'sing-box crashed sau khi khởi động — có thể do binary không tương thích hoặc TUN interface không tạo được', data: { startResult: result.data, statusAfter: verify.detail } });
     }
@@ -246,14 +246,14 @@ router.post('/:deviceId/stop', verifyDeviceAccess, async (req, res) => {
   const tid = (req as any).deviceTenantId as string;
   const result = await callDeviceApi(req.params.deviceId, 'POST', '/api/proxy/stop');
   if (result.ok) {
-    const found = findDeviceGlobal(req.params.deviceId);
+    const found = await findDeviceGlobal(req.params.deviceId);
     if (found?.device.proxyConfig) {
-      updateDeviceForTenant(tid, req.params.deviceId, {
+      await updateDeviceForTenant(tid, req.params.deviceId, {
         proxyConfig: { ...found.device.proxyConfig, enabled: false },
         proxyStatus: 'stopped',
       });
     } else {
-      updateDeviceForTenant(tid, req.params.deviceId, { proxyStatus: 'stopped' });
+      await updateDeviceForTenant(tid, req.params.deviceId, { proxyStatus: 'stopped' });
     }
   }
   res.json({ success: result.ok, data: result.data, error: result.error });
@@ -264,9 +264,9 @@ router.post('/:deviceId/spoof', verifyDeviceAccess, async (req, res) => {
   const tid = (req as any).deviceTenantId as string;
   const { timezone, locale, latitude, longitude, mode } = req.body;
 
-  const found = findDeviceGlobal(req.params.deviceId);
+  const found = await findDeviceGlobal(req.params.deviceId);
   if (found?.device.proxyConfig) {
-    updateDeviceForTenant(tid, req.params.deviceId, {
+    await updateDeviceForTenant(tid, req.params.deviceId, {
       proxyConfig: {
         ...found.device.proxyConfig,
         ...(mode !== undefined && { mode }),

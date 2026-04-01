@@ -8,40 +8,41 @@ let onExecutionUpdate: ((execution: ScheduleHistory) => void) | null = null;
 
 // --- Schedule CRUD ---
 
-export function getAllSchedules(): Schedule[] {
+export async function getAllSchedules(): Promise<Schedule[]> {
   return readCollection<Schedule>('schedules');
 }
 
-export function getSchedule(id: string): Schedule | undefined {
-  return getAllSchedules().find(s => s.id === id);
+export async function getSchedule(id: string): Promise<Schedule | undefined> {
+  const all = await getAllSchedules();
+  return all.find(s => s.id === id);
 }
 
-export function createSchedule(data: Omit<Schedule, 'id' | 'createdAt'>): Schedule {
-  const schedules = getAllSchedules();
+export async function createSchedule(data: Omit<Schedule, 'id' | 'createdAt'>): Promise<Schedule> {
+  const schedules = await getAllSchedules();
   const schedule: Schedule = {
     ...data,
     id: generateId(),
     createdAt: new Date().toISOString(),
   };
   schedules.push(schedule);
-  writeCollection('schedules', schedules);
+  await writeCollection('schedules', schedules);
   return schedule;
 }
 
-export function updateSchedule(id: string, data: Partial<Schedule>): Schedule | null {
-  const schedules = getAllSchedules();
+export async function updateSchedule(id: string, data: Partial<Schedule>): Promise<Schedule | null> {
+  const schedules = await getAllSchedules();
   const idx = schedules.findIndex(s => s.id === id);
   if (idx === -1) return null;
   schedules[idx] = { ...schedules[idx], ...data };
-  writeCollection('schedules', schedules);
+  await writeCollection('schedules', schedules);
   return schedules[idx];
 }
 
-export function deleteSchedule(id: string): boolean {
-  const schedules = getAllSchedules();
+export async function deleteSchedule(id: string): Promise<boolean> {
+  const schedules = await getAllSchedules();
   const filtered = schedules.filter(s => s.id !== id);
   if (filtered.length === schedules.length) return false;
-  writeCollection('schedules', filtered);
+  await writeCollection('schedules', filtered);
   return true;
 }
 
@@ -49,37 +50,37 @@ export function deleteSchedule(id: string): boolean {
 // Tenant-scoped Schedule CRUD
 // ============================================================
 
-export function getSchedulesForTenant(tenantId?: string): Schedule[] {
+export async function getSchedulesForTenant(tenantId?: string): Promise<Schedule[]> {
   if (!tenantId) return readAllTenantsCollection<Schedule>('schedules');
   return readUserCollection<Schedule>(tenantId, 'schedules');
 }
 
-export function createScheduleForTenant(userId: string, data: Omit<Schedule, 'id' | 'createdAt'>): Schedule {
-  const schedules = readUserCollection<Schedule>(userId, 'schedules');
+export async function createScheduleForTenant(userId: string, data: Omit<Schedule, 'id' | 'createdAt'>): Promise<Schedule> {
+  const schedules = await readUserCollection<Schedule>(userId, 'schedules');
   const schedule: Schedule = {
     ...data,
     id: generateId(),
     createdAt: new Date().toISOString(),
   };
   schedules.push(schedule);
-  writeUserCollection(userId, 'schedules', schedules);
+  await writeUserCollection(userId, 'schedules', schedules);
   return schedule;
 }
 
-export function updateScheduleForTenant(userId: string, id: string, data: Partial<Schedule>): Schedule | null {
-  const schedules = readUserCollection<Schedule>(userId, 'schedules');
+export async function updateScheduleForTenant(userId: string, id: string, data: Partial<Schedule>): Promise<Schedule | null> {
+  const schedules = await readUserCollection<Schedule>(userId, 'schedules');
   const idx = schedules.findIndex(s => s.id === id);
   if (idx === -1) return null;
   schedules[idx] = { ...schedules[idx], ...data };
-  writeUserCollection(userId, 'schedules', schedules);
+  await writeUserCollection(userId, 'schedules', schedules);
   return schedules[idx];
 }
 
-export function deleteScheduleForTenant(userId: string, id: string): boolean {
-  const schedules = readUserCollection<Schedule>(userId, 'schedules');
+export async function deleteScheduleForTenant(userId: string, id: string): Promise<boolean> {
+  const schedules = await readUserCollection<Schedule>(userId, 'schedules');
   const filtered = schedules.filter(s => s.id !== id);
   if (filtered.length === schedules.length) return false;
-  writeUserCollection(userId, 'schedules', filtered);
+  await writeUserCollection(userId, 'schedules', filtered);
   return true;
 }
 
@@ -142,7 +143,6 @@ export function getNextRun(cronExpr: string): string | undefined {
   const cron = parseCron(cronExpr);
   if (!cron) return undefined;
   const now = new Date();
-  // Check next 7 days, minute by minute
   for (let i = 1; i <= 10080; i++) {
     const check = new Date(now.getTime() + i * 60000);
     if (matchesCron(cron, check)) {
@@ -157,9 +157,9 @@ export function getNextRun(cronExpr: string): string | undefined {
 async function checkSchedules() {
   const now = new Date();
 
-  // Scan từng tenant — mỗi tenant có schedules riêng
-  for (const tenantId of getAllTenantIds()) {
-    const schedules = readUserCollection<Schedule>(tenantId, 'schedules');
+  const tenantIds = await getAllTenantIds();
+  for (const tenantId of tenantIds) {
+    const schedules = await readUserCollection<Schedule>(tenantId, 'schedules');
 
     for (const schedule of schedules) {
       if (!schedule.enabled) continue;
@@ -167,18 +167,16 @@ async function checkSchedules() {
       const cron = parseCron(schedule.cron);
       if (!cron || !matchesCron(cron, now)) continue;
 
-      // Get target device(s) từ đúng tenant
       let deviceIds: string[] = [];
       if (schedule.targetType === 'device') {
         deviceIds = [schedule.targetId];
       } else {
-        const groups = readUserCollection<{ id: string; deviceIds: string[] }>(tenantId, 'device-groups');
+        const groups = await readUserCollection<{ id: string; deviceIds: string[] }>(tenantId, 'device-groups');
         const group = groups.find(g => g.id === schedule.targetId);
         if (group) deviceIds = group.deviceIds;
       }
 
-      // Execute on each device (trong tenant)
-      const tenantDevices = readUserCollection<{ id: string; name: string; status: string }>(tenantId, 'devices');
+      const tenantDevices = await readUserCollection<{ id: string; name: string; status: string }>(tenantId, 'devices');
       for (const deviceId of deviceIds) {
         const device = tenantDevices.find(d => d.id === deviceId);
         if (!device || device.status === 'offline') continue;
@@ -188,14 +186,13 @@ async function checkSchedules() {
           deviceId,
           schedule.name,
           onExecutionUpdate || undefined,
-          tenantId  // Truyền tenantId để execution history lưu đúng tenant
+          tenantId
         ).catch(err => {
           console.error(`Schedule ${schedule.name} failed on ${device.name}:`, err);
         });
       }
 
-      // Update lastRun and nextRun trong tenant
-      updateScheduleForTenant(tenantId, schedule.id, {
+      await updateScheduleForTenant(tenantId, schedule.id, {
         lastRun: now.toISOString(),
         nextRun: getNextRun(schedule.cron),
       });
@@ -206,8 +203,9 @@ async function checkSchedules() {
 export function startScheduler(onUpdate?: (execution: ScheduleHistory) => void) {
   if (onUpdate) onExecutionUpdate = onUpdate;
   if (schedulerTimer) clearInterval(schedulerTimer);
-  // Check every minute
-  schedulerTimer = setInterval(checkSchedules, 60000);
+  schedulerTimer = setInterval(() => {
+    checkSchedules().catch(err => console.error('[Scheduler] Error:', err));
+  }, 60000);
 }
 
 export function stopScheduler() {

@@ -6,11 +6,11 @@ import type { VncProxy } from '../../src/types';
 const proxies = new Map<string, { process: ChildProcess; port: number }>();
 let nextPort = config.vncProxyPortStart;
 
-export function getActiveProxies(): VncProxy[] {
+export async function getActiveProxies(): Promise<VncProxy[]> {
   const result: VncProxy[] = [];
 
   for (const [deviceId, proxy] of proxies.entries()) {
-    const found = findDeviceGlobal(deviceId);
+    const found = await findDeviceGlobal(deviceId);
     const device = found?.device;
     result.push({
       deviceId,
@@ -25,18 +25,18 @@ export function getActiveProxies(): VncProxy[] {
   return result;
 }
 
-export function getProxyForDevice(deviceId: string): VncProxy | undefined {
-  return getActiveProxies().find(p => p.deviceId === deviceId);
+export async function getProxyForDevice(deviceId: string): Promise<VncProxy | undefined> {
+  return (await getActiveProxies()).find(p => p.deviceId === deviceId);
 }
 
-export function startProxy(deviceId: string): VncProxy | null {
+export async function startProxy(deviceId: string): Promise<VncProxy | null> {
   // Already running
   if (proxies.has(deviceId)) {
-    return getProxyForDevice(deviceId) || null;
+    return (await getProxyForDevice(deviceId)) || null;
   }
 
   // Use tenant-scoped lookup (findDeviceGlobal) instead of legacy getAllDevices
-  const found = findDeviceGlobal(deviceId);
+  const found = await findDeviceGlobal(deviceId);
   const device = found?.device;
   if (!device) return null;
 

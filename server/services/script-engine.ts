@@ -1,20 +1,20 @@
 import { readCollection, writeCollection, generateId, readUserCollection, writeUserCollection, readAllTenantsCollection } from '../store';
 import { callDeviceApi, updateDevice, getDevice, updateDeviceForTenant, findDeviceGlobal } from './device-manager';
-// vncTap no longer needed — PhoneAgent HTTP API now uses VNC coordinate transform
 import type { Script, ScriptStep, ScheduleHistory, ExecutionStep } from '../../src/types';
 
 // --- Script CRUD ---
 
-export function getAllScripts(): Script[] {
+export async function getAllScripts(): Promise<Script[]> {
   return readCollection<Script>('scripts');
 }
 
-export function getScript(id: string): Script | undefined {
-  return getAllScripts().find(s => s.id === id);
+export async function getScript(id: string): Promise<Script | undefined> {
+  const all = await getAllScripts();
+  return all.find(s => s.id === id);
 }
 
-export function createScript(data: Pick<Script, 'name' | 'description' | 'steps'> & Record<string, unknown>): Script {
-  const scripts = getAllScripts();
+export async function createScript(data: Pick<Script, 'name' | 'description' | 'steps'> & Record<string, unknown>): Promise<Script> {
+  const scripts = await getAllScripts();
   const script: Script = {
     ...data,
     id: generateId(),
@@ -24,24 +24,24 @@ export function createScript(data: Pick<Script, 'name' | 'description' | 'steps'
     updatedAt: new Date().toISOString(),
   };
   scripts.push(script);
-  writeCollection('scripts', scripts);
+  await writeCollection('scripts', scripts);
   return script;
 }
 
-export function updateScript(id: string, data: Partial<Script>): Script | null {
-  const scripts = getAllScripts();
+export async function updateScript(id: string, data: Partial<Script>): Promise<Script | null> {
+  const scripts = await getAllScripts();
   const idx = scripts.findIndex(s => s.id === id);
   if (idx === -1) return null;
   scripts[idx] = { ...scripts[idx], ...data, updatedAt: new Date().toISOString() };
-  writeCollection('scripts', scripts);
+  await writeCollection('scripts', scripts);
   return scripts[idx];
 }
 
-export function deleteScript(id: string): boolean {
-  const scripts = getAllScripts();
+export async function deleteScript(id: string): Promise<boolean> {
+  const scripts = await getAllScripts();
   const filtered = scripts.filter(s => s.id !== id);
   if (filtered.length === scripts.length) return false;
-  writeCollection('scripts', filtered);
+  await writeCollection('scripts', filtered);
   return true;
 }
 
@@ -49,13 +49,13 @@ export function deleteScript(id: string): boolean {
 // Tenant-scoped Script CRUD
 // ============================================================
 
-export function getScriptsForTenant(tenantId?: string): Script[] {
+export async function getScriptsForTenant(tenantId?: string): Promise<Script[]> {
   if (!tenantId) return readAllTenantsCollection<Script>('scripts');
   return readUserCollection<Script>(tenantId, 'scripts');
 }
 
-export function createScriptForTenant(userId: string, data: Pick<Script, 'name' | 'description' | 'steps'> & Record<string, unknown>): Script {
-  const scripts = readUserCollection<Script>(userId, 'scripts');
+export async function createScriptForTenant(userId: string, data: Pick<Script, 'name' | 'description' | 'steps'> & Record<string, unknown>): Promise<Script> {
+  const scripts = await readUserCollection<Script>(userId, 'scripts');
   const script: Script = {
     ...data,
     id: generateId(),
@@ -66,40 +66,40 @@ export function createScriptForTenant(userId: string, data: Pick<Script, 'name' 
     updatedAt: new Date().toISOString(),
   };
   scripts.push(script);
-  writeUserCollection(userId, 'scripts', scripts);
+  await writeUserCollection(userId, 'scripts', scripts);
   return script;
 }
 
-export function updateScriptForTenant(userId: string, id: string, data: Partial<Script>): Script | null {
-  const scripts = readUserCollection<Script>(userId, 'scripts');
+export async function updateScriptForTenant(userId: string, id: string, data: Partial<Script>): Promise<Script | null> {
+  const scripts = await readUserCollection<Script>(userId, 'scripts');
   const idx = scripts.findIndex(s => s.id === id);
   if (idx === -1) return null;
   scripts[idx] = { ...scripts[idx], ...data, updatedAt: new Date().toISOString() };
-  writeUserCollection(userId, 'scripts', scripts);
+  await writeUserCollection(userId, 'scripts', scripts);
   return scripts[idx];
 }
 
-export function deleteScriptForTenant(userId: string, id: string): boolean {
-  const scripts = readUserCollection<Script>(userId, 'scripts');
+export async function deleteScriptForTenant(userId: string, id: string): Promise<boolean> {
+  const scripts = await readUserCollection<Script>(userId, 'scripts');
   const filtered = scripts.filter(s => s.id !== id);
   if (filtered.length === scripts.length) return false;
-  writeUserCollection(userId, 'scripts', filtered);
+  await writeUserCollection(userId, 'scripts', filtered);
   return true;
 }
 
 // --- Execution History ---
 
-export function getExecutionHistory(): ScheduleHistory[] {
+export async function getExecutionHistory(): Promise<ScheduleHistory[]> {
   return readCollection<ScheduleHistory>('execution-history');
 }
 
-export function getExecutionHistoryForTenant(tenantId?: string): ScheduleHistory[] {
+export async function getExecutionHistoryForTenant(tenantId?: string): Promise<ScheduleHistory[]> {
   if (!tenantId) return readAllTenantsCollection<ScheduleHistory>('execution-history');
   return readUserCollection<ScheduleHistory>(tenantId, 'execution-history');
 }
 
-function saveExecution(execution: ScheduleHistory) {
-  const history = getExecutionHistory();
+async function saveExecution(execution: ScheduleHistory) {
+  const history = await getExecutionHistory();
   const idx = history.findIndex(h => h.id === execution.id);
   if (idx >= 0) {
     history[idx] = execution;
@@ -108,11 +108,11 @@ function saveExecution(execution: ScheduleHistory) {
   }
   // Keep last 500 entries
   if (history.length > 500) history.splice(0, history.length - 500);
-  writeCollection('execution-history', history);
+  await writeCollection('execution-history', history);
 }
 
-function saveExecutionForTenant(userId: string, execution: ScheduleHistory) {
-  const history = readUserCollection<ScheduleHistory>(userId, 'execution-history');
+async function saveExecutionForTenant(userId: string, execution: ScheduleHistory) {
+  const history = await readUserCollection<ScheduleHistory>(userId, 'execution-history');
   const idx = history.findIndex(h => h.id === execution.id);
   if (idx >= 0) {
     history[idx] = execution;
@@ -121,7 +121,7 @@ function saveExecutionForTenant(userId: string, execution: ScheduleHistory) {
   }
   // Keep last 500 entries per user
   if (history.length > 500) history.splice(0, history.length - 500);
-  writeUserCollection(userId, 'execution-history', history);
+  await writeUserCollection(userId, 'execution-history', history);
 }
 
 // --- Active Executions ---
@@ -160,9 +160,13 @@ export async function executeScript(
   tenantId?: string
 ): Promise<ScheduleHistory> {
   // Tìm script từ tenant nếu có, fallback legacy
-  const script = tenantId
-    ? readUserCollection<Script>(tenantId, 'scripts').find(s => s.id === scriptId)
-    : getScript(scriptId);
+  let script: Script | undefined;
+  if (tenantId) {
+    const scripts = await readUserCollection<Script>(tenantId, 'scripts');
+    script = scripts.find(s => s.id === scriptId);
+  } else {
+    script = await getScript(scriptId);
+  }
   if (!script) throw new Error('Script not found');
   return _executeScript(script, deviceId, scheduleName, onProgress, tenantId);
 }
@@ -176,8 +180,8 @@ async function _executeScript(
 ): Promise<ScheduleHistory> {
 
   // Tìm device: tenant storage trước, fallback legacy
-  const found = findDeviceGlobal(deviceId);
-  const device = found?.device ?? getDevice(deviceId);
+  const found = await findDeviceGlobal(deviceId);
+  const device = found?.device ?? await getDevice(deviceId);
   const deviceTenantId = found?.tenantId ?? tenantId;
   if (!device) throw new Error('Device not found');
 
@@ -187,9 +191,9 @@ async function _executeScript(
 
   // Mark device as running
   if (deviceTenantId) {
-    updateDeviceForTenant(deviceTenantId, deviceId, { status: 'running', currentScript: script.name });
+    await updateDeviceForTenant(deviceTenantId, deviceId, { status: 'running', currentScript: script.name });
   } else {
-    updateDevice(deviceId, { status: 'running', currentScript: script.name });
+    await updateDevice(deviceId, { status: 'running', currentScript: script.name });
   }
 
   const execution: ScheduleHistory = {
@@ -206,7 +210,7 @@ async function _executeScript(
   const saveFn = tenantId
     ? () => saveExecutionForTenant(tenantId, execution)
     : () => saveExecution(execution);
-  saveFn();
+  await saveFn();
 
   try {
     await executeSteps(script.steps, deviceId, execution, ctrl, onProgress, tenantId);
@@ -216,13 +220,13 @@ async function _executeScript(
     execution.error = err instanceof Error ? err.message : 'Unknown error';
   } finally {
     execution.finishedAt = new Date().toISOString();
-    saveFn();
+    await saveFn();
     activeExecutions.delete(executionId);
 
     if (deviceTenantId) {
-      updateDeviceForTenant(deviceTenantId, deviceId, { status: 'online', currentScript: undefined });
+      await updateDeviceForTenant(deviceTenantId, deviceId, { status: 'online', currentScript: undefined });
     } else {
-      updateDevice(deviceId, { status: 'online', currentScript: undefined });
+      await updateDevice(deviceId, { status: 'online', currentScript: undefined });
     }
 
     // Update script stats
@@ -233,9 +237,9 @@ async function _executeScript(
         status: 'active' as const,
       };
       if (tenantId) {
-        updateScriptForTenant(tenantId, script.id, scriptUpdate);
+        await updateScriptForTenant(tenantId, script.id, scriptUpdate);
       } else {
-        updateScript(script.id, scriptUpdate);
+        await updateScript(script.id, scriptUpdate);
       }
     }
 
@@ -278,15 +282,13 @@ async function executeSteps(
       execStep.status = 'error';
       execStep.error = err instanceof Error ? err.message : 'Unknown error';
       execStep.finishedAt = new Date().toISOString();
-      // Only fatal for launch failures; tap/swipe/key errors continue
       const fatalTypes = ['launch'];
       if (fatalTypes.includes(step.type)) {
         throw err;
       }
-      // Non-fatal: log error but continue
     }
 
-    saveFn();
+    await saveFn();
     onProgress?.(execution);
   }
 }
@@ -325,22 +327,20 @@ async function executeStep(
       const videoId = String(p.videoId || '');
       if (!videoId) throw new Error('No video selected');
 
-      // Get video URL from tenant collection or legacy
       const videos = tenantId
-        ? readUserCollection<{ id: string; url: string; name: string }>(tenantId, 'videos')
-        : readCollection<{ id: string; url: string; name: string }>('videos');
+        ? await readUserCollection<{ id: string; url: string; name: string }>(tenantId, 'videos')
+        : await readCollection<{ id: string; url: string; name: string }>('videos');
       const video = videos.find(v => v.id === videoId);
       if (!video) throw new Error(`Video not found: ${videoId}`);
 
-      // Send to device — PhoneAgent will download + save to Photos
-      const foundDev = findDeviceGlobal(deviceId);
-      const device = foundDev?.device ?? getDevice(deviceId);
-      if (!device) throw new Error('Device not found');
-      const apiPort = device.httpPort + 1;
-      const apiUrl = `http://${device.tailscaleIp}:${apiPort}/api/save-to-photos`;
+      const foundDev = await findDeviceGlobal(deviceId);
+      const dev = foundDev?.device ?? await getDevice(deviceId);
+      if (!dev) throw new Error('Device not found');
+      const apiPort = dev.httpPort + 1;
+      const apiUrl = `http://${dev.tailscaleIp}:${apiPort}/api/save-to-photos`;
 
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 1200000); // 20 min
+      const timeout = setTimeout(() => controller.abort(), 1200000);
       try {
         const apiRes = await fetch(apiUrl, {
           method: 'POST',
@@ -356,14 +356,10 @@ async function executeStep(
         if (err instanceof Error && err.name === 'AbortError') throw new Error('Timeout tải file');
         throw err;
       }
-      // Wait for download + save to complete on device (async on device side)
-      // Small delay to let device start processing
       await new Promise(r => setTimeout(r, 3000));
       break;
     }
     case 'select_video': {
-      // Tap vào video mới nhất (vị trí đầu tiên) trong Photos picker.
-      // Đặt ngay sau "Truyền File" → video vừa truyền ở vị trí đầu.
       const tapX = Number(p.tapX) || 0.12;
       const tapY = Number(p.tapY) || 0.25;
       const res = await callDeviceApi(deviceId, 'POST', '/api/tap', { x: tapX, y: tapY });
@@ -378,7 +374,6 @@ async function executeStep(
         trashDeleteY: Number(p.trashDeleteY) || 0.53,
       });
       if (!res.ok) throw new Error(`Clear photos failed: ${res.error}`);
-      // Đợi xoá hoàn tất: bước 1 (2s popup + tap) + bước 2 (5s sync + 2s popup + tap)
       await new Promise(r => setTimeout(r, 18000));
       break;
     }
@@ -407,7 +402,6 @@ async function executeStep(
     case 'screenshot': {
       const res = await callDeviceApi(deviceId, 'GET', '/api/screenshot');
       if (!res.ok) throw new Error(`Screenshot failed: ${res.error}`);
-      // Store screenshot reference on current step
       const currentStep = execution.steps[execution.steps.length - 1];
       if (currentStep) currentStep.screenshotUrl = `data:image/jpeg;base64,${res.data}`;
       break;

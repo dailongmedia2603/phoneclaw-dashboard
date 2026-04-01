@@ -11,7 +11,7 @@ import { config } from './config';
 import { startDeviceMonitor, stopDeviceMonitor } from './services/device-manager';
 import { startScheduler, stopScheduler } from './services/scheduler';
 import { stopAllProxies } from './services/vnc-proxy';
-import { readCollection, writeCollection, generateId, readUserCollection, writeUserCollection } from './store';
+import { readCollection, writeCollection, generateId, readUserCollection, writeUserCollection, initDb, closeDb } from './store';
 
 import authRoutes, { authMiddleware } from './routes/auth';
 import dashboardRoutes from './routes/dashboard';
@@ -54,7 +54,7 @@ function broadcast(message: WsMessage) {
   }
 }
 
-function addNotification(type: Notification['type'], title: string, message: string, userId?: string) {
+async function addNotification(type: Notification['type'], title: string, message: string, userId?: string) {
   const notification: Notification = {
     id: generateId(),
     type,
@@ -67,35 +67,33 @@ function addNotification(type: Notification['type'], title: string, message: str
 
   if (userId) {
     // User-specific notification → tenant file
-    const notifications = readUserCollection<Notification>(userId, 'notifications');
+    const notifications = await readUserCollection<Notification>(userId, 'notifications');
     notifications.push(notification);
     if (notifications.length > 200) notifications.splice(0, notifications.length - 200);
-    writeUserCollection(userId, 'notifications', notifications);
+    await writeUserCollection(userId, 'notifications', notifications);
   } else {
     // System notification → shared file
-    const notifications = readCollection<Notification>('notifications');
+    const notifications = await readCollection<Notification>('notifications');
     notifications.push(notification);
     if (notifications.length > 200) notifications.splice(0, notifications.length - 200);
-    writeCollection('notifications', notifications);
+    await writeCollection('notifications', notifications);
   }
 
   broadcast({ type: 'notification', payload: notification, timestamp: notification.timestamp });
 }
 
 // --- VNC WebSocket Proxy ---
-// Handles /vnc/{deviceId}/websockify — bridges browser WebSocket ↔ phone VNC (raw TCP)
-// Uses 'ws' library for proper WebSocket handling, net.Socket for VNC TCP connection
 import { findDeviceGlobal } from './services/device-manager';
 
 const vncWss = new WebSocketServer({ noServer: true });
 
-vncWss.on('connection', (ws, req) => {
+vncWss.on('connection', async (ws, req) => {
   const url = req.url || '';
   const match = url.match(/^\/vnc\/([^/]+)\/websockify/);
   if (!match) { ws.close(); return; }
 
   const deviceId = match[1];
-  const found = findDeviceGlobal(deviceId);
+  const found = await findDeviceGlobal(deviceId);
   const device = found?.device;
   if (!device) { ws.close(1008, 'Device not found'); return; }
 
@@ -187,52 +185,65 @@ app.get('*', (_req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });
 
-// --- Migrate data cũ sang tenant structure (chạy 1 lần) ---
-migrateToTenantStructure();
+// --- Async Server Startup ---
+async function main() {
+  // 1. Initialize database (no-op if USE_POSTGRES=false)
+  await initDb();
 
-// --- Start Services ---
-startDeviceMonitor((device) => {
-  broadcast({
-    type: 'device:status',
-    payload: device,
-    timestamp: new Date().toISOString(),
+  // 2. Migrate data cũ sang tenant structure (chạy 1 lần, skip khi PG mode)
+  await migrateToTenantStructure();
+
+  // 3. Start Services
+  await startDeviceMonitor((device) => {
+    broadcast({
+      type: 'device:status',
+      payload: device,
+      timestamp: new Date().toISOString(),
+    });
+
+    if (device.status === 'offline') {
+      addNotification('warning', 'Device Offline', `${device.name} (${device.tailscaleIp}) went offline`, device.ownerId);
+    }
   });
 
-  if (device.status === 'offline') {
-    addNotification('warning', 'Device Offline', `${device.name} (${device.tailscaleIp}) went offline`, device.ownerId);
-  }
-});
+  startScheduler((execution) => {
+    broadcast({
+      type: execution.status === 'running' ? 'script:progress' : 'script:complete',
+      payload: execution,
+      timestamp: new Date().toISOString(),
+    });
 
-startScheduler((execution) => {
-  broadcast({
-    type: execution.status === 'running' ? 'script:progress' : 'script:complete',
-    payload: execution,
-    timestamp: new Date().toISOString(),
+    if (execution.status === 'error') {
+      addNotification('error', 'Script Failed', `${execution.scriptName} failed on ${execution.targetName}: ${execution.error}`, execution.ownerId);
+    } else if (execution.status === 'success') {
+      addNotification('success', 'Script Complete', `${execution.scriptName} completed on ${execution.targetName}`, execution.ownerId);
+    }
   });
 
-  if (execution.status === 'error') {
-    addNotification('error', 'Script Failed', `${execution.scriptName} failed on ${execution.targetName}: ${execution.error}`, execution.ownerId);
-  } else if (execution.status === 'success') {
-    addNotification('success', 'Script Complete', `${execution.scriptName} completed on ${execution.targetName}`, execution.ownerId);
-  }
-});
+  // 4. Start HTTP server
+  server.listen(config.port, config.host, () => {
+    console.log(`PhoneClaw Dashboard Server running at http://${config.host}:${config.port}`);
+    console.log(`WebSocket available at ws://${config.host}:${config.port}/ws`);
+  });
+}
 
 // --- Graceful Shutdown ---
-function shutdown() {
+async function shutdown() {
   console.log('Shutting down...');
   stopDeviceMonitor();
   stopScheduler();
   stopAllProxies();
+  await closeDb();
   server.close();
   process.exit(0);
 }
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
+process.on('SIGINT', () => { shutdown(); });
+process.on('SIGTERM', () => { shutdown(); });
 
-// --- Start Server ---
-server.listen(config.port, config.host, () => {
-  console.log(`PhoneClaw Dashboard Server running at http://${config.host}:${config.port}`);
-  console.log(`WebSocket available at ws://${config.host}:${config.port}/ws`);
+// --- Start ---
+main().catch(err => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
 });
 
 export { app, server, broadcast, addNotification };

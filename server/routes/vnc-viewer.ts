@@ -5,11 +5,11 @@ import { getAuthUserId, isAdmin } from '../helpers/get-user';
 const router = Router();
 
 // GET /api/vnc-viewer/:deviceId — returns HTML that auto-connects noVNC with password
-router.get('/:deviceId', (req, res) => {
+router.get('/:deviceId', async (req, res) => {
   // Tìm device + kiểm tra ownership
   const userId = getAuthUserId(req);
-  const found = findDeviceGlobal(req.params.deviceId);
-  const device = found?.device ?? getDevice(req.params.deviceId);
+  const found = await findDeviceGlobal(req.params.deviceId);
+  const device = found?.device ?? await getDevice(req.params.deviceId);
   if (!device) return res.status(404).json({ success: false, error: 'Device not found' });
 
   if (found && !isAdmin(req) && found.tenantId !== userId) {
