@@ -57,6 +57,7 @@ export interface Device {
   proxyConfig?: ProxyConfig;
   proxyStatus?: 'running' | 'stopped' | 'error';
   ownerId?: string;
+  heartbeatConfigured?: boolean;
 }
 
 export interface DeviceGroup {

@@ -1,17 +1,17 @@
 import { spawn, ChildProcess } from 'child_process';
 import { config } from '../config';
-import { getAllDevices } from './device-manager';
+import { getAllDevices, findDeviceGlobal } from './device-manager';
 import type { VncProxy } from '../../src/types';
 
 const proxies = new Map<string, { process: ChildProcess; port: number }>();
 let nextPort = config.vncProxyPortStart;
 
 export function getActiveProxies(): VncProxy[] {
-  const devices = getAllDevices();
   const result: VncProxy[] = [];
 
   for (const [deviceId, proxy] of proxies.entries()) {
-    const device = devices.find(d => d.id === deviceId);
+    const found = findDeviceGlobal(deviceId);
+    const device = found?.device;
     result.push({
       deviceId,
       deviceName: device?.name || 'Unknown',
@@ -35,8 +35,9 @@ export function startProxy(deviceId: string): VncProxy | null {
     return getProxyForDevice(deviceId) || null;
   }
 
-  const devices = getAllDevices();
-  const device = devices.find(d => d.id === deviceId);
+  // Use tenant-scoped lookup (findDeviceGlobal) instead of legacy getAllDevices
+  const found = findDeviceGlobal(deviceId);
+  const device = found?.device;
   if (!device) return null;
 
   const port = nextPort++;

@@ -1,5 +1,6 @@
 import express from 'express';
 import http from 'http';
+import net from 'net';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { WebSocketServer, WebSocket } from 'ws';
@@ -35,7 +36,7 @@ const app = express();
 const server = http.createServer(app);
 
 // --- WebSocket ---
-const wss = new WebSocketServer({ server, path: '/ws' });
+const wss = new WebSocketServer({ noServer: true }); // Manual upgrade handling (see server.on('upgrade'))
 const clients = new Set<WebSocket>();
 
 wss.on('connection', (ws) => {
@@ -80,6 +81,67 @@ function addNotification(type: Notification['type'], title: string, message: str
 
   broadcast({ type: 'notification', payload: notification, timestamp: notification.timestamp });
 }
+
+// --- VNC WebSocket Proxy ---
+// Handles /vnc/{deviceId}/websockify — bridges browser WebSocket ↔ phone VNC (raw TCP)
+// Uses 'ws' library for proper WebSocket handling, net.Socket for VNC TCP connection
+import { findDeviceGlobal } from './services/device-manager';
+
+const vncWss = new WebSocketServer({ noServer: true });
+
+vncWss.on('connection', (ws, req) => {
+  const url = req.url || '';
+  const match = url.match(/^\/vnc\/([^/]+)\/websockify/);
+  if (!match) { ws.close(); return; }
+
+  const deviceId = match[1];
+  const found = findDeviceGlobal(deviceId);
+  const device = found?.device;
+  if (!device) { ws.close(1008, 'Device not found'); return; }
+
+  // Connect raw TCP to phone's VNC server
+  const vncSocket = net.connect(device.vncPort, device.tailscaleIp);
+
+  vncSocket.on('connect', () => {
+    console.log(`[VNC Proxy] Connected to ${device.name} (${device.tailscaleIp}:${device.vncPort})`);
+  });
+
+  // Browser → VNC: WebSocket binary message → raw TCP
+  ws.on('message', (data: Buffer) => {
+    if (vncSocket.writable) vncSocket.write(data);
+  });
+
+  // VNC → Browser: raw TCP → WebSocket binary message
+  vncSocket.on('data', (data: Buffer) => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(data, { binary: true });
+    }
+  });
+
+  ws.on('close', () => vncSocket.destroy());
+  ws.on('error', () => vncSocket.destroy());
+  vncSocket.on('close', () => ws.close());
+  vncSocket.on('error', (err) => {
+    console.error(`[VNC Proxy] ${device.name}: ${err.message}`);
+    ws.close(1011, 'VNC connection failed');
+  });
+});
+
+server.on('upgrade', (req, socket, head) => {
+  const url = req.url || '';
+
+  if (url === '/ws') {
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      wss.emit('connection', ws, req);
+    });
+  } else if (url.match(/^\/vnc\/[^/]+\/websockify/)) {
+    vncWss.handleUpgrade(req, socket, head, (ws) => {
+      vncWss.emit('connection', ws, req);
+    });
+  } else {
+    socket.destroy();
+  }
+});
 
 // --- Middleware ---
 app.use(express.json({ limit: '500mb' }));

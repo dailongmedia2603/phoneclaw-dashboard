@@ -330,6 +330,13 @@ export function handleHeartbeat(payload: HeartbeatPayload): Device | null {
   // 6. Write to disk
   const updated = updateDeviceForTenant(tenantId, deviceId, updateData);
 
+  // Log every heartbeat for monitoring
+  console.log(
+    `[Heartbeat] ← ${device.name} (${payload.tailscaleIp}) | ` +
+    `status=${previousStatus}→online | battery=${payload.battery ?? '?'}% | ` +
+    `proxy=${payload.proxyStatus ?? '?'} | iOS=${payload.systemVersion ?? '?'}`
+  );
+
   // 7. Broadcast if status changed — equivalent to old lines 255-257
   if (updated && statusChangeCallback && previousStatus !== 'online') {
     statusChangeCallback(updated);
@@ -340,6 +347,17 @@ export function handleHeartbeat(payload: HeartbeatPayload): Device | null {
     autoApplyProxy(device, tenantId).catch(err => {
       console.log(`[Heartbeat] Auto-apply proxy failed for ${device.name}:`, err);
     });
+  }
+
+  // 9. Auto-push heartbeat URL nếu phone chưa được cấu hình
+  // Chỉ chạy 1 lần — khi push thành công, set heartbeatConfigured = true
+  if (!device.heartbeatConfigured && config.heartbeatUrl) {
+    pushHeartbeatConfig(device.id).then(ok => {
+      if (ok) {
+        updateDeviceForTenant(tenantId, deviceId, { heartbeatConfigured: true });
+        console.log(`[Heartbeat] Auto-configured ${device.name} — sẽ không push lại nữa`);
+      }
+    }).catch(() => {});
   }
 
   return updated;
@@ -428,19 +446,21 @@ export const stopHealthChecks = stopDeviceMonitor;
 // --- Heartbeat Config Push ---
 
 /**
- * Push heartbeat URL to phone so it starts sending heartbeats to VPS.
- * Called once after device creation when initial health check succeeds.
+ * Push heartbeat URL tới phone để phone bắt đầu gửi heartbeat về VPS.
+ * Trả về true nếu push thành công, false nếu thất bại.
+ * Chỉ cần gọi 1 lần — phone lưu URL vào NSUserDefaults vĩnh viễn.
  */
-async function pushHeartbeatConfig(deviceId: string) {
-  if (!config.heartbeatUrl) return;
+async function pushHeartbeatConfig(deviceId: string): Promise<boolean> {
+  if (!config.heartbeatUrl) return false;
   const result = await callDeviceApi(deviceId, 'POST', '/api/heartbeat/config', {
     url: config.heartbeatUrl,
   });
   if (result.ok) {
     console.log(`[Heartbeat] Config pushed to device ${deviceId}: ${config.heartbeatUrl}`);
-  } else {
-    console.log(`[Heartbeat] Failed to push config to device ${deviceId}: ${result.error}`);
+    return true;
   }
+  console.log(`[Heartbeat] Failed to push config to device ${deviceId}: ${result.error}`);
+  return false;
 }
 
 // --- Proxy Auto-Apply ---
