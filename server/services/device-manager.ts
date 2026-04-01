@@ -1,6 +1,22 @@
 import { readCollection, writeCollection, generateId, readUserCollection, writeUserCollection, readAllTenantsCollection, getAllTenantIds } from '../store';
 import { config } from '../config';
+import { Agent, setGlobalDispatcher } from 'undici';
 import type { Device, DeviceGroup } from '../../src/types';
+
+// ============================================================
+// HTTP Keep-Alive: tái sử dụng TCP connections tới phones
+// Giảm ~50% latency (bỏ TCP handshake lặp lại mỗi request)
+// ============================================================
+const keepAliveAgent = new Agent({
+  keepAliveTimeout: 30_000,     // Giữ connection 30s (khớp heartbeat interval)
+  keepAliveMaxTimeout: 60_000,  // Max idle 60s rồi tự đóng
+  connections: 10,              // Max 10 concurrent connections per origin (per phone)
+  pipelining: 1,                // Không pipeline (phone API không hỗ trợ)
+  connect: {
+    timeout: 10_000,            // Connection timeout 10s (khớp deviceApiTimeout)
+  },
+});
+setGlobalDispatcher(keepAliveAgent);
 
 let healthCheckTimer: ReturnType<typeof setInterval> | null = null;
 let statusChangeCallback: ((device: Device) => void) | null = null;

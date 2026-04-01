@@ -31,6 +31,7 @@
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.13.2",
     "recharts": "^3.8.1",
+    "undici": "^7.24.7",
     "vite": "^6.2.0",
     "ws": "^8.18.0"
   },
