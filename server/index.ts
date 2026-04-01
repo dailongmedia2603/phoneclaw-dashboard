@@ -178,6 +178,11 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', uptime: process.uptime() });
 });
 
+// Serve noVNC static files — /vnc/:deviceId/core/rfb.js → /opt/novnc/core/rfb.js
+// noVNC library is installed at /opt/novnc on VPS (or ../TrollVNC/novnc locally)
+const novncPath = process.env.NOVNC_PATH || '/opt/novnc';
+app.use('/vnc/:deviceId', express.static(novncPath));
+
 // Serve frontend in production
 const distPath = path.join(__dirname, '..', 'dist');
 app.use(express.static(distPath));
