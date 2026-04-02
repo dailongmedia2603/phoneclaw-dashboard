@@ -90,6 +90,7 @@ export default function Scripts() {
   const [editorName, setEditorName] = useState('');
   const [editorDescription, setEditorDescription] = useState('');
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([]);
+  const [deviceDropdownOpen, setDeviceDropdownOpen] = useState(false);
   const [runLoading, setRunLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
   const [runningExecution, setRunningExecution] = useState<any>(null);
@@ -191,6 +192,7 @@ export default function Scripts() {
 
   const handleOpenRunModal = (scriptId: string) => {
     setSelectedDeviceIds([]);
+    setDeviceDropdownOpen(false);
     setShowRunModal(scriptId);
   };
 
@@ -779,12 +781,12 @@ screenshot()`}
       {/* Run Script Modal */}
       {showRunModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-visible">
+            <div className="px-6 py-4 border-b border-slate-100 rounded-t-2xl flex justify-between items-center">
               <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                 <Play size={18} className="text-blue-600" fill="currentColor" /> Chạy kịch bản
               </h2>
-              <button onClick={() => { stopPolling(); setShowRunModal(null); setSelectedDeviceIds([]); setRunningExecution(null); setRunLoading(false); }} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full">
+              <button onClick={() => { stopPolling(); setShowRunModal(null); setSelectedDeviceIds([]); setDeviceDropdownOpen(false); setRunningExecution(null); setRunLoading(false); }} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full">
                 <X size={20} />
               </button>
             </div>
@@ -802,19 +804,80 @@ screenshot()`}
                 </div>
               </div>
 
-              {/* Device selection (hide when running) */}
+              {/* Device selection dropdown (hide when running) */}
               {!runLoading && (
                 <div className="mb-4">
-                  <p className="text-sm font-medium text-slate-700 mb-2">Chọn thiết bị:</p>
-                  <div className="space-y-2 max-h-32 overflow-y-auto">
-                    {devicesData.map((device) => (
-                      <label key={device.id} className="flex items-center gap-3 p-2.5 border border-slate-200 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors">
-                        <input type="checkbox" className="w-4 h-4 text-blue-600 rounded" checked={selectedDeviceIds.includes(device.id)} onChange={() => toggleDeviceSelection(device.id)} />
-                        <Smartphone size={14} className="text-slate-400" />
-                        <span className="text-sm font-medium text-slate-700">{device.name}</span>
-                      </label>
-                    ))}
+                  <p className="text-sm font-medium text-slate-700 mb-2">Chọn thiết bị</p>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setDeviceDropdownOpen(!deviceDropdownOpen)}
+                      className="w-full flex items-center justify-between px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                    >
+                      <span className={selectedDeviceIds.length > 0 ? 'text-slate-900' : 'text-slate-400'}>
+                        {selectedDeviceIds.length === 0
+                          ? 'Chọn thiết bị...'
+                          : selectedDeviceIds.length === devicesData.length
+                            ? `Tất cả (${devicesData.length} thiết bị)`
+                            : `${selectedDeviceIds.length} thiết bị đã chọn`}
+                      </span>
+                      <ChevronRight size={16} className={`text-slate-400 transition-transform ${deviceDropdownOpen ? 'rotate-90' : ''}`} />
+                    </button>
+
+                    {deviceDropdownOpen && (
+                      <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-10 overflow-hidden">
+                        {devicesData.length > 1 && (
+                          <div
+                            onClick={() => setSelectedDeviceIds(prev => prev.length === devicesData.length ? [] : devicesData.map(d => d.id))}
+                            className="flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 cursor-pointer border-b border-slate-100"
+                          >
+                            <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                              selectedDeviceIds.length === devicesData.length ? 'bg-blue-600 border-blue-600' : 'border-slate-300'
+                            }`}>
+                              {selectedDeviceIds.length === devicesData.length && <Check size={10} className="text-white" />}
+                            </div>
+                            <span className="text-sm font-medium text-slate-700">Chọn tất cả</span>
+                          </div>
+                        )}
+                        <div className="max-h-52 overflow-y-auto">
+                          {devicesData.map(device => {
+                            const isSelected = selectedDeviceIds.includes(device.id);
+                            return (
+                              <div
+                                key={device.id}
+                                onClick={() => toggleDeviceSelection(device.id)}
+                                className={`flex items-center gap-3 px-3 py-2 hover:bg-slate-50 cursor-pointer transition-colors ${isSelected ? 'bg-blue-50/50' : ''}`}
+                              >
+                                <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                                  isSelected ? 'bg-blue-600 border-blue-600' : 'border-slate-300'
+                                }`}>
+                                  {isSelected && <Check size={10} className="text-white" />}
+                                </div>
+                                <Smartphone size={14} className="text-slate-400" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm text-slate-900 truncate">{device.name}</p>
+                                  <p className="text-xs text-slate-500">{device.tailscaleIp}</p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
+
+                  {/* Selected device tags */}
+                  {selectedDeviceIds.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {devicesData.filter(d => selectedDeviceIds.includes(d.id)).map(d => (
+                        <span key={d.id} className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium">
+                          <Smartphone size={10} />
+                          {d.name}
+                          <button onClick={() => toggleDeviceSelection(d.id)} className="hover:text-blue-900"><X size={12} /></button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
