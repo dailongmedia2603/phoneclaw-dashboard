@@ -39,16 +39,19 @@ function collectChain(
       continue;
     }
 
-    const data = node.data as { nodeType: string; params: Record<string, unknown> };
+    const data = node.data as { nodeType: string; params: Record<string, unknown>; label?: string };
     const def = NODE_DEFS[data.nodeType];
 
     // Custom nodes (custom_xxx) default to 'tap' stepType
     const stepType = def ? (def.stepType === 'start' ? 'wait' : def.stepType) : 'tap';
 
+    // Lấy label thân thiện từ NodeDef hoặc custom label
+    const nodeLabel = data.label || def?.label || data.nodeType;
+
     const step: ScriptStep = {
       id: node.id,
       type: stepType,
-      params: { ...data.params },
+      params: { ...data.params, _nodeLabel: nodeLabel },
     };
 
     // Handle loop children

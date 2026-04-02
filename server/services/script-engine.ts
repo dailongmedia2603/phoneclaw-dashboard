@@ -455,22 +455,48 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+const APP_NAMES: Record<string, string> = {
+  'com.ss.iphone.ugc.Ame': 'Mở TikTok VN',
+  'com.zhiliaoapp.musically': 'Mở TikTok US',
+  'com.facebook.Facebook': 'Mở Facebook',
+};
+
 function describeStep(step: ScriptStep): string {
   const p = step.params;
+  const label = p._nodeLabel as string | undefined;
+
   switch (step.type) {
-    case 'tap': return `Tap at (${p.x}, ${p.y})`;
-    case 'double_tap': return `Double-tap at (${p.x}, ${p.y})`;
-    case 'tap_image': return `Tap on image: ${p.templateName}`;
-    case 'swipe': return `Swipe from (${p.fromX},${p.fromY}) to (${p.toX},${p.toY})`;
-    case 'type': return `Type "${p.text}"`;
-    case 'key': return `Press key: ${p.key}`;
-    case 'launch': return `Launch app: ${p.bundleId}`;
-    case 'screenshot': return 'Take screenshot';
-    case 'clipboard': return p.text ? `Set clipboard: "${p.text}"` : 'Read clipboard';
-    case 'wait': return `Wait ${p.seconds}s`;
-    case 'wait_random': return `Wait random ${p.min}-${p.max}s`;
-    case 'repeat': return `Repeat ${p.count} times`;
-    case 'repeat_forever': return 'Repeat forever';
-    default: return step.type;
+    case 'tap':
+    case 'double_tap':
+      // Hiển thị tên node thân thiện (vd: "Bấm đăng bài") thay vì toạ độ
+      return label || `Tap (${p.x}, ${p.y})`;
+    case 'tap_image':
+      return label || `Tap hình ảnh: ${p.templateName}`;
+    case 'swipe': {
+      if (label) return label;
+      // Nhận diện swipe direction theo default params
+      if (Number(p.fromY) >= 0.7 && Number(p.toY) <= 0.3) return 'Lướt lên';
+      if (Number(p.fromY) <= 0.4 && Number(p.toY) >= 0.7) return 'Lướt xuống';
+      if (Number(p.fromX) >= 0.8 && Number(p.toX) <= 0.2) return 'Lướt trái';
+      if (Number(p.fromX) <= 0.2 && Number(p.toX) >= 0.8) return 'Lướt phải';
+      return 'Vuốt toạ độ';
+    }
+    case 'type': return `Gõ text: "${p.text}"`;
+    case 'key': {
+      if (p.key === 'home') return 'Nút Home';
+      return `Phím: ${p.key}`;
+    }
+    case 'launch':
+      return APP_NAMES[p.bundleId as string] || `Mở app: ${p.bundleId}`;
+    case 'screenshot': return 'Chụp ảnh màn hình';
+    case 'clipboard': return p.text ? `Đặt clipboard: "${p.text}"` : 'Đọc clipboard';
+    case 'send_file': return label || 'Truyền file video';
+    case 'select_video': return label || 'Chọn video';
+    case 'clear_photos': return 'Xoá Photos';
+    case 'wait': return `Chờ ${p.seconds} giây`;
+    case 'wait_random': return `Chờ ngẫu nhiên ${p.min}-${p.max} giây`;
+    case 'repeat': return `Lặp lại ${p.count} lần`;
+    case 'repeat_forever': return 'Lặp vô hạn';
+    default: return label || step.type;
   }
 }
