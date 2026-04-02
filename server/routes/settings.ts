@@ -7,7 +7,7 @@ import { S3Client, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import { readSingleton, writeSingleton, readCollection, readUserCollection, writeUserCollection, getAllTenantIds, ensureTenantDir } from '../store';
 import { getActiveProxies, startProxy, stopProxy } from '../services/vnc-proxy';
 import { findDeviceGlobal } from '../services/device-manager';
-import { getAuthUserId, isAdmin } from '../helpers/get-user';
+import { getAuthUserId } from '../helpers/get-user';
 import { adminOnly } from './auth';
 import type { AppSettings, VpsStatus } from '../../src/types';
 
@@ -92,7 +92,7 @@ router.post('/vnc-proxy/start', async (req, res) => {
   // Device ownership check
   const userId = getAuthUserId(req);
   const found = await findDeviceGlobal(deviceId);
-  if (found && !isAdmin(req) && found.tenantId !== userId) {
+  if (found && found.tenantId !== userId) {
     return res.status(403).json({ success: false, error: 'Không có quyền truy cập thiết bị này' });
   }
 
@@ -109,7 +109,7 @@ router.post('/vnc-proxy/stop', async (req, res) => {
   // Device ownership check
   const userId = getAuthUserId(req);
   const found = await findDeviceGlobal(deviceId);
-  if (found && !isAdmin(req) && found.tenantId !== userId) {
+  if (found && found.tenantId !== userId) {
     return res.status(403).json({ success: false, error: 'Không có quyền truy cập thiết bị này' });
   }
 

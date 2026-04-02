@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { readUserCollection, writeUserCollection, readAllTenantsCollection, getAllTenantIds, generateId } from '../store';
+import { readUserCollection, writeUserCollection, generateId } from '../store';
 import { getExecutionHistoryForTenant } from '../services/script-engine';
-import { getTenantId, getAuthUserId, isAdmin } from '../helpers/get-user';
+import { getTenantId, getAuthUserId } from '../helpers/get-user';
 import type { ActivityLog, ScreenshotLog } from '../../src/types';
 
 const router = Router();
@@ -11,9 +11,8 @@ const router = Router();
 // GET /api/logs/activity
 router.get('/activity', async (req, res) => {
   const tenantId = getTenantId(req);
-  const logs = tenantId
-    ? await readUserCollection<ActivityLog>(tenantId, 'activity-logs')
-    : await readAllTenantsCollection<ActivityLog>('activity-logs');
+  if (!tenantId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+  const logs = await readUserCollection<ActivityLog>(tenantId, 'activity-logs');
 
   const { type, deviceId, limit } = req.query;
 
@@ -54,9 +53,8 @@ router.post('/activity', async (req, res) => {
 // GET /api/logs/screenshots
 router.get('/screenshots', async (req, res) => {
   const tenantId = getTenantId(req);
-  const screenshots = tenantId
-    ? await readUserCollection<ScreenshotLog>(tenantId, 'screenshots')
-    : await readAllTenantsCollection<ScreenshotLog>('screenshots');
+  if (!tenantId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+  const screenshots = await readUserCollection<ScreenshotLog>(tenantId, 'screenshots');
 
   const { deviceId, limit } = req.query;
 
@@ -109,18 +107,6 @@ router.post('/cleanup', async (req, res) => {
   const { days } = req.body;
   const cutoff = new Date(Date.now() - (days || 30) * 86400000).toISOString();
 
-  if (isAdmin(req)) {
-    // Admin: cleanup tất cả tenants
-    let totalRemoved = { executions: 0, logs: 0, screenshots: 0 };
-    for (const tid of await getAllTenantIds()) {
-      totalRemoved.executions += await cleanupTenantCollection(tid, 'execution-history', cutoff, 'startedAt');
-      totalRemoved.logs += await cleanupTenantCollection(tid, 'activity-logs', cutoff, 'timestamp');
-      totalRemoved.screenshots += await cleanupTenantCollection(tid, 'screenshots', cutoff, 'timestamp');
-    }
-    return res.json({ success: true, data: { executionsRemoved: totalRemoved.executions, logsRemoved: totalRemoved.logs, screenshotsRemoved: totalRemoved.screenshots } });
-  }
-
-  // User: cleanup chỉ tenant mình
   const execRemoved = await cleanupTenantCollection(userId, 'execution-history', cutoff, 'startedAt');
   const logsRemoved = await cleanupTenantCollection(userId, 'activity-logs', cutoff, 'timestamp');
   const ssRemoved = await cleanupTenantCollection(userId, 'screenshots', cutoff, 'timestamp');
@@ -132,17 +118,9 @@ router.post('/cleanup-all', async (req, res) => {
   const userId = getAuthUserId(req);
   if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
-  if (isAdmin(req)) {
-    for (const tid of await getAllTenantIds()) {
-      await writeUserCollection(tid, 'execution-history', []);
-      await writeUserCollection(tid, 'activity-logs', []);
-      await writeUserCollection(tid, 'screenshots', []);
-    }
-  } else {
-    await writeUserCollection(userId, 'execution-history', []);
-    await writeUserCollection(userId, 'activity-logs', []);
-    await writeUserCollection(userId, 'screenshots', []);
-  }
+  await writeUserCollection(userId, 'execution-history', []);
+  await writeUserCollection(userId, 'activity-logs', []);
+  await writeUserCollection(userId, 'screenshots', []);
 
   res.json({ success: true, data: { message: 'All logs cleared' } });
 });

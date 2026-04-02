@@ -3,7 +3,7 @@
  * Dùng xuyên suốt routes để enforce data isolation.
  *
  * Quy ước:
- * - getTenantId(req) → undefined cho admin (xem TẤT CẢ), userId cho user thường
+ * - getTenantId(req) → luôn trả về userId (kể cả admin) — mỗi user chỉ thấy data của mình
  * - getAuthUserId(req) → luôn trả về userId (kể cả admin) — dùng khi ghi data
  * - isAdmin(req) → boolean check role
  */
@@ -19,15 +19,12 @@ interface AuthPayload {
 /**
  * Lấy tenant ID để filter data.
  *
- * - Admin → undefined (signal cho service layer đọc ALL tenants)
- * - User → userId (service layer đọc tenant riêng)
- *
+ * Mỗi user (kể cả admin) chỉ thấy data của chính mình.
  * Dùng cho GET endpoints — quyết định user thấy data gì.
  */
 export function getTenantId(req: Request): string | undefined {
   const user = (req as any).user as AuthPayload | undefined;
   if (!user) return undefined;
-  if (user.role === 'admin') return undefined; // Admin sees all
   return user.id;
 }
 

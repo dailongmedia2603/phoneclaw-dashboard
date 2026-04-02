@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getDevice, findDeviceGlobal } from '../services/device-manager';
-import { getAuthUserId, isAdmin } from '../helpers/get-user';
+import { getAuthUserId } from '../helpers/get-user';
 
 const router = Router();
 
@@ -12,7 +12,7 @@ router.get('/:deviceId', async (req, res) => {
   const device = found?.device ?? await getDevice(req.params.deviceId);
   if (!device) return res.status(404).json({ success: false, error: 'Device not found' });
 
-  if (found && !isAdmin(req) && found.tenantId !== userId) {
+  if (found && found.tenantId !== userId) {
     return res.status(403).json({ success: false, error: 'Không có quyền truy cập thiết bị này' });
   }
 

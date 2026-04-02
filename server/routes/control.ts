@@ -2,14 +2,13 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { callDeviceApi } from '../services/device-manager';
 import { findDeviceGlobal } from '../services/device-manager';
 import { triggerVncCapture } from '../services/vnc-tap';
-import { getAuthUserId, isAdmin } from '../helpers/get-user';
+import { getAuthUserId } from '../helpers/get-user';
 
 const router = Router();
 
 /**
  * Middleware: kiểm tra user có quyền truy cập device không.
- * - Admin: luôn được phép
- * - User: chỉ được truy cập device trong tenant của mình
+ * Mỗi user chỉ được truy cập device trong tenant của mình.
  */
 async function verifyDeviceAccess(req: Request, res: Response, next: NextFunction) {
   const userId = getAuthUserId(req);
@@ -19,7 +18,7 @@ async function verifyDeviceAccess(req: Request, res: Response, next: NextFunctio
     return res.status(404).json({ success: false, error: 'Device not found' });
   }
 
-  if (!isAdmin(req) && found.tenantId !== userId) {
+  if (found.tenantId !== userId) {
     return res.status(403).json({ success: false, error: 'Không có quyền truy cập thiết bị này' });
   }
 

@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { callDeviceApi, findDeviceGlobal, updateDeviceForTenant } from '../services/device-manager';
-import { getAuthUserId, isAdmin } from '../helpers/get-user';
+import { getAuthUserId } from '../helpers/get-user';
 import type { ProxyConfig } from '../../src/types';
 
 const router = Router();
@@ -19,6 +19,7 @@ async function verifyProxyRunning(deviceId: string): Promise<{ running: boolean;
 
 /**
  * Middleware: kiểm tra user có quyền truy cập device không.
+ * Mỗi user chỉ được truy cập device trong tenant của mình.
  */
 async function verifyDeviceAccess(req: Request, res: Response, next: NextFunction) {
   const userId = getAuthUserId(req);
@@ -28,7 +29,7 @@ async function verifyDeviceAccess(req: Request, res: Response, next: NextFunctio
     return res.status(404).json({ success: false, error: 'Device not found' });
   }
 
-  if (!isAdmin(req) && found.tenantId !== userId) {
+  if (found.tenantId !== userId) {
     return res.status(403).json({ success: false, error: 'Không có quyền truy cập thiết bị này' });
   }
 
@@ -43,13 +44,12 @@ async function verifyDeviceAccess(req: Request, res: Response, next: NextFunctio
  */
 async function verifyBatchOwnership(req: Request, deviceIds: string[]): Promise<Record<string, string> | null> {
   const userId = getAuthUserId(req);
-  const admin = isAdmin(req);
   const map: Record<string, string> = {};
 
   for (const deviceId of deviceIds) {
     const found = await findDeviceGlobal(deviceId);
-    if (!found) return null; // Device not found
-    if (!admin && found.tenantId !== userId) return null; // Không thuộc user
+    if (!found) return null;
+    if (found.tenantId !== userId) return null;
     map[deviceId] = found.tenantId;
   }
   return map;

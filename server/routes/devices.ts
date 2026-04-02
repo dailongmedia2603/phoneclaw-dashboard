@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import * as dm from '../services/device-manager';
-import { readCollection, getAllTenantIds } from '../store';
+import { readCollection } from '../store';
 import { getTenantId, getAuthUserId, isAdmin } from '../helpers/get-user';
 
 const router = Router();
@@ -23,8 +23,8 @@ router.get('/:id', async (req, res) => {
     return res.json({ success: true, data: device });
   }
 
-  // Ownership check: user chỉ xem device mình, admin xem tất cả
-  if (!isAdmin(req) && found.tenantId !== userId) {
+  // Ownership check: mỗi user chỉ xem device của mình
+  if (found.tenantId !== userId) {
     return res.status(403).json({ success: false, error: 'Không có quyền truy cập thiết bị này' });
   }
 
@@ -86,7 +86,7 @@ router.put('/:id', async (req, res) => {
     return res.json({ success: true, data: device });
   }
 
-  if (!isAdmin(req) && found.tenantId !== userId) {
+  if (found.tenantId !== userId) {
     return res.status(403).json({ success: false, error: 'Không có quyền sửa thiết bị này' });
   }
 
@@ -107,7 +107,7 @@ router.delete('/:id', async (req, res) => {
     return res.json({ success: true });
   }
 
-  if (!isAdmin(req) && found.tenantId !== userId) {
+  if (found.tenantId !== userId) {
     return res.status(403).json({ success: false, error: 'Không có quyền xoá thiết bị này' });
   }
 
@@ -138,45 +138,21 @@ router.post('/groups', async (req, res) => {
 // PUT /api/devices/groups/:id
 router.put('/groups/:id', async (req, res) => {
   const userId = getAuthUserId(req);
+  if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
-  // Tìm group trong tất cả tenants
-  const allGroups = await dm.getGroupsForTenant(undefined);
-  for (const tid of allGroups.map(g => (g as any).__tenantId).filter(Boolean)) {
-    // Nếu admin hoặc chủ sở hữu
-    if (isAdmin(req) || tid === userId) {
-      const group = await dm.updateGroupForTenant(tid as string, req.params.id, req.body);
-      if (group) return res.json({ success: true, data: group });
-    }
-  }
-
-  // Fallback: thử update trực tiếp trong tenant của user
-  if (userId) {
-    const group = await dm.updateGroupForTenant(userId, req.params.id, req.body);
-    if (group) return res.json({ success: true, data: group });
-  }
-
-  res.status(404).json({ success: false, error: 'Group not found' });
+  const group = await dm.updateGroupForTenant(userId, req.params.id, req.body);
+  if (!group) return res.status(404).json({ success: false, error: 'Group not found' });
+  res.json({ success: true, data: group });
 });
 
 // DELETE /api/devices/groups/:id
 router.delete('/groups/:id', async (req, res) => {
   const userId = getAuthUserId(req);
+  if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
-  if (userId) {
-    // User xoá group của mình
-    const ok = await dm.deleteGroupForTenant(userId, req.params.id);
-    if (ok) return res.json({ success: true });
-  }
-
-  // Admin fallback: tìm group trong mọi tenant
-  if (isAdmin(req)) {
-    for (const tid of await getAllTenantIds()) {
-      const ok = await dm.deleteGroupForTenant(tid, req.params.id);
-      if (ok) return res.json({ success: true });
-    }
-  }
-
-  res.status(404).json({ success: false, error: 'Group not found' });
+  const ok = await dm.deleteGroupForTenant(userId, req.params.id);
+  if (!ok) return res.status(404).json({ success: false, error: 'Group not found' });
+  res.json({ success: true });
 });
 
 export default router;

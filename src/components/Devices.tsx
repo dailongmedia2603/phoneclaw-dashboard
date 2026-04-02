@@ -37,8 +37,7 @@ export default function Devices() {
 
   const allPackages = packageList || [];
   const currentPkg = authUser?.packageId ? allPackages.find(p => p.id === authUser.packageId) : null;
-  const isNonAdmin = authUser?.role !== 'admin';
-  const userDeviceCount = authUser ? (deviceList || []).filter(d => d.ownerId === authUser.id).length : 0;
+  const userDeviceCount = (deviceList || []).length;
   const isAtLimit = !!(currentPkg && userDeviceCount >= currentPkg.maxDevices);
 
   useEffect(() => {
@@ -191,8 +190,8 @@ export default function Devices() {
         </button>
       </div>
 
-      {/* Quota Banner (non-admin with package) */}
-      {isNonAdmin && currentPkg && (
+      {/* Quota Banner (user with package) */}
+      {currentPkg && (
         <div className="px-6 py-3 border-b border-blue-100 bg-blue-50/80 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div>

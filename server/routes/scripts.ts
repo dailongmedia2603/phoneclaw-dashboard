@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import * as se from '../services/script-engine';
 import { findDeviceGlobal } from '../services/device-manager';
-import { getTenantId, getAuthUserId, isAdmin } from '../helpers/get-user';
+import { getTenantId, getAuthUserId } from '../helpers/get-user';
 
 const router = Router();
 
@@ -36,18 +36,6 @@ router.put('/:id', async (req, res) => {
   const userId = getAuthUserId(req);
   if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
-  // Ownership check: tìm script trong tenant user hoặc admin xem tất cả
-  if (isAdmin(req)) {
-    // Admin: tìm trong tất cả tenants
-    const allScripts = await se.getScriptsForTenant(undefined);
-    const target = allScripts.find(s => s.id === req.params.id);
-    if (!target) return res.status(404).json({ success: false, error: 'Script not found' });
-    const tid = (target as any).__tenantId || userId;
-    const script = await se.updateScriptForTenant(tid, req.params.id, req.body);
-    if (!script) return res.status(404).json({ success: false, error: 'Script not found' });
-    return res.json({ success: true, data: script });
-  }
-
   const script = await se.updateScriptForTenant(userId, req.params.id, req.body);
   if (!script) return res.status(404).json({ success: false, error: 'Script not found' });
   res.json({ success: true, data: script });
@@ -57,16 +45,6 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   const userId = getAuthUserId(req);
   if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
-
-  if (isAdmin(req)) {
-    const allScripts = await se.getScriptsForTenant(undefined);
-    const target = allScripts.find(s => s.id === req.params.id);
-    if (!target) return res.status(404).json({ success: false, error: 'Script not found' });
-    const tid = (target as any).__tenantId || userId;
-    const ok = await se.deleteScriptForTenant(tid, req.params.id);
-    if (!ok) return res.status(404).json({ success: false, error: 'Script not found' });
-    return res.json({ success: true });
-  }
 
   const ok = await se.deleteScriptForTenant(userId, req.params.id);
   if (!ok) return res.status(404).json({ success: false, error: 'Script not found' });
@@ -82,14 +60,14 @@ router.post('/:id/run', async (req, res) => {
   if (!deviceId) return res.status(400).json({ success: false, error: 'deviceId is required' });
 
   // Check script ownership: script phải thuộc tenant user
-  const userScripts = await se.getScriptsForTenant(isAdmin(req) ? undefined : userId);
+  const userScripts = await se.getScriptsForTenant(userId);
   const script = userScripts.find(s => s.id === req.params.id);
   if (!script) return res.status(403).json({ success: false, error: 'Không có quyền chạy script này' });
 
   // Check device ownership: device phải thuộc tenant user
   const found = await findDeviceGlobal(deviceId);
   if (!found) return res.status(404).json({ success: false, error: 'Device not found' });
-  if (!isAdmin(req) && found.tenantId !== userId) {
+  if (found.tenantId !== userId) {
     return res.status(403).json({ success: false, error: 'Không có quyền truy cập thiết bị này' });
   }
 

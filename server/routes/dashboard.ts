@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { getDevicesForTenant } from '../services/device-manager';
 import { getExecutionHistoryForTenant } from '../services/script-engine';
-import { readCollection, writeCollection, readUserCollection, writeUserCollection, readAllTenantsCollection } from '../store';
-import { getTenantId, getAuthUserId, isAdmin } from '../helpers/get-user';
+import { readCollection, writeCollection, readUserCollection, writeUserCollection } from '../store';
+import { getTenantId, getAuthUserId } from '../helpers/get-user';
 import type { DashboardStats, Notification } from '../../src/types';
 
 const router = Router();
@@ -51,20 +51,13 @@ router.get('/stats', async (req, res) => {
 // GET /api/dashboard/notifications
 router.get('/notifications', async (req, res) => {
   const tenantId = getTenantId(req);
+  if (!tenantId) return res.status(401).json({ success: false, error: 'Unauthorized' });
   const limit = parseInt(req.query.limit as string) || 20;
 
-  let notifications: Notification[];
-  if (tenantId) {
-    // User: đọc từ tenant + shared notifications
-    const userNotifs = await readUserCollection<Notification>(tenantId, 'notifications');
-    const sharedNotifs = await readCollection<Notification>('notifications');
-    notifications = [...userNotifs, ...sharedNotifs];
-  } else {
-    // Admin: đọc tất cả tenant notifications + shared
-    const allTenantNotifs = await readAllTenantsCollection<Notification>('notifications') as Notification[];
-    const sharedNotifs = await readCollection<Notification>('notifications');
-    notifications = [...allTenantNotifs, ...sharedNotifs];
-  }
+  // Đọc notifications riêng của user + shared notifications
+  const userNotifs = await readUserCollection<Notification>(tenantId, 'notifications');
+  const sharedNotifs = await readCollection<Notification>('notifications');
+  const notifications = [...userNotifs, ...sharedNotifs];
 
   const sorted = notifications
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
