@@ -45,12 +45,12 @@ jobs:
           $SSH_CMD $VPS_USER@$VPS_HOST "mkdir -p $APP_DIR/server/data $APP_DIR/src/types $APP_DIR/dist"
 
           # Sync entire project (exclude heavy/local files)
+          # IMPORTANT: --exclude='server/data/**' bảo vệ toàn bộ dữ liệu trên VPS
           rsync -avz --delete \
             -e "$SSH_CMD" \
             --exclude='node_modules' \
             --exclude='.git' \
-            --exclude='server/data/*.json' \
-            --exclude='server/data/templates/*.png' \
+            --exclude='server/data/**' \
             --exclude='src/' \
             --exclude='.github/' \
             ./ $VPS_USER@$VPS_HOST:$APP_DIR/
