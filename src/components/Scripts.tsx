@@ -96,6 +96,7 @@ export default function Scripts() {
   const [pollingTimer, setPollingTimer] = useState<ReturnType<typeof setInterval> | null>(null);
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportSelected, setExportSelected] = useState<string[]>([]);
+  const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
   const [importLoading, setImportLoading] = useState(false);
 
   const { data: scriptsList, loading, error, refresh } = useApi<Script[]>(() => scriptsApi.getAll(), []);
@@ -651,77 +652,119 @@ screenshot()`}
       {/* Export Modal */}
       {showExportModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
             {/* Header */}
             <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
               <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                 <Download size={18} className="text-blue-600" /> Export Kịch bản
               </h2>
-              <button onClick={() => setShowExportModal(false)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full">
+              <button onClick={() => { setShowExportModal(false); setExportDropdownOpen(false); }} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full">
                 <X size={20} />
               </button>
             </div>
 
-            {/* Select All */}
-            <div
-              onClick={toggleExportAll}
-              className="px-6 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3 cursor-pointer hover:bg-slate-100/50 transition-colors"
-            >
-              <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                exportSelected.length === scriptsData.length && scriptsData.length > 0
-                  ? 'bg-blue-600 border-blue-600' : 'border-slate-300'
-              }`}>
-                {exportSelected.length === scriptsData.length && scriptsData.length > 0 && <Check size={14} className="text-white" />}
-              </div>
-              <span className="text-sm font-medium text-slate-700">
-                Chọn tất cả ({scriptsData.length} kịch bản)
-              </span>
-            </div>
+            <div className="p-6 space-y-4">
+              {/* Multi-select dropdown */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Chọn kịch bản</label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setExportDropdownOpen(!exportDropdownOpen)}
+                    className="w-full flex items-center justify-between px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                  >
+                    <span className={exportSelected.length > 0 ? 'text-slate-900' : 'text-slate-400'}>
+                      {exportSelected.length === 0
+                        ? 'Chọn kịch bản để export...'
+                        : exportSelected.length === scriptsData.length
+                          ? `Tất cả (${scriptsData.length} kịch bản)`
+                          : `${exportSelected.length} kịch bản đã chọn`}
+                    </span>
+                    <ChevronRight size={16} className={`text-slate-400 transition-transform ${exportDropdownOpen ? 'rotate-90' : ''}`} />
+                  </button>
 
-            {/* Script list */}
-            <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
-              {scriptsData.length === 0 ? (
-                <div className="px-6 py-8 text-center text-sm text-slate-400">Chưa có kịch bản nào</div>
-              ) : (
-                scriptsData.map(script => {
-                  const isSelected = exportSelected.includes(script.id);
-                  const channelLabel = APP_TABS.find(t => t.id === (script.channel || 'tiktok_vn'))?.label || script.channel;
-                  return (
-                    <label key={script.id} className="flex items-center gap-3 px-6 py-3 hover:bg-slate-50 cursor-pointer transition-colors">
-                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-                        isSelected ? 'bg-blue-600 border-blue-600' : 'border-slate-300 hover:border-slate-400'
-                      }`}>
-                        {isSelected && <Check size={14} className="text-white" />}
+                  {exportDropdownOpen && (
+                    <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-10 overflow-hidden">
+                      {/* Select All option */}
+                      <div
+                        onClick={toggleExportAll}
+                        className="flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 cursor-pointer border-b border-slate-100"
+                      >
+                        <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                          exportSelected.length === scriptsData.length && scriptsData.length > 0
+                            ? 'bg-blue-600 border-blue-600' : 'border-slate-300'
+                        }`}>
+                          {exportSelected.length === scriptsData.length && scriptsData.length > 0 && <Check size={10} className="text-white" />}
+                        </div>
+                        <span className="text-sm font-medium text-slate-700">Chọn tất cả</span>
                       </div>
-                      <input
-                        type="checkbox"
-                        className="hidden"
-                        checked={isSelected}
-                        onChange={() => toggleExportSelect(script.id)}
-                      />
-                      <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                        <Wand2 size={14} />
+
+                      {/* Script options */}
+                      <div className="max-h-52 overflow-y-auto">
+                        {scriptsData.length === 0 ? (
+                          <div className="px-3 py-4 text-center text-sm text-slate-400">Chưa có kịch bản nào</div>
+                        ) : (
+                          scriptsData.map(script => {
+                            const isSelected = exportSelected.includes(script.id);
+                            const channelLabel = APP_TABS.find(t => t.id === (script.channel || 'tiktok_vn'))?.label || script.channel;
+                            return (
+                              <div
+                                key={script.id}
+                                onClick={() => toggleExportSelect(script.id)}
+                                className={`flex items-center gap-3 px-3 py-2 hover:bg-slate-50 cursor-pointer transition-colors ${
+                                  isSelected ? 'bg-blue-50/50' : ''
+                                }`}
+                              >
+                                <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                                  isSelected ? 'bg-blue-600 border-blue-600' : 'border-slate-300'
+                                }`}>
+                                  {isSelected && <Check size={10} className="text-white" />}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm text-slate-900 truncate">{script.name}</p>
+                                  <p className="text-xs text-slate-500">{channelLabel} · {script.steps.length} bước</p>
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-900 truncate">{script.name}</p>
-                        <p className="text-xs text-slate-500">{channelLabel} · {script.steps.length} bước</p>
-                      </div>
-                    </label>
-                  );
-                })
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Selected tags */}
+              {exportSelected.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {scriptsData.filter(s => exportSelected.includes(s.id)).map(s => (
+                    <span
+                      key={s.id}
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium"
+                    >
+                      {s.name}
+                      <button
+                        onClick={() => toggleExportSelect(s.id)}
+                        className="hover:text-blue-900 transition-colors"
+                      >
+                        <X size={12} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
               )}
             </div>
 
             {/* Footer */}
             <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50">
               <button
-                onClick={() => setShowExportModal(false)}
+                onClick={() => { setShowExportModal(false); setExportDropdownOpen(false); }}
                 className="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors"
               >
                 Huỷ
               </button>
               <button
-                onClick={handleExport}
+                onClick={() => { handleExport(); setExportDropdownOpen(false); }}
                 disabled={exportSelected.length === 0}
                 className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
