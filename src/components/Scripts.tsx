@@ -5,7 +5,7 @@ import {
   Clock, Smartphone, FileJson, Search,
   X, Save, Code, List, ChevronRight, GripVertical,
   MousePointer2, Timer, Repeat, Variable, CheckSquare,
-  Copy
+  Copy, Check
 } from 'lucide-react';
 import { scripts as scriptsApi, devices as devicesApi } from '../services/api';
 import { useApi } from '../hooks/useApi';
@@ -94,6 +94,9 @@ export default function Scripts() {
   const [saveLoading, setSaveLoading] = useState(false);
   const [runningExecution, setRunningExecution] = useState<any>(null);
   const [pollingTimer, setPollingTimer] = useState<ReturnType<typeof setInterval> | null>(null);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportSelected, setExportSelected] = useState<string[]>([]);
+  const [importLoading, setImportLoading] = useState(false);
 
   const { data: scriptsList, loading, error, refresh } = useApi<Script[]>(() => scriptsApi.getAll(), []);
   const { data: devicesList } = useApi<Device[]>(() => devicesApi.getAll(), []);
@@ -196,6 +199,95 @@ export default function Scripts() {
     );
   };
 
+  // --- Export ---
+  const handleExport = () => {
+    const selected = scriptsData.filter(s => exportSelected.includes(s.id));
+    const exportData = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      scripts: selected.map(s => ({
+        name: s.name,
+        description: s.description,
+        channel: s.channel,
+        graphData: s.graphData,
+        steps: s.steps,
+      })),
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `phoneclaw-scripts-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setShowExportModal(false);
+    setExportSelected([]);
+    showToast('success', `Đã export ${selected.length} kịch bản`);
+  };
+
+  const toggleExportSelect = (id: string) => {
+    setExportSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const toggleExportAll = () => {
+    setExportSelected(prev => prev.length === scriptsData.length ? [] : scriptsData.map(s => s.id));
+  };
+
+  // --- Import ---
+  const handleImport = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      setImportLoading(true);
+      try {
+        const text = await file.text();
+        let data: any;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          showToast('error', 'File không đúng định dạng JSON');
+          return;
+        }
+
+        if (!data.version || !Array.isArray(data.scripts) || data.scripts.length === 0) {
+          showToast('error', 'File không đúng định dạng PhoneClaw hoặc không có kịch bản nào');
+          return;
+        }
+
+        for (const s of data.scripts) {
+          if (!s.name || !Array.isArray(s.steps)) {
+            showToast('error', `Kịch bản "${s.name || 'không tên'}" không hợp lệ`);
+            return;
+          }
+        }
+
+        let created = 0;
+        for (const s of data.scripts) {
+          await scriptsApi.create({
+            name: s.name,
+            description: s.description || '',
+            channel: s.channel || 'tiktok_vn',
+            graphData: s.graphData,
+            steps: s.steps,
+          });
+          created++;
+        }
+
+        showToast('success', `Đã import ${created} kịch bản thành công`);
+        refresh();
+      } catch (err) {
+        showToast('error', 'Lỗi import: ' + (err instanceof Error ? err.message : 'Không xác định'));
+      } finally {
+        setImportLoading(false);
+      }
+    };
+    input.click();
+  };
+
   return (
     <div className="h-full flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden relative">
       {/* Header */}
@@ -205,11 +297,18 @@ export default function Scripts() {
           <p className="text-sm text-slate-500">Tạo, chỉnh sửa và phân bổ kịch bản tự động hóa cho thiết bị</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 shadow-sm transition-colors">
+          <button
+            onClick={handleImport}
+            disabled={importLoading}
+            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 shadow-sm transition-colors disabled:opacity-50"
+          >
             <Upload size={18} className="text-slate-400" />
-            Import
+            {importLoading ? 'Đang import...' : 'Import'}
           </button>
-          <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 shadow-sm transition-colors">
+          <button
+            onClick={() => { setExportSelected([]); setShowExportModal(true); }}
+            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 shadow-sm transition-colors"
+          >
             <Download size={18} className="text-slate-400" />
             Export
           </button>
@@ -544,6 +643,91 @@ screenshot()`}
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Export Modal */}
+      {showExportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <Download size={18} className="text-blue-600" /> Export Kịch bản
+              </h2>
+              <button onClick={() => setShowExportModal(false)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full">
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Select All */}
+            <div
+              onClick={toggleExportAll}
+              className="px-6 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3 cursor-pointer hover:bg-slate-100/50 transition-colors"
+            >
+              <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                exportSelected.length === scriptsData.length && scriptsData.length > 0
+                  ? 'bg-blue-600 border-blue-600' : 'border-slate-300'
+              }`}>
+                {exportSelected.length === scriptsData.length && scriptsData.length > 0 && <Check size={14} className="text-white" />}
+              </div>
+              <span className="text-sm font-medium text-slate-700">
+                Chọn tất cả ({scriptsData.length} kịch bản)
+              </span>
+            </div>
+
+            {/* Script list */}
+            <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
+              {scriptsData.length === 0 ? (
+                <div className="px-6 py-8 text-center text-sm text-slate-400">Chưa có kịch bản nào</div>
+              ) : (
+                scriptsData.map(script => {
+                  const isSelected = exportSelected.includes(script.id);
+                  const channelLabel = APP_TABS.find(t => t.id === (script.channel || 'tiktok_vn'))?.label || script.channel;
+                  return (
+                    <label key={script.id} className="flex items-center gap-3 px-6 py-3 hover:bg-slate-50 cursor-pointer transition-colors">
+                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                        isSelected ? 'bg-blue-600 border-blue-600' : 'border-slate-300 hover:border-slate-400'
+                      }`}>
+                        {isSelected && <Check size={14} className="text-white" />}
+                      </div>
+                      <input
+                        type="checkbox"
+                        className="hidden"
+                        checked={isSelected}
+                        onChange={() => toggleExportSelect(script.id)}
+                      />
+                      <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                        <Wand2 size={14} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-slate-900 truncate">{script.name}</p>
+                        <p className="text-xs text-slate-500">{channelLabel} · {script.steps.length} bước</p>
+                      </div>
+                    </label>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50">
+              <button
+                onClick={() => setShowExportModal(false)}
+                className="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors"
+              >
+                Huỷ
+              </button>
+              <button
+                onClick={handleExport}
+                disabled={exportSelected.length === 0}
+                className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Download size={16} />
+                Export ({exportSelected.length})
+              </button>
             </div>
           </div>
         </div>
