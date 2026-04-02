@@ -213,7 +213,8 @@ export default function ScriptEditorPage({ appTab, apiType = 'scripts' }: Script
           graphData,
         });
         showToast('success', 'Đã tạo kịch bản');
-        onBack();
+        setHasUnsavedChanges(false);
+        navigate(backPath);
       }
     } catch {
       showToast('error', 'Lưu thất bại');
