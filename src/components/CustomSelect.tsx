@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Check } from 'lucide-react';
 
 interface Option {
@@ -67,7 +68,7 @@ export default function CustomSelect({ value, onChange, options, placeholder }: 
         <ChevronDown size={16} className={`text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
-      {open && (
+      {open && createPortal(
         <div
           ref={dropRef}
           style={dropStyle}
@@ -90,7 +91,8 @@ export default function CustomSelect({ value, onChange, options, placeholder }: 
               <span className="truncate">{opt.label}</span>
             </button>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

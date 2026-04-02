@@ -235,17 +235,37 @@ export default function Devices() {
           </div>
 
           <div className="flex items-center bg-white rounded-xl p-1 border border-slate-200 shadow-sm overflow-x-auto">
-            {groups.map(group => (
-              <button
-                key={group}
-                onClick={() => setActiveGroup(group)}
-                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors whitespace-nowrap ${
-                  activeGroup === group ? 'bg-slate-100 text-slate-800' : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                {group}
-              </button>
-            ))}
+            {groups.map(group => {
+              const isSystem = group === 'Tất cả' || group === 'Chưa phân nhóm';
+              const groupObj = !isSystem ? (groupList || []).find(g => g.name === group) : null;
+              return (
+                <div key={group} className="relative group/tab flex items-center">
+                  <button
+                    onClick={() => setActiveGroup(group)}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors whitespace-nowrap ${
+                      activeGroup === group ? 'bg-slate-100 text-slate-800' : 'text-slate-500 hover:text-slate-700'
+                    } ${groupObj ? 'pr-7' : ''}`}
+                  >
+                    {group}
+                  </button>
+                  {groupObj && (
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        await devicesApi.removeGroup(groupObj.id);
+                        if (activeGroup === group) setActiveGroup('Tất cả');
+                        refreshGroups();
+                        showToast('success', `Đã xóa nhóm "${group}"`);
+                      }}
+                      className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover/tab:opacity-100 transition-all"
+                      title={`Xóa nhóm ${group}`}
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
 
