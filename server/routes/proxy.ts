@@ -161,15 +161,24 @@ router.post('/batch/stop', async (req, res) => {
 // GET /api/proxy/geolocate/:ip
 router.get('/geolocate/:ip', async (req, res) => {
   try {
-    const response = await fetch(
-      `http://ip-api.com/json/${req.params.ip}?fields=status,country,regionName,city,lat,lon,timezone`
-    );
-    const data = await response.json();
-    if (data.status === 'success') {
-      res.json({ success: true, data });
-    } else {
-      res.json({ success: false, error: 'Không thể xác định vị trí từ IP' });
+    const response = await fetch(`https://ipinfo.io/${req.params.ip}/json`);
+    const raw = await response.json() as Record<string, unknown>;
+    if (raw.bogon || !raw.loc) {
+      return res.json({ success: false, error: 'Không thể xác định vị trí từ IP' });
     }
+    // Parse "lat,lon" string → numbers
+    const [lat, lon] = (raw.loc as string).split(',').map(Number);
+    res.json({
+      success: true,
+      data: {
+        country: raw.country as string,
+        regionName: raw.region as string,
+        city: raw.city as string,
+        lat,
+        lon,
+        timezone: raw.timezone as string,
+      },
+    });
   } catch {
     res.json({ success: false, error: 'Lỗi khi tra cứu IP' });
   }
