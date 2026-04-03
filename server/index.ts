@@ -11,7 +11,7 @@ import { config } from './config';
 import { startDeviceMonitor, stopDeviceMonitor } from './services/device-manager';
 import { startScheduler, stopScheduler } from './services/scheduler';
 import { stopAllProxies } from './services/vnc-proxy';
-import { readCollection, writeCollection, generateId, readUserCollection, writeUserCollection, initDb, closeDb } from './store';
+import { readCollection, writeCollection, generateId, readUserCollection, writeUserCollection, readSingleton, initDb, closeDb } from './store';
 
 import authRoutes, { authMiddleware, seedDefaultAdmin } from './routes/auth';
 import dashboardRoutes from './routes/dashboard';
@@ -30,7 +30,7 @@ import packagesRoutes from './routes/packages';
 import heartbeatRoutes from './routes/heartbeat';
 import { migrateToTenantStructure } from './migration';
 
-import type { Notification, WsMessage } from '../src/types';
+import type { Notification, WsMessage, AppSettings } from '../src/types';
 
 const app = express();
 const server = http.createServer(app);
@@ -80,6 +80,33 @@ async function addNotification(type: Notification['type'], title: string, messag
   }
 
   broadcast({ type: 'notification', payload: notification, timestamp: notification.timestamp });
+
+  // Send Telegram notification if configured
+  try {
+    const settings = await readSingleton<AppSettings>('settings', {} as AppSettings);
+    const nc = settings.notifications;
+    if (nc?.telegramBotToken && nc?.telegramChatId) {
+      const shouldSend =
+        (type === 'warning' && nc.alertOnDeviceOffline) ||
+        (type === 'error' && nc.alertOnScriptError) ||
+        (type === 'success' && nc.alertOnScriptComplete);
+
+      if (shouldSend) {
+        const emoji = type === 'error' ? '🔴' : type === 'warning' ? '⚠️' : '✅';
+        fetch(`https://api.telegram.org/bot${nc.telegramBotToken}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: nc.telegramChatId,
+            text: `${emoji} <b>${title}</b>\n${message}`,
+            parse_mode: 'HTML',
+          }),
+        }).catch(err => console.error('[Telegram] Send failed:', err.message));
+      }
+    }
+  } catch {
+    // Silently ignore — Telegram is optional
+  }
 }
 
 // --- VNC WebSocket Proxy ---
