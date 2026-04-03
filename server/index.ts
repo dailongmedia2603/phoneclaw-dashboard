@@ -28,6 +28,11 @@ import sharedScriptsRoutes from './routes/shared-scripts';
 import proxyRoutes from './routes/proxy';
 import packagesRoutes from './routes/packages';
 import heartbeatRoutes from './routes/heartbeat';
+import apiTokenRoutes from './routes/api-tokens';
+import externalApiRoutes from './routes/external-api';
+import { apiTokenAuthMiddleware } from './middleware/api-token-auth';
+import { ipRateLimiter, userRateLimiter, authFailLimiter } from './middleware/rate-limit';
+import { auditLogMiddleware } from './middleware/audit-log';
 import { migrateToTenantStructure } from './migration';
 
 import type { Notification, WsMessage, AppSettings } from '../src/types';
@@ -175,7 +180,7 @@ app.use(express.json({ limit: '500mb' }));
 app.use((_req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Token');
   if (_req.method === 'OPTIONS') return res.sendStatus(200);
   next();
 });
@@ -183,9 +188,24 @@ app.use((_req, res, next) => {
 // --- Auth ---
 app.use('/api/auth', authRoutes);
 app.use('/api/heartbeat', heartbeatRoutes); // Before auth — phones use Tailscale network auth
+
+// --- External API v1 (mount BEFORE authMiddleware — uses own API Token auth) ---
+app.use('/api/v1/external',
+  authFailLimiter,
+  ipRateLimiter,
+  apiTokenAuthMiddleware,
+  userRateLimiter,
+  auditLogMiddleware,
+  externalApiRoutes
+);
+
+// --- Dashboard Auth (UNCHANGED) ---
 app.use(authMiddleware);
 
-// --- API Routes ---
+// --- Token Management (needs JWT auth from above) ---
+app.use('/api/auth/tokens', apiTokenRoutes);
+
+// --- API Routes (UNCHANGED) ---
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/devices', devicesRoutes);
 app.use('/api/control', controlRoutes);

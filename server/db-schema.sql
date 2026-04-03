@@ -324,4 +324,47 @@ VALUES (1, '{
 }'::jsonb)
 ON CONFLICT (id) DO NOTHING;
 
+-- ============================================================
+-- 15. API TOKENS
+--     Mỗi user có thể có nhiều API token cho external integrations.
+--     Token lưu dạng SHA-256 hash (không plaintext).
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS api_tokens (
+    id              TEXT PRIMARY KEY,
+    user_id         TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name            TEXT NOT NULL DEFAULT 'Default Token',
+    token_hash      TEXT NOT NULL UNIQUE,     -- SHA-256 hash of full token
+    token_prefix    TEXT NOT NULL,            -- First 20 chars for display: "pa_live_xxxxxxxxxxxx"
+    last_used_at    TIMESTAMPTZ,
+    last_used_ip    TEXT,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    revoked_at      TIMESTAMPTZ              -- NULL = active, non-NULL = revoked
+);
+
+CREATE INDEX IF NOT EXISTS idx_api_tokens_user ON api_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_api_tokens_hash ON api_tokens(token_hash) WHERE revoked_at IS NULL;
+
+-- ============================================================
+-- 16. API AUDIT LOGS
+--     Logs mỗi API call từ external integration.
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS api_audit_logs (
+    id              TEXT PRIMARY KEY,
+    token_id        TEXT REFERENCES api_tokens(id) ON DELETE SET NULL,
+    user_id         TEXT REFERENCES users(id) ON DELETE CASCADE,
+    method          TEXT NOT NULL,            -- GET, POST, PUT, DELETE
+    path            TEXT NOT NULL,            -- /api/v1/external/devices
+    status_code     INTEGER,
+    ip              TEXT,
+    user_agent      TEXT,
+    response_time   INTEGER,                 -- milliseconds
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_logs_user ON api_audit_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON api_audit_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_token ON api_audit_logs(token_id);
+
 COMMIT;

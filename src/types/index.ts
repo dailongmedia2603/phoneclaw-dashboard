@@ -249,6 +249,37 @@ export interface ApiResponse<T = unknown> {
   error?: string;
 }
 
+// --- API Token ---
+export interface ApiToken {
+  id: string;
+  userId: string;
+  name: string;
+  tokenPrefix: string;      // "pa_live_xxxxxxxxxxxx" — for display only
+  lastUsedAt?: string;
+  lastUsedIp?: string;
+  createdAt: string;
+  revokedAt?: string;
+}
+
+/** Only returned at creation time — plaintext shown ONCE */
+export interface ApiTokenWithSecret extends ApiToken {
+  token: string;             // Full plaintext token
+}
+
+// --- API Audit Log ---
+export interface ApiAuditLog {
+  id: string;
+  tokenId?: string;
+  userId: string;
+  method: string;
+  path: string;
+  statusCode?: number;
+  ip?: string;
+  userAgent?: string;
+  responseTime?: number;
+  createdAt: string;
+}
+
 // --- VNC Proxy ---
 export interface VncProxy {
   deviceId: string;
