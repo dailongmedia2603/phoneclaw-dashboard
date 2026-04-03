@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  # ============================================================
+  # PostgreSQL Database
+  # ============================================================
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: phoneagent
+      POSTGRES_USER: phoneagent
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-phoneagent_secure_2024}
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+      - ./server/db-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U phoneagent -d phoneagent"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal
+
+  # ============================================================
+  # PhoneAgent App (Backend + Frontend)
+  # ============================================================
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "9000:9000"    # Direct access for Tailscale heartbeat
+    volumes:
+      - app-data:/app/server/data
+    networks:
+      - internal
+
+  # ============================================================
+  # Nginx Reverse Proxy (HTTP + HTTPS)
+  # ============================================================
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - certbot-etc:/etc/letsencrypt:ro
+      - certbot-www:/var/www/certbot:ro
+    depends_on:
+      - app
+    networks:
+      - internal
+
+  # ============================================================
+  # Certbot (SSL Certificate Auto-Renewal)
+  # ============================================================
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --quiet; sleep 12h & wait $${!}; done;'"
+
+volumes:
+  pg-data:
+    driver: local
+  app-data:
+    driver: local
+  certbot-etc:
+    driver: local
+  certbot-www:
+    driver: local
+
+networks:
+  internal:
+    driver: bridge

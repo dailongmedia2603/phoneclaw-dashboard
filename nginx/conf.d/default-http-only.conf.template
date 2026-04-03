@@ -1,0 +1,37 @@
+# ============================================================
+# TEMPORARY: HTTP-only config for initial SSL certificate setup
+# After certbot completes, replace with default.conf
+# ============================================================
+
+server {
+    listen 80;
+    server_name phoneagent.io.vn;
+
+    # Let's Encrypt ACME challenge
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    # Proxy all traffic to app (no SSL yet)
+    client_max_body_size 500M;
+
+    location / {
+        proxy_pass http://app:9000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_read_timeout 86400s;
+    }
+
+    location /ws {
+        proxy_pass http://app:9000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_read_timeout 86400s;
+    }
+}

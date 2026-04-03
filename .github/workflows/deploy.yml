@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     env:
@@ -18,18 +18,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build frontend
-        run: npm run build
-
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
@@ -37,55 +25,56 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H $VPS_HOST >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: Sync to VPS
+      - name: Sync code to VPS
         run: |
           SSH_CMD="ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no"
 
           # Ensure remote dirs exist
-          $SSH_CMD $VPS_USER@$VPS_HOST "mkdir -p $APP_DIR/server/data $APP_DIR/src/types $APP_DIR/dist"
+          $SSH_CMD $VPS_USER@$VPS_HOST "mkdir -p $APP_DIR/nginx/conf.d"
 
-          # Sync entire project (exclude heavy/local files)
-          # IMPORTANT: --exclude='server/data/**' bảo vệ toàn bộ dữ liệu trên VPS
+          # Sync project files to VPS
+          # --exclude='server/data/**' protects production data
+          # --exclude='.env' protects production environment config
           rsync -avz --delete \
             -e "$SSH_CMD" \
             --exclude='node_modules' \
             --exclude='.git' \
             --exclude='server/data/**' \
-            --exclude='src/' \
+            --exclude='.env' \
             --exclude='.github/' \
+            --exclude='plans/' \
+            --exclude='nginx/conf.d/default.conf' \
             ./ $VPS_USER@$VPS_HOST:$APP_DIR/
 
-          # Also sync src/types (needed by server at runtime)
-          rsync -avz \
-            -e "$SSH_CMD" \
-            src/types/ $VPS_USER@$VPS_HOST:$APP_DIR/src/types/
-
-      - name: Setup & Deploy
+      - name: Build & Deploy with Docker
         run: |
           SSH_CMD="ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no"
 
           $SSH_CMD $VPS_USER@$VPS_HOST "
             cd $APP_DIR
 
-            # First-time nginx setup
-            if [ ! -f /etc/nginx/sites-available/phoneclaw ]; then
-              bash deploy/setup-vps.sh
-            fi
+            echo '=== Building Docker image... ==='
+            docker compose build --no-cache
 
-            # Install deps + deploy
-            bash deploy/deploy.sh
+            echo '=== Restarting containers... ==='
+            docker compose up -d
+
+            echo '=== Waiting for health check... ==='
+            sleep 10
+            docker compose ps
           "
 
       - name: Health check
         run: |
           sleep 5
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 "http://$VPS_HOST/api/health" || echo "000")
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 "https://$VPS_HOST/api/health" || echo "000")
           echo "Health check status: $STATUS"
           if [ "$STATUS" = "200" ]; then
-            echo "Dashboard live at http://$VPS_HOST"
+            echo "Dashboard live at https://phoneagent.io.vn"
           else
             echo "Health check returned $STATUS - checking logs..."
-            ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "$VPS_USER@$VPS_HOST" "pm2 logs phoneclaw-dashboard --lines 20 --nostream" || true
+            SSH_CMD="ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no"
+            $SSH_CMD $VPS_USER@$VPS_HOST "cd /opt/phoneclaw-dashboard && docker compose logs app --tail 20"
           fi
 
       - name: Cleanup
