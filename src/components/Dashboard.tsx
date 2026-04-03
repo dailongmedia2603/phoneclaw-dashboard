@@ -82,7 +82,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Charts — 2 cột đều */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Online Devices Chart */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <h3 className="text-base font-bold text-slate-900 mb-4">Thiết bị Online (24h)</h3>
@@ -126,55 +127,55 @@ export default function Dashboard() {
             </ResponsiveContainer>
           </div>
         </div>
+      </div>
 
-        {/* Notifications */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-bold text-slate-900">Thông báo gần đây</h3>
-            <button className="text-xs font-medium text-blue-600 hover:text-blue-700">Xem tất cả</button>
-          </div>
+      {/* Notifications — full width bên dưới */}
+      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-bold text-slate-900">Thông báo gần đây</h3>
+          <button className="text-xs font-medium text-blue-600 hover:text-blue-700">Xem tất cả</button>
+        </div>
 
-          <div className="flex-1 overflow-y-auto pr-2 space-y-4 max-h-64">
-            {(!notifications || notifications.length === 0) && (
-              <div className="text-center py-8 text-slate-400">
-                <Info size={24} className="mx-auto mb-2" />
-                <p className="text-sm">Chưa có thông báo</p>
-              </div>
-            )}
-            {(notifications || []).map((notif) => {
-              const Icon = NOTIFICATION_ICONS[notif.type] || Info;
-              let bgColor = 'bg-slate-50';
-              let iconColor = 'text-slate-500';
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-72 overflow-y-auto pr-2">
+          {(!notifications || notifications.length === 0) && (
+            <div className="col-span-full text-center py-8 text-slate-400">
+              <Info size={24} className="mx-auto mb-2" />
+              <p className="text-sm">Chưa có thông báo</p>
+            </div>
+          )}
+          {(notifications || []).map((notif) => {
+            const Icon = NOTIFICATION_ICONS[notif.type] || Info;
+            let bgColor = 'bg-slate-50';
+            let iconColor = 'text-slate-500';
 
-              if (notif.type === 'error') {
-                bgColor = 'bg-red-50';
-                iconColor = 'text-red-500';
-              } else if (notif.type === 'success') {
-                bgColor = 'bg-emerald-50';
-                iconColor = 'text-emerald-500';
-              } else if (notif.type === 'warning') {
-                bgColor = 'bg-amber-50';
-                iconColor = 'text-amber-500';
-              } else if (notif.type === 'info') {
-                bgColor = 'bg-blue-50';
-                iconColor = 'text-blue-500';
-              }
+            if (notif.type === 'error') {
+              bgColor = 'bg-red-50';
+              iconColor = 'text-red-500';
+            } else if (notif.type === 'success') {
+              bgColor = 'bg-emerald-50';
+              iconColor = 'text-emerald-500';
+            } else if (notif.type === 'warning') {
+              bgColor = 'bg-amber-50';
+              iconColor = 'text-amber-500';
+            } else if (notif.type === 'info') {
+              bgColor = 'bg-blue-50';
+              iconColor = 'text-blue-500';
+            }
 
-              const timeAgo = getTimeAgo(notif.timestamp);
+            const timeAgo = getTimeAgo(notif.timestamp);
 
-              return (
-                <div key={notif.id} className={`flex gap-3 items-start p-3 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100 ${!notif.read ? 'bg-blue-50/30' : ''}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${bgColor} ${iconColor}`}>
-                    <Icon size={16} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-800 leading-snug">{notif.message}</p>
-                    <p className="text-xs text-slate-500 mt-1">{timeAgo}</p>
-                  </div>
+            return (
+              <div key={notif.id} className={`flex gap-3 items-start p-3 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100 ${!notif.read ? 'bg-blue-50/30' : ''}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${bgColor} ${iconColor}`}>
+                  <Icon size={16} />
                 </div>
-              );
-            })}
-          </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-800 leading-snug">{notif.message}</p>
+                  <p className="text-xs text-slate-500 mt-1">{timeAgo}</p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
