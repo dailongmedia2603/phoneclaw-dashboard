@@ -123,6 +123,8 @@ export default function ProxyManager() {
   const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
   const [loading, setLoading] = useState<Record<string, boolean>>({});
   const [autoDetecting, setAutoDetecting] = useState(false);
+  const [batchApplying, setBatchApplying] = useState(false);
+  const [batchStopping, setBatchStopping] = useState(false);
 
   useEffect(() => {
     const unsub = on('device:status', () => refreshDevices());
@@ -286,6 +288,7 @@ export default function ProxyManager() {
     if (!selectedDevices.length) { showToast('error', 'Chọn thiết bị trước'); return; }
     if (proxyMode !== 'none' && (!proxyIp || !proxyPort)) { showToast('error', 'Nhập IP và Port'); return; }
 
+    setBatchApplying(true);
     for (const id of selectedDevices) setDeviceLoading(id, true);
     let hasError = false;
 
@@ -364,13 +367,16 @@ export default function ProxyManager() {
     }
 
     for (const id of selectedDevices) setDeviceLoading(id, false);
+    setBatchApplying(false);
     refreshDevices();
   };
 
   const batchStop = async () => {
     if (!selectedDevices.length) { showToast('error', 'Chọn thiết bị trước'); return; }
+    setBatchStopping(true);
     for (const id of selectedDevices) setDeviceLoading(id, true);
     const res = await proxy.batchStop(selectedDevices);
+    for (const id of selectedDevices) setDeviceLoading(id, false);
     for (const id of selectedDevices) setDeviceLoading(id, false);
     if (res.success) {
       showToast('success', `Đã tắt proxy cho ${selectedDevices.length} thiết bị`);
@@ -378,6 +384,7 @@ export default function ProxyManager() {
       const { fail, errors } = countResults(res.data);
       showToast('error', `${fail} thiết bị không tắt được: ${errors[0] || 'Lỗi'}`);
     }
+    setBatchStopping(false);
     refreshDevices();
   };
 
@@ -595,15 +602,17 @@ export default function ProxyManager() {
         </button>
 
         <button onClick={batchApplyAndStart}
-          disabled={!selectedDevices.length || (proxyMode !== 'none' && !proxyIp) || selectedDevices.some(id => allDevices.find(d => d.id === id)?.proxyStatus === 'running')}
+          disabled={batchApplying || !selectedDevices.length || (proxyMode !== 'none' && !proxyIp) || selectedDevices.some(id => allDevices.find(d => d.id === id)?.proxyStatus === 'running')}
           className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed">
-          <Play size={16} /> {proxyMode === 'none' ? 'Stop All' : `Apply ${proxyMode.toUpperCase()} & Start`} ({selectedDevices.length})
+          {batchApplying ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
+          {batchApplying ? 'Đang áp dụng...' : `${proxyMode === 'none' ? 'Stop All' : `Apply ${proxyMode.toUpperCase()} & Start`} (${selectedDevices.length})`}
         </button>
 
         <button onClick={batchStop}
-          disabled={!selectedDevices.length}
+          disabled={batchStopping || !selectedDevices.length}
           className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed">
-          <Square size={16} /> Stop ({selectedDevices.length})
+          {batchStopping ? <Loader2 size={16} className="animate-spin" /> : <Square size={16} />}
+          {batchStopping ? 'Đang dừng...' : `Stop (${selectedDevices.length})`}
         </button>
 
         {selectedDevices.length > 0 && (
