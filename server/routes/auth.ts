@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { readCollection, writeCollection, generateId, ensureTenantDir } from '../store';
+import { ensureUserToken } from '../services/api-token';
 
 const router = Router();
 
@@ -69,7 +70,14 @@ export async function seedDefaultAdmin() {
       createdAt: new Date().toISOString(),
     };
     await saveUsers([admin]);
+    ensureTenantDir(admin.id);
+    await ensureUserToken(admin.id);
     console.log('[Auth] Default admin account created: long@dailongmedia.io.vn');
+  }
+
+  // Ensure all existing users have API tokens (migration for existing accounts)
+  for (const user of users) {
+    await ensureUserToken(user.id);
   }
 }
 
@@ -189,6 +197,9 @@ router.post('/users', adminOnly, async (req: Request, res: Response) => {
 
   // Tạo tenant directory cho user mới
   ensureTenantDir(user.id);
+
+  // Auto-generate API token cho user mới
+  await ensureUserToken(user.id);
 
   res.json({ success: true, data: sanitizeUser(user) });
 });

@@ -3,7 +3,7 @@ import {
   Server, MonitorPlay, Network, Users, Bell, Cloud,
   Cpu, HardDrive, Activity, CheckCircle2, AlertCircle, Shield, Key,
   Save, Smartphone, Loader2, Package, Eye, EyeOff,
-  Plus, RefreshCw, Trash2, Copy, CheckCircle, XCircle
+  RefreshCw, Copy, CheckCircle
 } from 'lucide-react';
 import { settings as settingsApi, devices as devicesApi } from '../services/api';
 import { useApi } from '../hooks/useApi';
@@ -43,8 +43,6 @@ export default function Settings() {
   // API Token state
   const [apiTokens, setApiTokens] = useState<ApiToken[]>([]);
   const [loadingTokens, setLoadingTokens] = useState(false);
-  const [newTokenName, setNewTokenName] = useState('');
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [createdToken, setCreatedToken] = useState<string | null>(null);
   const [copiedToken, setCopiedToken] = useState(false);
 
@@ -180,51 +178,8 @@ export default function Settings() {
 
   useEffect(() => { fetchTokens(); }, []);
 
-  const handleCreateToken = async () => {
-    const name = newTokenName.trim() || 'API Token';
-    try {
-      const res = await fetch('/api/auth/tokens', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('phoneclaw_token')}`,
-        },
-        body: JSON.stringify({ name }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setCreatedToken(data.data.token);
-        setNewTokenName('');
-        setShowCreateDialog(false);
-        showToast('success', 'Token đã được tạo');
-        fetchTokens();
-      } else {
-        showToast('error', data.error || 'Tạo token thất bại');
-      }
-    } catch {
-      showToast('error', 'Tạo token thất bại');
-    }
-  };
-
-  const handleRevokeToken = async (tokenId: string) => {
-    if (!confirm('Thu hồi token này? Các integration sử dụng token này sẽ ngừng hoạt động.')) return;
-    try {
-      const res = await fetch(`/api/auth/tokens/${tokenId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('phoneclaw_token')}` },
-      });
-      const data = await res.json();
-      if (data.success) {
-        showToast('success', 'Đã thu hồi token');
-        fetchTokens();
-      }
-    } catch {
-      showToast('error', 'Thu hồi token thất bại');
-    }
-  };
-
   const handleRegenerateToken = async (tokenId: string) => {
-    if (!confirm('Tạo lại token? Token cũ sẽ bị thu hồi ngay lập tức.')) return;
+    if (!confirm('Tạo lại token mới? Token cũ sẽ ngừng hoạt động ngay lập tức.')) return;
     try {
       const res = await fetch(`/api/auth/tokens/${tokenId}/regenerate`, {
         method: 'POST',
@@ -488,14 +443,14 @@ export default function Settings() {
               {/* API TOKEN SECTION */}
               <div>
                 <h3 className="text-lg font-bold text-slate-900 mb-1">API Token</h3>
-                <p className="text-sm text-slate-500 mb-4">Quản lý token để tích hợp với phần mềm bên ngoài</p>
+                <p className="text-sm text-slate-500 mb-4">Token dùng để tích hợp với phần mềm bên ngoài qua API</p>
 
-                {/* Created Token Alert — shown once */}
+                {/* New Token Alert — shown once after regenerate */}
                 {createdToken && (
                   <div className="mb-4 bg-green-50 border border-green-200 rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <CheckCircle size={16} className="text-green-600" />
-                      <span className="font-semibold text-green-800 text-sm">Token đã được tạo!</span>
+                      <span className="font-semibold text-green-800 text-sm">Token mới đã được tạo!</span>
                     </div>
                     <p className="text-xs text-green-700 mb-3">
                       Sao chép token này ngay. Bạn sẽ không thể xem lại sau khi đóng.
@@ -510,7 +465,7 @@ export default function Settings() {
                       </button>
                     </div>
                     <p className="text-xs text-slate-500 mt-2 font-mono">
-                      Header: X-API-Token: {createdToken.substring(0, 24)}...
+                      Sử dụng trong header: X-API-Token: {createdToken.substring(0, 24)}...
                     </p>
                     <button
                       onClick={() => setCreatedToken(null)}
@@ -521,95 +476,46 @@ export default function Settings() {
                   </div>
                 )}
 
-                {/* Token List */}
-                <div className="space-y-3">
-                  {activeTokens.map(token => (
-                    <div key={token.id} className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <Key size={16} className="text-orange-500" />
-                          <span className="font-medium text-slate-900 text-sm">{token.name}</span>
-                        </div>
-                        <code className="text-xs text-slate-400 font-mono">{token.tokenPrefix}...</code>
+                {/* Active Token Display */}
+                {loadingTokens ? (
+                  <div className="flex items-center justify-center py-6">
+                    <Loader2 size={20} className="animate-spin text-slate-400" />
+                  </div>
+                ) : activeTokens.length > 0 ? (
+                  <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-5">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-9 h-9 rounded-lg bg-orange-100 flex items-center justify-center">
+                        <Key size={18} className="text-orange-600" />
                       </div>
-                      <div className="flex items-center gap-4 text-xs text-slate-500 mb-3">
-                        <span>Tạo: {new Date(token.createdAt).toLocaleDateString('vi-VN')}</span>
-                        {token.lastUsedAt && (
-                          <span>Dùng lần cuối: {formatTimeAgo(token.lastUsedAt)}</span>
-                        )}
-                        {token.lastUsedIp && <span>IP: {token.lastUsedIp}</span>}
-                        {!token.lastUsedAt && <span className="text-amber-500">Chưa sử dụng</span>}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleRegenerateToken(token.id)}
-                          className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
-                        >
-                          <RefreshCw size={12} /> Tạo lại
-                        </button>
-                        <button
-                          onClick={() => handleRevokeToken(token.id)}
-                          className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
-                        >
-                          <Trash2 size={12} /> Thu hồi
-                        </button>
+                      <div className="flex-1">
+                        <p className="font-medium text-slate-900 text-sm">Token hiện tại</p>
+                        <code className="text-xs text-slate-500 font-mono">{activeTokens[0].tokenPrefix}••••••••••••</code>
                       </div>
                     </div>
-                  ))}
-
-                  {activeTokens.length === 0 && !loadingTokens && (
-                    <div className="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-6 text-center">
-                      <Key size={24} className="mx-auto mb-2 text-slate-400" />
-                      <p className="text-sm text-slate-500">Chưa có API token nào</p>
-                      <p className="text-xs text-slate-400 mt-1">Tạo token để tích hợp với phần mềm bên ngoài</p>
+                    <div className="flex items-center gap-4 text-xs text-slate-500 mb-4 pl-12">
+                      <span>Tạo: {new Date(activeTokens[0].createdAt).toLocaleDateString('vi-VN')}</span>
+                      {activeTokens[0].lastUsedAt ? (
+                        <span>Dùng lần cuối: {formatTimeAgo(activeTokens[0].lastUsedAt)}</span>
+                      ) : (
+                        <span className="text-amber-500">Chưa sử dụng</span>
+                      )}
+                      {activeTokens[0].lastUsedIp && <span>IP: {activeTokens[0].lastUsedIp}</span>}
                     </div>
-                  )}
-
-                  {loadingTokens && (
-                    <div className="flex items-center justify-center py-4">
-                      <Loader2 size={20} className="animate-spin text-slate-400" />
+                    <div className="pl-12">
+                      <button
+                        onClick={() => handleRegenerateToken(activeTokens[0].id)}
+                        className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
+                      >
+                        <RefreshCw size={13} /> Đổi token mới
+                      </button>
                     </div>
-                  )}
-                </div>
-
-                {/* Create Token */}
-                <div className="mt-4">
-                  {showCreateDialog ? (
-                    <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Tên token</label>
-                      <input
-                        type="text"
-                        value={newTokenName}
-                        onChange={e => setNewTokenName(e.target.value)}
-                        placeholder="VD: CRM Integration, Marketing Tool..."
-                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 mb-3"
-                        onKeyDown={e => e.key === 'Enter' && handleCreateToken()}
-                        autoFocus
-                      />
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={handleCreateToken}
-                          className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm rounded-xl transition-colors font-medium"
-                        >
-                          Tạo token
-                        </button>
-                        <button
-                          onClick={() => { setShowCreateDialog(false); setNewTokenName(''); }}
-                          className="px-4 py-2 text-slate-600 hover:text-slate-800 text-sm"
-                        >
-                          Hủy
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setShowCreateDialog(true)}
-                      className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 rounded-xl transition-colors"
-                    >
-                      <Plus size={16} /> Tạo token mới
-                    </button>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <div className="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-6 text-center">
+                    <Loader2 size={20} className="mx-auto mb-2 text-slate-400 animate-spin" />
+                    <p className="text-sm text-slate-500">Đang tạo token...</p>
+                  </div>
+                )}
               </div>
 
               <div>
