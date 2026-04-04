@@ -83,14 +83,19 @@ export async function createToken(userId: string, name: string = 'Default Token'
 /**
  * Ensure a user has at least one active token.
  * If no active token exists, auto-create one.
- * Returns the active token (without plaintext).
+ * Silently catches errors (e.g. api_tokens table not yet created in PG).
  */
 export async function ensureUserToken(userId: string): Promise<void> {
-  const tokens = await listTokens(userId);
-  const active = tokens.filter((t: any) => !t.revokedAt);
-  if (active.length === 0) {
-    await createToken(userId, 'API Token');
-    console.log(`[API Token] Auto-generated token for user ${userId}`);
+  try {
+    const tokens = await listTokens(userId);
+    const active = tokens.filter((t: any) => !t.revokedAt);
+    if (active.length === 0) {
+      await createToken(userId, 'API Token');
+      console.log(`[API Token] Auto-generated token for user ${userId}`);
+    }
+  } catch (err: any) {
+    // Table may not exist yet in PG — skip silently, will retry on next startup
+    console.warn(`[API Token] ensureUserToken skipped for ${userId}: ${err.message}`);
   }
 }
 

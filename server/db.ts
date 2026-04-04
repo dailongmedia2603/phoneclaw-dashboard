@@ -49,6 +49,40 @@ export async function initDb(): Promise<void> {
   try {
     await client.query('SELECT 1');
     console.log('[DB] PostgreSQL connected successfully');
+
+    // Auto-migrate: create api_tokens + api_audit_logs if not exist
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS api_tokens (
+        id              TEXT PRIMARY KEY,
+        user_id         TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        name            TEXT NOT NULL DEFAULT 'Default Token',
+        token_hash      TEXT NOT NULL UNIQUE,
+        token_prefix    TEXT NOT NULL,
+        last_used_at    TIMESTAMPTZ,
+        last_used_ip    TEXT,
+        created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        revoked_at      TIMESTAMPTZ
+      );
+      CREATE INDEX IF NOT EXISTS idx_api_tokens_user ON api_tokens(user_id);
+      CREATE INDEX IF NOT EXISTS idx_api_tokens_hash ON api_tokens(token_hash) WHERE revoked_at IS NULL;
+
+      CREATE TABLE IF NOT EXISTS api_audit_logs (
+        id              TEXT PRIMARY KEY,
+        token_id        TEXT REFERENCES api_tokens(id) ON DELETE SET NULL,
+        user_id         TEXT REFERENCES users(id) ON DELETE CASCADE,
+        method          TEXT NOT NULL,
+        path            TEXT NOT NULL,
+        status_code     INTEGER,
+        ip              TEXT,
+        user_agent      TEXT,
+        response_time   INTEGER,
+        created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_audit_logs_user ON api_audit_logs(user_id);
+      CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON api_audit_logs(created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_audit_logs_token ON api_audit_logs(token_id);
+    `);
+    console.log('[DB] API Token tables ensured');
   } finally {
     client.release();
   }
