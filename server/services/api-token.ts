@@ -12,6 +12,9 @@ import { readUserCollection, writeUserCollection, readCollection, generateId, is
 // --- Constants ---
 const TOKEN_PREFIX = 'pa_live_';
 const TOKEN_BYTES = 32; // 256-bit entropy
+const ENCRYPT_KEY = crypto.createHash('sha256')
+  .update(process.env.JWT_SECRET || 'phoneclaw-secret-key-change-in-production')
+  .digest(); // 32 bytes for AES-256
 
 // --- Stored Token Shape (internal, file-based mode) ---
 interface StoredToken {
@@ -20,6 +23,7 @@ interface StoredToken {
   name: string;
   tokenHash: string;
   tokenPrefix: string;
+  tokenEncrypted: string; // AES-256-GCM encrypted full token
   lastUsedAt: string | null;
   lastUsedIp: string | null;
   createdAt: string;
@@ -42,10 +46,31 @@ export function generateApiToken(): { token: string; tokenHash: string; tokenPre
 
 /**
  * Hash token with SHA-256.
- * SHA-256 is sufficient because tokens have 256-bit entropy (brute force infeasible).
  */
 export function hashToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+/** Encrypt token with AES-256-GCM (reversible, for user viewing). */
+function encryptToken(plainToken: string): string {
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', ENCRYPT_KEY, iv);
+  const encrypted = Buffer.concat([cipher.update(plainToken, 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  // Format: iv:tag:ciphertext (all hex)
+  return `${iv.toString('hex')}:${tag.toString('hex')}:${encrypted.toString('hex')}`;
+}
+
+/** Decrypt token from AES-256-GCM. */
+function decryptToken(encryptedStr: string): string | null {
+  try {
+    const [ivHex, tagHex, dataHex] = encryptedStr.split(':');
+    const decipher = crypto.createDecipheriv('aes-256-gcm', ENCRYPT_KEY, Buffer.from(ivHex, 'hex'));
+    decipher.setAuthTag(Buffer.from(tagHex, 'hex'));
+    return decipher.update(Buffer.from(dataHex, 'hex')) + decipher.final('utf8');
+  } catch {
+    return null;
+  }
 }
 
 // --- CRUD Operations ---
@@ -56,19 +81,20 @@ export function hashToken(token: string): string {
  */
 export async function createToken(userId: string, name: string = 'Default Token') {
   const { token, tokenHash, tokenPrefix } = generateApiToken();
+  const tokenEncrypted = encryptToken(token);
   const id = `tok_${generateId()}`;
   const now = new Date().toISOString();
 
   if (isPostgresMode) {
     const { query } = await import('../store.js');
     await query(
-      `INSERT INTO api_tokens (id, user_id, name, token_hash, token_prefix, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [id, userId, name, tokenHash, tokenPrefix, now]
+      `INSERT INTO api_tokens (id, user_id, name, token_hash, token_prefix, token_encrypted, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [id, userId, name, tokenHash, tokenPrefix, tokenEncrypted, now]
     );
   } else {
     const stored: StoredToken = {
-      id, userId, name, tokenHash, tokenPrefix,
+      id, userId, name, tokenHash, tokenPrefix, tokenEncrypted,
       lastUsedAt: null, lastUsedIp: null,
       createdAt: now, revokedAt: null,
     };
@@ -100,13 +126,13 @@ export async function ensureUserToken(userId: string): Promise<void> {
 }
 
 /**
- * List tokens for a user (NO plaintext/hash returned).
+ * List tokens for a user. Includes decrypted token value for display.
  */
 export async function listTokens(userId: string) {
   if (isPostgresMode) {
     const { query } = await import('../store.js');
     const result = await query(
-      `SELECT id, user_id, name, token_prefix, last_used_at, last_used_ip, created_at, revoked_at
+      `SELECT id, user_id, name, token_prefix, token_encrypted, last_used_at, last_used_ip, created_at, revoked_at
        FROM api_tokens WHERE user_id = $1 ORDER BY created_at DESC`,
       [userId]
     );
@@ -115,6 +141,7 @@ export async function listTokens(userId: string) {
       userId: r.user_id,
       name: r.name,
       tokenPrefix: r.token_prefix,
+      tokenValue: r.token_encrypted ? decryptToken(r.token_encrypted) : null,
       lastUsedAt: r.last_used_at?.toISOString?.() || r.last_used_at || null,
       lastUsedIp: r.last_used_ip,
       createdAt: r.created_at?.toISOString?.() || r.created_at,
@@ -122,7 +149,10 @@ export async function listTokens(userId: string) {
     }));
   } else {
     const tokens = await readUserCollection<StoredToken>(userId, 'api-tokens');
-    return tokens.map(({ tokenHash: _hash, ...rest }) => rest);
+    return tokens.map(({ tokenHash: _h, tokenEncrypted, ...rest }) => ({
+      ...rest,
+      tokenValue: tokenEncrypted ? decryptToken(tokenEncrypted) : null,
+    }));
   }
 }
 

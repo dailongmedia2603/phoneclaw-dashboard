@@ -336,6 +336,7 @@ CREATE TABLE IF NOT EXISTS api_tokens (
     name            TEXT NOT NULL DEFAULT 'Default Token',
     token_hash      TEXT NOT NULL UNIQUE,     -- SHA-256 hash of full token
     token_prefix    TEXT NOT NULL,            -- First 20 chars for display: "pa_live_xxxxxxxxxxxx"
+    token_encrypted TEXT,                    -- AES-256-GCM encrypted full token (for user viewing)
     last_used_at    TIMESTAMPTZ,
     last_used_ip    TEXT,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),

@@ -255,6 +255,7 @@ export interface ApiToken {
   userId: string;
   name: string;
   tokenPrefix: string;      // "pa_live_xxxxxxxxxxxx" — for display only
+  tokenValue?: string | null; // Full token (decrypted) — for user viewing
   lastUsedAt?: string;
   lastUsedIp?: string;
   createdAt: string;

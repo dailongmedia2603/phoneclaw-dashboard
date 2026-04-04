@@ -45,6 +45,7 @@ export default function Settings() {
   const [loadingTokens, setLoadingTokens] = useState(false);
   const [createdToken, setCreatedToken] = useState<string | null>(null);
   const [copiedToken, setCopiedToken] = useState(false);
+  const [showToken, setShowToken] = useState(false);
 
   const { data: vpsStatus } = useApi<VpsStatus>(() => settingsApi.getVpsStatus(), []);
   const { data: appSettings, refresh: refreshSettings } = useApi<AppSettings>(() => settingsApi.get(), []);
@@ -211,7 +212,9 @@ export default function Settings() {
   };
 
   const allDevices = deviceList || [];
-  const activeTokens = apiTokens.filter(t => !t.revokedAt);
+  const activeTokens = apiTokens
+    .filter(t => !t.revokedAt)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return (
     <div className="h-full flex bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -487,9 +490,38 @@ export default function Settings() {
                       <div className="w-9 h-9 rounded-lg bg-orange-100 flex items-center justify-center">
                         <Key size={18} className="text-orange-600" />
                       </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-slate-900 text-sm">Token hiện tại</p>
-                        <code className="text-xs text-slate-500 font-mono">{activeTokens[0].tokenPrefix}••••••••••••</code>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-slate-900 text-sm mb-1">Token hiện tại</p>
+                        <div className="flex items-center gap-2">
+                          <code className="text-xs text-slate-700 font-mono break-all select-all">
+                            {showToken && activeTokens[0].tokenValue
+                              ? activeTokens[0].tokenValue
+                              : `${activeTokens[0].tokenPrefix}${'•'.repeat(52)}`}
+                          </code>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => setShowToken(!showToken)}
+                          className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+                          title={showToken ? 'Ẩn token' : 'Hiện token'}
+                        >
+                          {showToken ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                        <button
+                          onClick={() => {
+                            const val = activeTokens[0].tokenValue;
+                            if (val) {
+                              navigator.clipboard.writeText(val);
+                              setCopiedToken(true);
+                              setTimeout(() => setCopiedToken(false), 2000);
+                            }
+                          }}
+                          className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+                          title="Sao chép token"
+                        >
+                          {copiedToken ? <CheckCircle size={16} className="text-green-500" /> : <Copy size={16} />}
+                        </button>
                       </div>
                     </div>
                     <div className="flex items-center gap-4 text-xs text-slate-500 mb-4 pl-12">
@@ -503,7 +535,7 @@ export default function Settings() {
                     </div>
                     <div className="pl-12">
                       <button
-                        onClick={() => handleRegenerateToken(activeTokens[0].id)}
+                        onClick={() => { setShowToken(false); handleRegenerateToken(activeTokens[0].id); }}
                         className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
                       >
                         <RefreshCw size={13} /> Đổi token mới

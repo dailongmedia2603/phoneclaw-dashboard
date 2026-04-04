@@ -58,11 +58,14 @@ export async function initDb(): Promise<void> {
         name            TEXT NOT NULL DEFAULT 'Default Token',
         token_hash      TEXT NOT NULL UNIQUE,
         token_prefix    TEXT NOT NULL,
+        token_encrypted TEXT,
         last_used_at    TIMESTAMPTZ,
         last_used_ip    TEXT,
         created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         revoked_at      TIMESTAMPTZ
       );
+      -- Add column if table existed before this migration
+      ALTER TABLE api_tokens ADD COLUMN IF NOT EXISTS token_encrypted TEXT;
       CREATE INDEX IF NOT EXISTS idx_api_tokens_user ON api_tokens(user_id);
       CREATE INDEX IF NOT EXISTS idx_api_tokens_hash ON api_tokens(token_hash) WHERE revoked_at IS NULL;
 
