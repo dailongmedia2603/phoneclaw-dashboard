@@ -804,7 +804,7 @@ function UseCasesSection() {
 
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
           {/* Left tabs */}
-          <div className="w-full lg:w-[35%] flex lg:flex-col gap-2 overflow-x-auto pb-4 lg:pb-0 snap-x">
+          <div className="w-full lg:w-[30%] flex lg:flex-col gap-1.5 overflow-x-auto pb-4 lg:pb-0 snap-x">
             {industries.map((ind, idx) => {
               const Icon = ind.icon;
               const isActive = activeTab === idx;
@@ -812,23 +812,23 @@ function UseCasesSection() {
                 <button
                   key={idx}
                   onClick={() => setActiveTab(idx)}
-                  className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-left transition-all duration-300 snap-start whitespace-nowrap lg:whitespace-normal flex-shrink-0 lg:flex-shrink ${
+                  className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-left transition-all duration-300 snap-start whitespace-nowrap lg:whitespace-normal flex-shrink-0 lg:flex-shrink ${
                     isActive
-                      ? 'bg-gradient-to-r from-orange-500 to-rose-500 text-white shadow-lg shadow-orange-500/20 scale-[1.02]'
+                      ? 'bg-gradient-to-r from-orange-500 to-rose-500 text-white shadow-lg shadow-orange-500/20'
                       : 'bg-slate-50 text-slate-600 hover:bg-orange-50 hover:text-orange-600 border border-slate-100'
                   }`}
                 >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isActive ? 'bg-white/20' : 'bg-white shadow-sm'}`}>
-                    <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-slate-700'}`} />
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isActive ? 'bg-white/20' : 'bg-white shadow-sm'}`}>
+                    <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-700'}`} />
                   </div>
-                  <span className="font-bold text-sm md:text-base">{ind.name}</span>
+                  <span className="font-semibold text-sm">{ind.name}</span>
                 </button>
               );
             })}
           </div>
 
           {/* Right content */}
-          <div className="w-full lg:w-[65%]">
+          <div className="w-full lg:w-[70%]">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
