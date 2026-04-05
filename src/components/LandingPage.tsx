@@ -1,193 +1,237 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, useInView } from 'motion/react';
+import { motion, AnimatePresence, useInView } from 'motion/react';
 import {
   Cpu, Wand2, CalendarDays, Shield, BookOpen, Monitor,
   ChevronDown, Menu, X, Check, ArrowRight, Smartphone,
-  FileText, Clock, Users, Zap, Play, Globe, Lock, MessageSquare
+  Clock, Users, Zap, Star, Quote, MessageCircleHeart,
+  AlertCircle, Lightbulb, ShieldCheck, TrendingUp, TrendingDown,
+  Sparkles, CheckCircle2, BrainCircuit, MonitorSmartphone,
+  Video, ShoppingCart, Megaphone, Briefcase,
+  MessageSquare, Bot, Globe, Lock
 } from 'lucide-react';
 
-/* ─────────────────────────────────────
+/* ═══════════════════════════════════════
    DATA
-   ───────────────────────────────────── */
+   ═══════════════════════════════════════ */
 
-const stats = [
-  { icon: Smartphone, value: 500, suffix: '+', label: 'Thiết bị đang hoạt động' },
-  { icon: FileText, value: 1000, suffix: '+', label: 'Kịch bản đã tạo' },
-  { icon: Clock, value: 10000, suffix: '+', label: 'Lịch trình tự động' },
-  { icon: Users, value: 50, suffix: '+', label: 'Khách hàng tin dùng' },
-];
-
-const painPoints = [
+const bullets = [
   {
-    pain: 'Quản lý 10+ điện thoại thủ công mỗi ngày?',
-    solution: 'Dashboard tập trung — theo dõi trạng thái, pin, kết nối của tất cả thiết bị real-time.',
-  },
-  {
-    pain: 'Lặp đi lặp lại cùng thao tác trên từng máy?',
-    solution: 'Script Editor kéo thả — tạo kịch bản 1 lần, chạy trên hàng trăm máy.',
-  },
-  {
-    pain: 'Phải thức đêm để chạy chiến dịch theo giờ?',
-    solution: 'Lịch trình Cron — đặt lịch tự chạy 24/7, nhận thông báo qua Telegram.',
-  },
-  {
-    pain: 'Tài khoản bị ban vì cùng IP/vị trí?',
-    solution: 'Proxy + GPS Spoof — mỗi máy một IP khác nhau, giả lập vị trí VN/US.',
-  },
-];
-
-const features = [
-  {
-    icon: Cpu,
-    title: 'Quản lý thiết bị',
-    desc: 'Theo dõi hàng trăm iPhone cùng lúc. Trạng thái online/offline, pin, nhóm thiết bị — tất cả trên một dashboard.',
-  },
-  {
-    icon: Wand2,
+    icon: <Wand2 className="w-6 h-6 text-rose-500" />,
     title: 'Script Editor trực quan',
-    desc: 'Kéo thả để tạo kịch bản tự động. Tap, swipe, gõ text, mở app, chờ, lặp lại — không cần viết code.',
+    description: 'Kéo thả để tạo kịch bản tự động: tap, swipe, gõ text, mở app, chờ, lặp lại — không cần viết một dòng code nào.',
+    bgColor: 'bg-rose-50',
   },
   {
-    icon: CalendarDays,
-    title: 'Lịch trình tự động',
-    desc: 'Đặt lịch chạy script theo giờ, ngày, tuần. Hệ thống tự chạy 24/7, bạn chỉ cần ngồi theo dõi.',
+    icon: <Cpu className="w-6 h-6 text-orange-500" />,
+    title: 'Quản lý đa thiết bị',
+    description: 'Theo dõi hàng trăm iPhone cùng lúc. Trạng thái online/offline, pin, nhóm thiết bị — tất cả trên một dashboard duy nhất.',
+    bgColor: 'bg-orange-50',
   },
   {
-    icon: Monitor,
+    icon: <CalendarDays className="w-6 h-6 text-orange-500" />,
+    title: 'Lịch trình tự động 24/7',
+    description: 'Đặt lịch chạy script theo giờ, ngày, tuần. Hệ thống tự chạy ngay cả khi bạn đang ngủ, và báo cáo kết quả qua Telegram.',
+    bgColor: 'bg-orange-50',
+  },
+];
+
+const pains = [
+  {
+    icon: <MonitorSmartphone className="w-8 h-8 text-rose-600" />,
+    text: 'Bạn có đang mệt mỏi vì phải lặp đi lặp lại cùng một thao tác trên từng máy — lướt, like, follow, đăng video — hàng chục lần mỗi ngày?',
+  },
+  {
+    icon: <Clock className="w-8 h-8 text-rose-600" />,
+    text: 'Bạn có đang thức đêm để chạy chiến dịch đúng "giờ vàng" vì không có hệ thống lịch trình tự động nào đủ thông minh?',
+  },
+  {
+    icon: <AlertCircle className="w-8 h-8 text-rose-600" />,
+    text: 'Tài khoản liên tục bị ban vì dùng chung IP, cùng vị trí cho nhiều máy — và bạn không biết cách giả lập proxy hay GPS?',
+  },
+];
+
+const benefits = [
+  {
+    id: 'script-editor',
+    title: 'Script Editor kéo thả',
+    desc: 'Tạo kịch bản tự động bằng node-based editor trực quan. Hỗ trợ tap, swipe, type, launch app, wait, repeat, if/else, biến — không cần viết code.',
+    icon: <Wand2 className="w-8 h-8 text-blue-600" />,
+    bg: 'bg-blue-50',
+    border: 'border-blue-100',
+    colSpan: 'md:col-span-2',
+    highlight: 'Không cần code',
+  },
+  {
+    id: 'auto-schedule',
+    title: 'Lịch trình Cron thông minh',
+    desc: 'Đặt lịch chạy script tự động theo giờ, ngày, tuần. Hệ thống tự chạy 24/7 và gửi thông báo qua Telegram khi hoàn thành.',
+    icon: <Zap className="w-8 h-8 text-orange-500" />,
+    bg: 'bg-orange-50',
+    border: 'border-orange-100',
+    colSpan: 'md:col-span-1',
+    highlight: 'Tự động 100%',
+  },
+  {
+    id: 'remote-control',
     title: 'Điều khiển từ xa',
-    desc: 'Xem live screenshot, tap, swipe, gõ text trực tiếp từ trình duyệt. Kiểm soát thiết bị ở bất kỳ đâu.',
+    desc: 'Xem live screenshot, tap, swipe, gõ text trực tiếp từ trình duyệt. Kiểm soát thiết bị ở bất kỳ đâu, bất kỳ lúc nào.',
+    icon: <Monitor className="w-8 h-8 text-emerald-600" />,
+    bg: 'bg-emerald-50',
+    border: 'border-emerald-100',
+    colSpan: 'md:col-span-1',
+    highlight: 'Real-time',
   },
   {
-    icon: Shield,
+    id: 'proxy',
     title: 'Proxy & GPS Spoof',
-    desc: 'Route traffic qua VN/US. Giả lập GPS, timezone, locale cho từng thiết bị riêng biệt.',
+    desc: 'Route traffic qua VN/US. Giả lập GPS, timezone, locale cho từng thiết bị riêng biệt. Bảo vệ tài khoản an toàn.',
+    icon: <Shield className="w-8 h-8 text-purple-600" />,
+    bg: 'bg-purple-50',
+    border: 'border-purple-100',
+    colSpan: 'md:col-span-1',
+    highlight: 'An toàn tuyệt đối',
   },
   {
-    icon: BookOpen,
+    id: 'shared-scripts',
     title: 'Kho kịch bản sẵn',
-    desc: 'Thư viện kịch bản được tạo sẵn cho TikTok, Facebook, Instagram. Chỉ cần chọn và chạy.',
+    desc: 'Thư viện kịch bản được tạo sẵn cho TikTok, Facebook, Instagram. Chỉ cần chọn và chạy ngay lập tức.',
+    icon: <BookOpen className="w-8 h-8 text-rose-600" />,
+    bg: 'bg-rose-50',
+    border: 'border-rose-100',
+    colSpan: 'md:col-span-1',
+    highlight: 'Chạy ngay',
   },
 ];
 
-const steps = [
+const industries = [
   {
-    num: '01',
-    title: 'Kết nối thiết bị',
-    desc: 'Thêm iPhone vào hệ thống qua Tailscale. Thiết bị tự động xuất hiện trên dashboard.',
+    name: 'TikTok Agency',
+    icon: Video,
+    problem: 'Quản lý hàng chục tài khoản TikTok trên nhiều máy, phải thủ công lướt, like, follow từng cái một. Nhân viên không đủ để vận hành 24/7.',
+    solution: 'Phone Agent tự động hoá toàn bộ: lướt FYP, like video, follow theo kịch bản, đăng video tự động. Chạy song song trên hàng trăm máy cùng lúc.',
+    notLose: 'Không bỏ lỡ "giờ vàng" đăng bài hay thời điểm tương tác cao nhất trong ngày.',
+    gain: 'Gấp 10x năng suất vận hành TikTok với cùng số nhân viên.',
   },
   {
-    num: '02',
-    title: 'Tạo hoặc chọn kịch bản',
-    desc: 'Dùng Script Editor kéo thả hoặc chọn kịch bản có sẵn trong kho. Tuỳ chỉnh theo nhu cầu.',
+    name: 'Dropshipper',
+    icon: ShoppingCart,
+    problem: 'Phải đăng sản phẩm thủ công lên nhiều tài khoản, lặp đi lặp lại cùng thao tác hàng trăm lần mỗi ngày trên từng điện thoại.',
+    solution: 'Tạo script đăng sản phẩm một lần, chạy trên tất cả thiết bị. Đặt lịch đăng tự động theo giờ, Phone Agent làm hết phần còn lại.',
+    notLose: 'Không mất thời gian đăng bài thủ công — dành thời gian cho chiến lược và chốt đơn.',
+    gain: 'Đăng sản phẩm trên 50+ tài khoản chỉ trong vài phút thay vì cả ngày.',
   },
   {
-    num: '03',
-    title: 'Chạy & theo dõi',
-    desc: 'Chạy ngay hoặc đặt lịch tự động. Theo dõi tiến trình real-time, nhận thông báo Telegram.',
+    name: 'MMO Freelancer',
+    icon: Globe,
+    problem: 'Farm nhiều tài khoản cần thao tác khác nhau trên từng máy, dễ bị ban vì hành vi giống nhau hoặc trùng IP.',
+    solution: 'Phone Agent + Proxy GPS Spoof: mỗi máy một IP riêng, GPS riêng, thao tác ngẫu nhiên hóa. Script có biến random để tạo hành vi tự nhiên.',
+    notLose: 'Không mất tài khoản đã nuôi lâu vì bị phát hiện dùng tool.',
+    gain: 'Scale số lượng tài khoản gấp 5-10 lần mà vẫn an toàn.',
+  },
+  {
+    name: 'Livestream',
+    icon: Users,
+    problem: 'Cần "đổ view" và tương tác cho nhiều phiên live cùng lúc, nhưng không đủ người để thao tác trên từng máy.',
+    solution: 'Kịch bản tự động vào live, bình luận, thả tim, ở lại phiên live. Chạy đồng thời trên hàng chục thiết bị với nội dung bình luận random.',
+    notLose: 'Không để phiên live "ế" vì thiếu tương tác ban đầu.',
+    gain: 'Tạo hiệu ứng đám đông ngay từ những phút đầu tiên của mỗi phiên live.',
+  },
+  {
+    name: 'Marketing Agency',
+    icon: Megaphone,
+    problem: 'Chạy chiến dịch seeding, tạo buzz trên nhiều nền tảng đòi hỏi nhân sự vận hành lớn và chi phí cao.',
+    solution: 'Tự động hoá seeding: like, comment, share theo kịch bản trên hàng trăm tài khoản. Đặt lịch chạy theo timeline chiến dịch.',
+    notLose: 'Không tốn chi phí thuê nhân sự thủ công cho các chiến dịch lặp đi lặp lại.',
+    gain: 'Giảm 80% chi phí vận hành seeding với hiệu quả tương đương.',
+  },
+  {
+    name: 'E-commerce',
+    icon: Briefcase,
+    problem: 'Quản lý nhiều shop trên các sàn TMĐT, phải đăng nhập từng tài khoản, cập nhật giá, trả lời chat thủ công.',
+    solution: 'Phone Agent quản lý tất cả thiết bị đăng nhập các shop. Script tự động cập nhật sản phẩm, respond chat, check đơn hàng.',
+    notLose: 'Không bỏ lỡ đơn hàng hay chat khách vì phản hồi chậm.',
+    gain: 'Vận hành 10+ shop online chỉ với 1-2 nhân viên giám sát.',
   },
 ];
 
-const pricingPlans = [
+const testimonials = [
+  {
+    name: 'Anh Minh Đức',
+    role: 'Chủ Agency TikTok',
+    content: 'Từ ngày dùng Phone Agent, đội ngũ 3 người quản được 80 máy. Trước phải thuê 10 người làm thủ công. Script Editor kéo thả quá tiện, nhân viên mới vào 1 ngày là dùng được.',
+    avatar: 'https://i.pravatar.cc/150?img=11',
+  },
+  {
+    name: 'Chị Thu Hằng',
+    role: 'Dropshipper TikTok Shop',
+    content: 'Đăng sản phẩm lên 30 tài khoản mỗi ngày giờ chỉ mất 5 phút thay vì cả buổi sáng. Tính năng lịch trình Cron là "game changer" — đặt lịch đăng lúc 7h tối rồi đi ngủ.',
+    avatar: 'https://i.pravatar.cc/150?img=5',
+  },
+  {
+    name: 'Anh Hoàng Nam',
+    role: 'Freelancer MMO',
+    content: 'Proxy + GPS Spoof cứu tài khoản mình nhiều lần. Trước farm 20 nick bị ban hết, giờ chạy 50 nick ổn định nhờ mỗi máy 1 IP riêng. Rất đáng tiền gói Pro!',
+    avatar: 'https://i.pravatar.cc/150?img=14',
+  },
+  {
+    name: 'Chị Ngọc Ánh',
+    role: 'Marketing Manager',
+    content: 'Chạy chiến dịch seeding cho khách hàng giờ nhẹ nhàng hơn nhiều. Kho kịch bản sẵn cho TikTok và Facebook giúp tiết kiệm cả tuần setup. Recommend cho mọi agency!',
+    avatar: 'https://i.pravatar.cc/150?img=9',
+  },
+];
+
+const plans = [
   {
     name: 'Starter',
+    desc: 'Gói trải nghiệm cho cá nhân mới bắt đầu.',
     price: '49.000',
-    period: '/tháng',
+    period: '/ tháng',
     features: ['1 thiết bị', '5 kịch bản tự tạo', '2 lịch trình', '500 MB video', 'Kho kịch bản chia sẻ', 'VNC Remote'],
-    cta: 'Bắt đầu',
-    popular: false,
+    highlight: false,
   },
   {
     name: 'Basic',
+    desc: 'Dành cho cá nhân cần quản lý nhiều thiết bị hơn.',
     price: '99.000',
-    period: '/tháng',
+    period: '/ tháng',
     features: ['3 thiết bị', '15 kịch bản tự tạo', '5 lịch trình', '2 GB video', 'Proxy management', 'Hỗ trợ email'],
-    cta: 'Bắt đầu',
-    popular: false,
+    highlight: false,
   },
   {
     name: 'Pro',
+    badge: 'Phổ biến nhất',
+    desc: 'Gói tối ưu cho team và freelancer chuyên nghiệp.',
     price: '249.000',
-    period: '/tháng',
+    period: '/ tháng',
     features: ['10 thiết bị', 'Không giới hạn kịch bản', '20 lịch trình', '10 GB video', 'Proxy + GPS Spoof', 'Hỗ trợ ưu tiên'],
-    cta: 'Bắt đầu ngay',
-    popular: true,
+    highlight: true,
   },
   {
     name: 'Business',
+    desc: 'Dành cho doanh nghiệp và agency quy mô lớn.',
     price: '499.000',
-    period: '/tháng',
+    period: '/ tháng',
     features: ['30 thiết bị', 'Không giới hạn kịch bản', 'Không giới hạn lịch trình', '50 GB video', 'API tokens', 'Chat trực tiếp'],
-    cta: 'Liên hệ',
-    popular: false,
+    highlight: false,
   },
 ];
 
 const faqs = [
-  {
-    q: 'Phone Agent hoạt động như thế nào?',
-    a: 'Phone Agent kết nối với iPhone thật qua mạng nội bộ Tailscale. Bạn tạo kịch bản trên web, hệ thống gửi lệnh đến từng thiết bị để thực hiện thao tác tự động.',
-  },
-  {
-    q: 'Có cần jailbreak iPhone không?',
-    a: 'Cần cài đặt một ứng dụng automation trên iPhone để nhận lệnh từ server. Chi tiết hướng dẫn sẽ được cung cấp sau khi đăng ký.',
-  },
-  {
-    q: 'Tôi có thể quản lý bao nhiêu thiết bị?',
-    a: 'Tuỳ gói — từ 1 (Starter) đến 30 (Business). Cần nhiều hơn? Liên hệ để được tư vấn gói Enterprise.',
-  },
-  {
-    q: 'Dữ liệu có an toàn không?',
-    a: 'Toàn bộ kết nối qua Tailscale VPN (mã hoá end-to-end). Dữ liệu lưu trên VPS riêng, không chia sẻ với bên thứ 3.',
-  },
-  {
-    q: 'Có hỗ trợ API không?',
-    a: 'Có. Gói Business bao gồm API tokens để tích hợp với hệ thống của bạn qua REST API.',
-  },
-  {
-    q: 'Tôi có được dùng thử không?',
-    a: 'Có! Đăng ký gói Starter miễn phí 7 ngày để trải nghiệm trước khi quyết định.',
-  },
+  { q: 'Phone Agent hoạt động như thế nào?', a: 'Phone Agent kết nối với iPhone thật qua mạng nội bộ Tailscale. Bạn tạo kịch bản trên web, hệ thống gửi lệnh đến từng thiết bị để thực hiện thao tác tự động.' },
+  { q: 'Có cần jailbreak iPhone không?', a: 'Cần cài đặt một ứng dụng automation trên iPhone để nhận lệnh từ server. Chi tiết hướng dẫn sẽ được cung cấp sau khi đăng ký.' },
+  { q: 'Tôi có thể quản lý bao nhiêu thiết bị?', a: 'Tuỳ gói — từ 1 (Starter) đến 30 (Business). Cần nhiều hơn? Liên hệ để được tư vấn gói Enterprise.' },
+  { q: 'Dữ liệu có an toàn không?', a: 'Toàn bộ kết nối qua Tailscale VPN (mã hoá end-to-end). Dữ liệu lưu trên VPS riêng, không chia sẻ với bên thứ 3.' },
+  { q: 'Có hỗ trợ API không?', a: 'Có. Gói Business bao gồm API tokens để tích hợp với hệ thống của bạn qua REST API.' },
+  { q: 'Tôi có được dùng thử không?', a: 'Có! Đăng ký gói Starter và trải nghiệm 7 ngày miễn phí trước khi quyết định.' },
 ];
 
-/* ─────────────────────────────────────
-   HELPER: Counter animation
-   ───────────────────────────────────── */
-
-function AnimatedCounter({ target, suffix }: { target: number; suffix: string }) {
-  const [count, setCount] = useState(0);
-  const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, amount: 0.5 });
-
-  useEffect(() => {
-    if (!inView) return;
-    let start = 0;
-    const duration = 2000;
-    const increment = target / (duration / 16);
-    const timer = setInterval(() => {
-      start += increment;
-      if (start >= target) {
-        setCount(target);
-        clearInterval(timer);
-      } else {
-        setCount(Math.floor(start));
-      }
-    }, 16);
-    return () => clearInterval(timer);
-  }, [inView, target]);
-
-  return (
-    <span ref={ref}>
-      {count.toLocaleString('vi-VN')}{suffix}
-    </span>
-  );
-}
-
-/* ─────────────────────────────────────
+/* ═══════════════════════════════════════
    SECTIONS
-   ───────────────────────────────────── */
+   ═══════════════════════════════════════ */
 
-function Header() {
+function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -203,290 +247,140 @@ function Header() {
   };
 
   return (
-    <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled ? 'bg-slate-900/95 backdrop-blur-md border-b border-white/10 shadow-lg' : 'bg-transparent'
-      }`}
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 md:h-20">
-          {/* Logo */}
-          <Link to="/" className="shrink-0">
-            <img src="/logo.png" alt="Phone Agent" className="h-9 md:h-11 object-contain brightness-0 invert" />
-          </Link>
+    <nav className="fixed top-0 left-0 right-0 z-50 flex justify-center p-4">
+      <div className={`backdrop-blur-md border shadow-sm rounded-full px-6 py-3 flex items-center justify-between w-full mx-4 md:mx-8 lg:mx-12 transition-all duration-300 ${
+        scrolled ? 'bg-white/90 border-gray-200 shadow-md' : 'bg-white/80 border-white/20'
+      }`}>
+        <Link to="/" className="flex items-center gap-2">
+          <img src="/favico.png" alt="Phone Agent" className="w-7 h-7 object-contain" />
+          <span className="font-bold text-xl tracking-tight text-gray-900">Phone Agent</span>
+        </Link>
 
-          {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-8">
-            <button onClick={() => scrollTo('features')} className="text-sm text-slate-300 hover:text-white transition-colors">
-              Tính năng
-            </button>
-            <button onClick={() => scrollTo('pricing')} className="text-sm text-slate-300 hover:text-white transition-colors">
-              Bảng giá
-            </button>
-            <button onClick={() => scrollTo('faq')} className="text-sm text-slate-300 hover:text-white transition-colors">
-              FAQ
-            </button>
-          </nav>
-
-          {/* Desktop CTA */}
-          <div className="hidden md:flex items-center gap-3">
-            <Link
-              to="/login"
-              className="px-4 py-2 text-sm text-slate-300 hover:text-white border border-white/20 hover:border-white/40 rounded-lg transition-all"
-            >
-              Đăng nhập
-            </Link>
-            <Link
-              to="/login"
-              className="px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors font-medium"
-            >
-              Dùng thử miễn phí
-            </Link>
-          </div>
-
-          {/* Mobile hamburger */}
-          <button
-            onClick={() => setMobileOpen(!mobileOpen)}
-            className="md:hidden text-white p-2"
-          >
-            {mobileOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+        <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
+          <button onClick={() => scrollTo('features')} className="hover:text-gray-900 transition-colors">Tính năng</button>
+          <button onClick={() => scrollTo('pricing')} className="hover:text-gray-900 transition-colors">Bảng giá</button>
+          <button onClick={() => scrollTo('faq')} className="hover:text-gray-900 transition-colors">FAQ</button>
         </div>
 
-        {/* Mobile menu */}
-        {mobileOpen && (
-          <div className="md:hidden pb-4 border-t border-white/10">
-            <nav className="flex flex-col gap-2 pt-4">
-              <button onClick={() => scrollTo('features')} className="text-left px-3 py-2 text-sm text-slate-300 hover:text-white">
-                Tính năng
-              </button>
-              <button onClick={() => scrollTo('pricing')} className="text-left px-3 py-2 text-sm text-slate-300 hover:text-white">
-                Bảng giá
-              </button>
-              <button onClick={() => scrollTo('faq')} className="text-left px-3 py-2 text-sm text-slate-300 hover:text-white">
-                FAQ
-              </button>
-              <div className="flex flex-col gap-2 pt-2 px-3">
-                <Link to="/login" className="text-center px-4 py-2.5 text-sm text-white border border-white/20 rounded-lg">
-                  Đăng nhập
-                </Link>
-                <Link to="/login" className="text-center px-4 py-2.5 text-sm text-white bg-blue-600 rounded-lg font-medium">
-                  Dùng thử miễn phí
-                </Link>
-              </div>
-            </nav>
-          </div>
-        )}
+        <div className="hidden md:flex items-center gap-3">
+          <Link to="/login" className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">Đăng nhập</Link>
+          <Link to="/login" className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-full text-sm font-medium transition-colors">
+            Dùng thử miễn phí
+          </Link>
+        </div>
+
+        <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden p-2 text-gray-600">
+          {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
       </div>
-    </header>
+
+      {/* Mobile menu */}
+      {mobileOpen && (
+        <div className="absolute top-full left-4 right-4 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 md:hidden">
+          <div className="flex flex-col gap-2">
+            <button onClick={() => scrollTo('features')} className="text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-xl">Tính năng</button>
+            <button onClick={() => scrollTo('pricing')} className="text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-xl">Bảng giá</button>
+            <button onClick={() => scrollTo('faq')} className="text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-xl">FAQ</button>
+            <hr className="my-2 border-gray-100" />
+            <Link to="/login" className="text-center px-4 py-2.5 text-sm text-gray-700 font-medium">Đăng nhập</Link>
+            <Link to="/login" className="text-center px-4 py-2.5 text-sm bg-orange-500 text-white rounded-xl font-medium">Dùng thử miễn phí</Link>
+          </div>
+        </div>
+      )}
+    </nav>
   );
 }
 
 function HeroSection() {
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
-      {/* Background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/20 via-transparent to-transparent" />
+    <section className="relative pt-32 pb-20 overflow-hidden bg-gradient-to-b from-[#f97316] to-[#c2410c]">
+      {/* Animated blobs */}
+      <div className="absolute top-20 left-10 w-64 h-64 bg-orange-400 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-blob" />
+      <div className="absolute top-20 right-10 w-64 h-64 bg-yellow-400 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-blob" style={{ animationDelay: '2s' }} />
+      <div className="absolute -bottom-8 left-20 w-64 h-64 bg-orange-400 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-blob" style={{ animationDelay: '4s' }} />
 
-      {/* Grid pattern */}
-      <div className="absolute inset-0 opacity-[0.03]" style={{
-        backgroundImage: 'linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)',
-        backgroundSize: '60px 60px',
-      }} />
-
-      {/* Floating orbs */}
-      <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-blue-500/10 rounded-full blur-[120px] animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
-
-      <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        {/* Badge */}
+      <div className="w-full px-4 md:px-8 lg:px-12 relative z-10 text-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
+          className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md border border-white/30 rounded-full px-5 py-2 text-sm md:text-base font-semibold text-white mb-8 shadow-sm"
         >
-          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-medium mb-8">
-            <Zap size={14} />
-            Nền tảng #1 tự động hoá iPhone tại Việt Nam
-          </span>
+          <Zap className="w-5 h-5 text-yellow-400 fill-current" />
+          NỀN TẢNG #1 TỰ ĐỘNG HOÁ iPHONE TẠI VIỆT NAM
         </motion.div>
 
-        {/* Headline */}
         <motion.h1
-          className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-tight tracking-tight"
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.15 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-tight mb-8 max-w-5xl mx-auto"
         >
-          Quản lý hàng trăm iPhone
-          <br />
-          <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-            từ một màn hình duy nhất
+          Quản lý hàng trăm iPhone{' '}
+          <span className="bg-white text-orange-600 px-4 py-1 rounded-md inline-block mt-2 md:mt-0 shadow-sm">từ một màn hình</span>{' '}
+          duy nhất
+          <span className="text-3xl md:text-4xl lg:text-5xl font-medium opacity-90 block mt-4">
+            — Tự động hoá mọi thao tác, chạy 24/7
           </span>
         </motion.h1>
 
-        {/* Subheadline */}
         <motion.p
-          className="mt-6 text-lg sm:text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed"
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.3 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="text-lg md:text-xl text-orange-50 mb-12 max-w-4xl mx-auto leading-relaxed font-medium"
         >
-          Tự động hoá mọi thao tác — từ lướt TikTok, đăng video, đến quản lý hàng loạt tài khoản.
-          Không cần code. Chạy 24/7.
+          Từ lướt TikTok, đăng video, farm tài khoản đến quản lý hàng loạt thiết bị — <strong className="text-yellow-300">Phone Agent</strong> biến điện thoại của bạn thành đội quân tự động. Không cần code. Không cần giám sát.
         </motion.p>
 
-        {/* CTAs */}
         <motion.div
-          className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4"
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.45 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
         >
-          <Link
-            to="/login"
-            className="group inline-flex items-center gap-2 px-8 py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 text-base"
-          >
-            Bắt đầu miễn phí
-            <ArrowRight size={18} className="group-hover:translate-x-0.5 transition-transform" />
+          <Link to="/login" className="w-full sm:w-auto bg-yellow-400 text-orange-900 hover:bg-yellow-300 px-8 py-4 rounded-full text-lg font-bold transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 flex items-center justify-center gap-2">
+            <Bot className="w-6 h-6" />
+            Dùng thử miễn phí
           </Link>
           <button
             onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}
-            className="group inline-flex items-center gap-2 px-8 py-3.5 text-slate-300 hover:text-white border border-white/15 hover:border-white/30 rounded-xl transition-all text-base"
+            className="w-full sm:w-auto bg-white/10 backdrop-blur-sm border border-white/30 text-white hover:bg-white/20 px-8 py-4 rounded-full text-lg font-medium transition-all flex items-center justify-center gap-2"
           >
-            <Play size={18} />
+            <MessageSquare className="w-5 h-5" />
             Xem demo
           </button>
         </motion.div>
-
-        {/* Dashboard mockup */}
-        <motion.div
-          className="mt-16 sm:mt-20 relative mx-auto max-w-4xl"
-          initial={{ opacity: 0, y: 60 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, delay: 0.6 }}
-        >
-          <div className="rounded-xl border border-white/10 bg-slate-800/50 backdrop-blur-sm p-1.5 shadow-2xl shadow-black/50">
-            {/* Browser bar */}
-            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-white/5">
-              <div className="flex gap-1.5">
-                <div className="w-3 h-3 rounded-full bg-red-500/60" />
-                <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
-                <div className="w-3 h-3 rounded-full bg-green-500/60" />
-              </div>
-              <div className="flex-1 text-center">
-                <span className="text-xs text-slate-500 bg-slate-700/50 px-4 py-1 rounded-md">phoneagent.io.vn/dashboard</span>
-              </div>
-            </div>
-            {/* Mock dashboard content */}
-            <div className="p-4 sm:p-6 space-y-4">
-              {/* Stats row */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {['Thiết bị online', 'Đang chạy', 'Lịch trình', 'Kịch bản'].map((label, i) => (
-                  <div key={label} className="bg-slate-700/40 rounded-lg p-3 text-center">
-                    <div className="text-xl sm:text-2xl font-bold text-white">{[24, 8, 15, 42][i]}</div>
-                    <div className="text-xs text-slate-400 mt-1">{label}</div>
-                  </div>
-                ))}
-              </div>
-              {/* Device list mockup */}
-              <div className="bg-slate-700/30 rounded-lg p-3 space-y-2">
-                {[
-                  { name: 'iPhone 15 Pro #1', status: 'online', script: 'TikTok Auto Scroll' },
-                  { name: 'iPhone 14 #3', status: 'running', script: 'FB Auto Post' },
-                  { name: 'iPhone 13 #7', status: 'online', script: '—' },
-                ].map((d) => (
-                  <div key={d.name} className="flex items-center justify-between px-3 py-2 bg-slate-800/50 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-2 h-2 rounded-full ${d.status === 'running' ? 'bg-blue-400 animate-pulse' : 'bg-green-400'}`} />
-                      <span className="text-sm text-slate-300">{d.name}</span>
-                    </div>
-                    <span className="text-xs text-slate-500">{d.script}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-          {/* Glow effect */}
-          <div className="absolute -inset-px rounded-xl bg-gradient-to-b from-blue-500/20 to-transparent opacity-50 blur-sm -z-10" />
-        </motion.div>
       </div>
     </section>
   );
 }
 
-function StatsSection() {
+function IntrigueBulletsSection() {
   return (
-    <section className="relative py-16 bg-slate-900 border-y border-white/5">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          {stats.map((s, i) => {
-            const Icon = s.icon;
-            return (
-              <motion.div
-                key={i}
-                className="text-center"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.5 }}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-              >
-                <Icon size={24} className="mx-auto text-blue-400 mb-3" />
-                <div className="text-2xl sm:text-3xl font-bold text-white">
-                  <AnimatedCounter target={s.value} suffix={s.suffix} />
-                </div>
-                <div className="text-sm text-slate-400 mt-1">{s.label}</div>
-              </motion.div>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function PainPointSection() {
-  return (
-    <section className="relative py-20 md:py-28 bg-slate-950">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          className="text-center mb-14"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-        >
-          <h2 className="text-3xl md:text-4xl font-bold text-white">
-            Bạn đang gặp những vấn đề này?
+    <section className="py-24 bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl md:text-5xl font-bold text-gray-900 max-w-4xl mx-auto leading-tight">
+            Những tính năng bạn sẽ <span className="text-orange-600">yêu thích</span>
           </h2>
-          <p className="text-slate-400 mt-3 text-lg">Phone Agent giải quyết tất cả.</p>
-        </motion.div>
+        </div>
 
-        <div className="space-y-6">
-          {painPoints.map((pp, i) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {bullets.map((bullet, index) => (
             <motion.div
-              key={i}
-              className="grid md:grid-cols-2 gap-4"
+              key={index}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.5, delay: i * 0.1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+              className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 hover:shadow-md transition-shadow relative overflow-hidden group"
             >
-              {/* Pain */}
-              <div className="flex items-start gap-3 p-5 rounded-xl bg-red-500/5 border border-red-500/10">
-                <div className="shrink-0 w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center mt-0.5">
-                  <X size={16} className="text-red-400" />
-                </div>
-                <p className="text-slate-300 text-sm sm:text-base leading-relaxed">{pp.pain}</p>
+              <div className={`w-14 h-14 rounded-2xl ${bullet.bgColor} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                {bullet.icon}
               </div>
-              {/* Solution */}
-              <div className="flex items-start gap-3 p-5 rounded-xl bg-green-500/5 border border-green-500/10">
-                <div className="shrink-0 w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center mt-0.5">
-                  <Check size={16} className="text-green-400" />
-                </div>
-                <p className="text-slate-300 text-sm sm:text-base leading-relaxed">{pp.solution}</p>
-              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-3 leading-snug">{bullet.title}</h3>
+              <p className="text-gray-600 leading-relaxed">{bullet.description}</p>
             </motion.div>
           ))}
         </div>
@@ -495,229 +389,485 @@ function PainPointSection() {
   );
 }
 
-function FeaturesSection() {
+function PainPointsSection() {
   return (
-    <section id="features" className="relative py-20 md:py-28 bg-slate-900">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          className="text-center mb-14"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-        >
-          <h2 className="text-3xl md:text-4xl font-bold text-white">
-            Mọi thứ bạn cần để scale
-          </h2>
-          <p className="text-slate-400 mt-3 text-lg">Một nền tảng duy nhất thay thế hàng chục công cụ</p>
-        </motion.div>
+    <section className="py-24 bg-slate-50 relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-rose-200/50 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-orange-200/50 rounded-full blur-[100px] translate-y-1/3 -translate-x-1/4 pointer-events-none" />
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {features.map((f, i) => {
-            const Icon = f.icon;
-            return (
-              <motion.div
-                key={i}
-                className="group p-6 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:border-blue-500/30 hover:bg-white/[0.05] transition-all duration-300"
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                transition={{ duration: 0.5, delay: i * 0.08 }}
-                whileHover={{ y: -4 }}
-              >
-                <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-4 group-hover:bg-blue-500/20 transition-colors">
-                  <Icon size={22} className="text-blue-400" />
-                </div>
-                <h3 className="text-lg font-semibold text-white mb-2">{f.title}</h3>
-                <p className="text-slate-400 text-sm leading-relaxed">{f.desc}</p>
-              </motion.div>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-}
+      <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="lg:col-span-7"
+          >
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 leading-tight mb-10">
+              Sự thật <span className="text-rose-600">đau lòng</span> về việc quản lý iPhone thủ công
+            </h2>
 
-function HowItWorksSection() {
-  return (
-    <section className="relative py-20 md:py-28 bg-slate-950">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          className="text-center mb-14"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-        >
-          <h2 className="text-3xl md:text-4xl font-bold text-white">
-            Bắt đầu trong 3 phút
-          </h2>
-        </motion.div>
-
-        <div className="grid md:grid-cols-3 gap-8 relative">
-          {/* Connecting line — desktop only */}
-          <div className="hidden md:block absolute top-12 left-1/6 right-1/6 h-px bg-gradient-to-r from-transparent via-blue-500/30 to-transparent" />
-
-          {steps.map((s, i) => (
-            <motion.div
-              key={i}
-              className="relative text-center"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.5, delay: i * 0.15 }}
-            >
-              <div className="w-16 h-16 rounded-full bg-blue-600 text-white text-xl font-bold flex items-center justify-center mx-auto mb-5 shadow-lg shadow-blue-500/30 relative z-10">
-                {s.num}
-              </div>
-              <h3 className="text-lg font-semibold text-white mb-2">{s.title}</h3>
-              <p className="text-slate-400 text-sm leading-relaxed max-w-xs mx-auto">{s.desc}</p>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function DemoSection() {
-  const [activeTab, setActiveTab] = useState(0);
-  const tabs = ['Dashboard', 'Script Editor', 'Điều khiển'];
-
-  return (
-    <section id="demo" className="relative py-20 md:py-28 bg-slate-900">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          className="text-center mb-12"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-        >
-          <h2 className="text-3xl md:text-4xl font-bold text-white">
-            Trải nghiệm trực quan
-          </h2>
-          <p className="text-slate-400 mt-3 text-lg">Giao diện thân thiện, dễ sử dụng</p>
-        </motion.div>
-
-        {/* Tabs */}
-        <div className="flex justify-center gap-2 mb-8">
-          {tabs.map((tab, i) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(i)}
-              className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
-                activeTab === i
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25'
-                  : 'text-slate-400 hover:text-white bg-white/5 hover:bg-white/10'
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
-
-        {/* Mockup area */}
-        <motion.div
-          className="rounded-xl border border-white/10 bg-slate-800/40 p-1.5 shadow-2xl shadow-black/40"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-        >
-          {/* Browser chrome */}
-          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-white/5">
-            <div className="flex gap-1.5">
-              <div className="w-3 h-3 rounded-full bg-red-500/60" />
-              <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
-              <div className="w-3 h-3 rounded-full bg-green-500/60" />
+            <div className="space-y-8">
+              {pains.map((pain, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.15 + 0.3 }}
+                  className="flex gap-6 items-start group"
+                >
+                  <div className="w-16 h-16 rounded-2xl bg-white border border-rose-100 flex items-center justify-center flex-shrink-0 group-hover:bg-rose-50 transition-colors shadow-lg shadow-rose-900/5">
+                    {pain.icon}
+                  </div>
+                  <p className="text-lg md:text-xl text-slate-700 leading-relaxed pt-1 font-medium">{pain.text}</p>
+                </motion.div>
+              ))}
             </div>
-          </div>
+          </motion.div>
 
-          <div className="p-4 sm:p-6 min-h-[300px] sm:min-h-[380px]">
-            {/* Tab 0: Dashboard */}
-            {activeTab === 0 && (
-              <div className="space-y-4 animate-in fade-in duration-300">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {[
-                    { label: 'Online', val: '24', color: 'text-green-400' },
-                    { label: 'Running', val: '8', color: 'text-blue-400' },
-                    { label: 'Offline', val: '3', color: 'text-slate-500' },
-                    { label: 'Tổng', val: '35', color: 'text-white' },
-                  ].map((s) => (
-                    <div key={s.label} className="bg-slate-700/40 rounded-lg p-4 text-center">
-                      <div className={`text-2xl font-bold ${s.color}`}>{s.val}</div>
-                      <div className="text-xs text-slate-500 mt-1">{s.label}</div>
-                    </div>
-                  ))}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="lg:col-span-5 relative mt-10 lg:mt-0"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-rose-200 to-orange-200 rounded-[3rem] transform rotate-3 scale-105 -z-10 blur-xl opacity-60" />
+            <div className="bg-white border border-rose-100 rounded-[3rem] p-10 md:p-12 shadow-2xl shadow-rose-900/10 relative overflow-hidden h-full flex flex-col justify-center">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-rose-50 rounded-bl-full" />
+              <TrendingDown className="w-16 h-16 text-rose-500 mb-8" />
+              <p className="text-2xl md:text-3xl font-medium text-slate-900 leading-relaxed mb-10">
+                "Đó là lý do tại sao <span className="text-rose-600 font-bold">90%</span> thời gian của bạn đang bị lãng phí vào những <span className="text-rose-600 font-bold">thao tác lặp đi lặp lại</span>."
+              </p>
+              <div className="mt-auto">
+                <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden mb-3">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    whileInView={{ width: '90%' }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 1.5, delay: 0.8, ease: 'easeOut' }}
+                    className="h-full bg-gradient-to-r from-rose-500 to-rose-400 rounded-full"
+                  />
                 </div>
-                {/* Chart mockup */}
-                <div className="bg-slate-700/30 rounded-lg p-4 h-32 sm:h-44 flex items-end gap-1.5 sm:gap-2">
-                  {[40, 55, 35, 70, 45, 80, 60, 90, 50, 75, 85, 65].map((h, i) => (
-                    <div key={i} className="flex-1 bg-blue-500/40 rounded-t" style={{ height: `${h}%` }} />
-                  ))}
+                <div className="flex justify-between text-sm font-bold text-slate-500 uppercase tracking-wider">
+                  <span>Thời gian hiệu quả</span>
+                  <span className="text-rose-600">Lãng phí (90%)</span>
                 </div>
               </div>
-            )}
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
 
-            {/* Tab 1: Script Editor */}
-            {activeTab === 1 && (
-              <div className="space-y-4 animate-in fade-in duration-300">
-                <div className="flex gap-4">
-                  {/* Node palette */}
-                  <div className="hidden sm:block w-40 bg-slate-700/30 rounded-lg p-3 space-y-2">
-                    {['Tap', 'Swipe', 'Wait', 'Launch App', 'Type Text', 'Repeat'].map((n) => (
-                      <div key={n} className="px-3 py-1.5 bg-slate-600/40 rounded text-xs text-slate-300 hover:bg-slate-600/60 cursor-pointer">
-                        {n}
+function SolutionSection() {
+  return (
+    <section id="demo" className="py-24 bg-white relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-orange-50 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+
+      <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
+          {/* Left: Dashboard mockup */}
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="lg:col-span-6 relative order-2 lg:order-1"
+          >
+            <div className="relative w-full max-w-lg mx-auto">
+              <div className="absolute inset-0 bg-gradient-to-tr from-orange-400 to-yellow-300 rounded-[3rem] transform -rotate-3 scale-105 opacity-20 blur-xl" />
+              <div className="absolute inset-0 bg-white rounded-[3rem] shadow-2xl border border-orange-100 overflow-hidden flex flex-col">
+                {/* Browser header */}
+                <div className="bg-slate-900 p-5 flex items-center gap-4 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/20 rounded-full blur-2xl" />
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-lg relative z-10">
+                    <Smartphone className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="relative z-10">
+                    <h3 className="text-white font-bold text-lg">Phone Agent</h3>
+                    <p className="text-orange-200 text-sm flex items-center gap-1.5 mt-0.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      24 thiết bị online
+                    </p>
+                  </div>
+                </div>
+                {/* Dashboard body */}
+                <div className="flex-1 p-5 bg-slate-50 flex flex-col gap-4">
+                  <div className="grid grid-cols-3 gap-2">
+                    {[{ v: '24', l: 'Online', c: 'text-emerald-600' }, { v: '8', l: 'Running', c: 'text-blue-600' }, { v: '15', l: 'Scripts', c: 'text-orange-600' }].map((s) => (
+                      <div key={s.l} className="bg-white rounded-xl p-3 text-center border border-slate-100 shadow-sm">
+                        <div className={`text-xl font-bold ${s.c}`}>{s.v}</div>
+                        <div className="text-xs text-slate-500 mt-0.5">{s.l}</div>
                       </div>
                     ))}
                   </div>
-                  {/* Flow area */}
-                  <div className="flex-1 bg-slate-700/20 rounded-lg p-4 relative min-h-[240px] sm:min-h-[300px]">
-                    {/* Nodes */}
-                    <div className="absolute top-6 left-6 sm:left-12 w-32 sm:w-36 bg-blue-600/20 border border-blue-500/30 rounded-lg px-3 py-2">
-                      <div className="text-xs text-blue-400 font-medium">Launch App</div>
-                      <div className="text-[10px] text-slate-500 mt-0.5">TikTok VN</div>
+                  {[
+                    { name: 'iPhone 15 Pro #1', status: 'running', script: 'TikTok Auto' },
+                    { name: 'iPhone 14 #3', status: 'online', script: 'FB Post' },
+                    { name: 'iPhone 13 #7', status: 'online', script: 'Idle' },
+                  ].map((d) => (
+                    <div key={d.name} className="flex items-center justify-between px-4 py-3 bg-white rounded-xl border border-slate-100 shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-2.5 h-2.5 rounded-full ${d.status === 'running' ? 'bg-blue-500 animate-pulse' : 'bg-emerald-400'}`} />
+                        <span className="text-sm font-medium text-slate-700">{d.name}</span>
+                      </div>
+                      <span className="text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded-lg">{d.script}</span>
                     </div>
-                    <div className="absolute top-6 left-6 sm:left-12 top-24 w-32 sm:w-36 bg-green-600/20 border border-green-500/30 rounded-lg px-3 py-2">
-                      <div className="text-xs text-green-400 font-medium">Swipe</div>
-                      <div className="text-[10px] text-slate-500 mt-0.5">Lướt lên</div>
-                    </div>
-                    <div className="absolute top-6 left-6 sm:left-12 top-[168px] w-32 sm:w-36 bg-yellow-600/20 border border-yellow-500/30 rounded-lg px-3 py-2">
-                      <div className="text-xs text-yellow-400 font-medium">Wait</div>
-                      <div className="text-[10px] text-slate-500 mt-0.5">3 giây</div>
-                    </div>
-                    {/* Connection lines */}
-                    <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ left: '20px' }}>
-                      <line x1="72" y1="52" x2="72" y2="88" stroke="rgba(59,130,246,0.3)" strokeWidth="2" />
-                      <line x1="72" y1="128" x2="72" y2="162" stroke="rgba(59,130,246,0.3)" strokeWidth="2" />
-                    </svg>
+                  ))}
+                  <div className="mx-auto mt-2 bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 shadow-sm">
+                    <ShieldCheck className="w-4 h-4" />
+                    Mã hoá end-to-end qua Tailscale VPN
                   </div>
                 </div>
               </div>
-            )}
+            </div>
+          </motion.div>
 
-            {/* Tab 2: Control */}
-            {activeTab === 2 && (
-              <div className="space-y-4 animate-in fade-in duration-300">
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {[1, 2, 3, 4, 5, 6].map((n) => (
-                    <div key={n} className="bg-slate-700/30 rounded-lg p-2 sm:p-3 aspect-[9/16] max-h-[140px] sm:max-h-[180px] flex flex-col">
-                      <div className="text-[10px] text-slate-500 mb-1.5 flex items-center gap-1">
-                        <div className={`w-1.5 h-1.5 rounded-full ${n <= 4 ? 'bg-green-400' : 'bg-slate-600'}`} />
-                        iPhone {n}
-                      </div>
-                      <div className="flex-1 bg-slate-800/60 rounded flex items-center justify-center">
-                        <Smartphone size={20} className="text-slate-600" />
-                      </div>
-                    </div>
-                  ))}
+          {/* Right: Text */}
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="lg:col-span-6 order-1 lg:order-2"
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-100 text-orange-700 font-bold text-sm mb-6 uppercase tracking-wider border border-orange-200">
+              <Zap className="w-4 h-4" />
+              Giải pháp đột phá
+            </div>
+
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 leading-[1.1] mb-6">
+              Giới thiệu{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-yellow-500">
+                Phone Agent
+              </span>
+            </h2>
+
+            <p className="text-2xl text-slate-800 font-bold mb-6 leading-snug">
+              Nền tảng quản lý & tự động hoá iPhone mạnh mẽ nhất hiện nay.
+            </p>
+
+            <p className="text-lg text-slate-600 mb-10 leading-relaxed">
+              Không chỉ là tool quản lý thiết bị, Phone Agent mang đến một <strong className="text-orange-600 text-xl mx-1">"trung tâm điều khiển"</strong> toàn diện: script editor kéo thả, lịch trình cron, proxy thông minh — tất cả trên một dashboard duy nhất.
+            </p>
+
+            <div className="space-y-6">
+              <div className="flex gap-5 items-start bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md hover:border-orange-200 transition-all group">
+                <div className="w-14 h-14 rounded-2xl bg-orange-50 flex items-center justify-center flex-shrink-0 group-hover:bg-orange-100 transition-colors">
+                  <Wand2 className="w-7 h-7 text-orange-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900 mb-2">Script Editor kéo thả</h3>
+                  <p className="text-slate-600 leading-relaxed">Tạo kịch bản tự động chỉ bằng kéo thả. Tap, swipe, type, launch app, wait, repeat — ai cũng dùng được, không cần biết code.</p>
                 </div>
               </div>
-            )}
+
+              <div className="flex gap-5 items-start bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md hover:border-yellow-200 transition-all group">
+                <div className="w-14 h-14 rounded-2xl bg-yellow-50 flex items-center justify-center flex-shrink-0 group-hover:bg-yellow-100 transition-colors">
+                  <CalendarDays className="w-7 h-7 text-yellow-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900 mb-2">Lịch trình Cron 24/7</h3>
+                  <p className="text-slate-600 leading-relaxed">Đặt lịch tự chạy theo giờ, ngày, tuần. Hệ thống tự vận hành ngay cả khi bạn đang ngủ, và báo cáo kết quả qua Telegram.</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function CredibilitySection() {
+  return (
+    <section className="py-24 relative overflow-hidden bg-gradient-to-br from-[#f97316] to-[#c2410c]">
+      <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-orange-400/30 rounded-full mix-blend-screen filter blur-[100px] opacity-50 animate-blob pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-yellow-400/30 rounded-full mix-blend-screen filter blur-[80px] opacity-50 animate-blob pointer-events-none" style={{ animationDelay: '2s' }} />
+
+      <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 relative z-10 text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="relative z-10 max-w-6xl mx-auto"
+        >
+          <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white font-semibold text-sm mb-10 shadow-lg">
+            <Sparkles className="w-4 h-4 text-yellow-300" />
+            Công nghệ hàng đầu
+          </div>
+
+          <h2 className="text-3xl md:text-4xl lg:text-[2.75rem] font-medium text-white leading-[1.4] mb-14">
+            "Phone Agent sử dụng các công nghệ <span className="font-bold text-yellow-300">bảo mật và hiệu suất cao</span><br className="hidden lg:block" /> đảm bảo thiết bị của bạn luôn <span className="font-bold text-orange-200">an toàn và ổn định</span>."
+          </h2>
+
+          <div className="flex flex-wrap justify-center items-center gap-6 md:gap-12">
+            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-8 py-4 rounded-2xl shadow-lg border border-white/20 hover:bg-white/20 transition-colors">
+              <Lock className="w-8 h-8 text-emerald-300" />
+              <span className="font-bold text-white text-xl tracking-tight">Tailscale VPN</span>
+            </div>
+
+            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-8 py-4 rounded-2xl shadow-lg border border-white/20 hover:bg-white/20 transition-colors">
+              <Zap className="w-8 h-8 text-yellow-300" />
+              <span className="font-bold text-white text-xl tracking-tight">WebSocket Real-time</span>
+            </div>
+
+            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-8 py-4 rounded-2xl shadow-lg border border-white/20 hover:bg-white/20 transition-colors">
+              <CheckCircle2 className="w-8 h-8 text-emerald-400" />
+              <span className="font-bold text-white text-xl tracking-tight">E2E Encryption</span>
+            </div>
           </div>
         </motion.div>
+      </div>
+    </section>
+  );
+}
+
+function BenefitsSection() {
+  return (
+    <section id="features" className="py-24 bg-white relative">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12">
+        <div className="text-center mb-16">
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-4xl md:text-5xl font-black text-slate-900 leading-tight mb-6"
+          >
+            Biến tính năng thành <span className="text-orange-600">hiệu quả</span>
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            className="text-lg text-slate-600 max-w-2xl mx-auto"
+          >
+            Phone Agent không chỉ là công cụ, mà là một hệ thống tối ưu hóa toàn bộ quy trình vận hành iPhone của bạn.
+          </motion.p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {benefits.map((b, idx) => (
+            <motion.div
+              key={b.id}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: idx * 0.1 }}
+              className={`${b.colSpan} ${b.bg} border ${b.border} rounded-3xl p-8 relative overflow-hidden group hover:shadow-xl transition-all duration-300 hover:-translate-y-1`}
+            >
+              <div className="absolute -right-6 -top-6 w-32 h-32 bg-white/40 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />
+              <div className="relative z-10 flex flex-col h-full">
+                <div className="flex justify-between items-start mb-6">
+                  <div className="w-16 h-16 rounded-2xl bg-white shadow-sm flex items-center justify-center flex-shrink-0">
+                    {b.icon}
+                  </div>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full bg-white/60 text-slate-700 text-xs font-bold backdrop-blur-sm border border-white/80 shadow-sm">
+                    {b.highlight}
+                  </span>
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900 mb-3">{b.title}</h3>
+                <p className="text-slate-700 leading-relaxed font-medium mt-auto">{b.desc}</p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function UseCasesSection() {
+  const [activeTab, setActiveTab] = useState(0);
+
+  return (
+    <section className="py-24 bg-white relative overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 relative z-10">
+        <div className="text-center mb-16">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-100 text-orange-700 font-bold text-sm mb-6 uppercase tracking-wider"
+          >
+            <Briefcase className="w-4 h-4" />
+            Giải pháp chuyên biệt
+          </motion.div>
+
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            className="text-4xl md:text-5xl font-black text-slate-900 leading-tight mb-6"
+          >
+            Ứng dụng thực tế trong{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-rose-500">Đa Ngành</span>
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+            className="text-lg text-slate-600 max-w-2xl mx-auto"
+          >
+            Dù bạn kinh doanh trong lĩnh vực nào, Phone Agent đều có kịch bản và giải pháp tối ưu dành riêng cho bạn.
+          </motion.p>
+        </div>
+
+        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
+          {/* Left tabs */}
+          <div className="w-full lg:w-[35%] flex lg:flex-col gap-2 overflow-x-auto pb-4 lg:pb-0 snap-x">
+            {industries.map((ind, idx) => {
+              const Icon = ind.icon;
+              const isActive = activeTab === idx;
+              return (
+                <button
+                  key={idx}
+                  onClick={() => setActiveTab(idx)}
+                  className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-left transition-all duration-300 snap-start whitespace-nowrap lg:whitespace-normal flex-shrink-0 lg:flex-shrink ${
+                    isActive
+                      ? 'bg-gradient-to-r from-orange-500 to-rose-500 text-white shadow-lg shadow-orange-500/20 scale-[1.02]'
+                      : 'bg-slate-50 text-slate-600 hover:bg-orange-50 hover:text-orange-600 border border-slate-100'
+                  }`}
+                >
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isActive ? 'bg-white/20' : 'bg-white shadow-sm'}`}>
+                    <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-slate-700'}`} />
+                  </div>
+                  <span className="font-bold text-sm md:text-base">{ind.name}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Right content */}
+          <div className="w-full lg:w-[65%]">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3 }}
+                className="bg-slate-50 rounded-[2rem] p-6 md:p-10 border border-slate-100 h-full"
+              >
+                <div className="flex items-center gap-4 mb-8 pb-6 border-b border-slate-200">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500 to-rose-500 flex items-center justify-center shadow-lg shadow-orange-500/30">
+                    {(() => { const Icon = industries[activeTab].icon; return <Icon className="w-8 h-8 text-white" />; })()}
+                  </div>
+                  <h3 className="text-2xl md:text-3xl font-black text-slate-900">{industries[activeTab].name}</h3>
+                </div>
+
+                <div className="flex flex-col gap-6">
+                  <div className="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-red-100 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-1.5 h-full bg-red-400" />
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center">
+                        <AlertCircle className="w-5 h-5 text-red-500" />
+                      </div>
+                      <h4 className="text-xl font-bold text-slate-900">Vấn đề</h4>
+                    </div>
+                    <p className="text-slate-600 text-base md:text-lg leading-relaxed">{industries[activeTab].problem}</p>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-blue-50/80 to-indigo-50/80 rounded-2xl p-6 md:p-8 shadow-sm border border-blue-200 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-500" />
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                        <Lightbulb className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <h4 className="text-xl font-bold text-slate-900">Giải pháp Phone Agent</h4>
+                    </div>
+                    <p className="text-slate-800 text-base md:text-lg leading-relaxed font-medium">{industries[activeTab].solution}</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-orange-100">
+                      <div className="flex items-center gap-2 mb-3">
+                        <ShieldCheck className="w-5 h-5 text-orange-500" />
+                        <h4 className="font-bold text-slate-900">Không còn mất</h4>
+                      </div>
+                      <p className="text-slate-600 text-sm leading-relaxed">{industries[activeTab].notLose}</p>
+                    </div>
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-emerald-100">
+                      <div className="flex items-center gap-2 mb-3">
+                        <TrendingUp className="w-5 h-5 text-emerald-500" />
+                        <h4 className="font-bold text-slate-900">Bạn sẽ có</h4>
+                      </div>
+                      <p className="text-slate-600 text-sm leading-relaxed">{industries[activeTab].gain}</p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function SocialProofSection() {
+  return (
+    <section className="py-24 bg-slate-50 relative overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 relative z-10">
+        <div className="text-center mb-16">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-rose-100 text-rose-700 font-bold text-sm mb-6 uppercase tracking-wider"
+          >
+            <MessageCircleHeart className="w-4 h-4" />
+            Bằng chứng thực tế
+          </motion.div>
+
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            className="text-4xl md:text-5xl font-black text-slate-900 leading-tight mb-6"
+          >
+            Hàng trăm người đã <span className="text-orange-600">tiết kiệm thời gian</span>
+            <br className="hidden md:block" /> nhờ Phone Agent
+          </motion.h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
+          {testimonials.map((item, idx) => (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: idx * 0.15 }}
+              className={`bg-white rounded-3xl p-6 shadow-lg shadow-slate-200/50 border border-slate-100 relative ${idx % 2 !== 0 ? 'lg:mt-12' : ''}`}
+            >
+              <Quote className="absolute top-6 right-6 w-8 h-8 text-orange-100 transform rotate-180" />
+              <div className="flex gap-1 mb-4">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                ))}
+              </div>
+              <p className="text-slate-700 leading-relaxed mb-6 relative z-10">"{item.content}"</p>
+              <div className="flex items-center gap-4 pt-4 border-t border-slate-50">
+                <img src={item.avatar} alt={item.name} className="w-12 h-12 rounded-full object-cover border-2 border-orange-100" />
+                <div>
+                  <h4 className="font-bold text-slate-900">{item.name}</h4>
+                  <p className="text-xs text-slate-500">{item.role}</p>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -725,67 +875,84 @@ function DemoSection() {
 
 function PricingSection() {
   return (
-    <section id="pricing" className="relative py-20 md:py-28 bg-slate-950">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          className="text-center mb-14"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-        >
-          <h2 className="text-3xl md:text-4xl font-bold text-white">
-            Bảng giá đơn giản, minh bạch
-          </h2>
-          <p className="text-slate-400 mt-3 text-lg">Chọn gói phù hợp. Nâng cấp bất cứ lúc nào.</p>
-        </motion.div>
+    <section id="pricing" className="py-24 bg-slate-50 relative overflow-hidden">
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-orange-100/50 rounded-full blur-[120px] pointer-events-none" />
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {pricingPlans.map((plan, i) => (
+      <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 relative z-10">
+        <div className="text-center mb-16">
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-4xl md:text-5xl font-black text-slate-900 leading-tight mb-6"
+          >
+            Bảng giá <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-rose-500">đơn giản, minh bạch</span>
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            className="text-lg text-slate-600 max-w-2xl mx-auto"
+          >
+            Chọn gói dịch vụ phù hợp với quy mô của bạn. Nâng cấp hoặc hủy bất kỳ lúc nào.
+          </motion.p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 items-stretch">
+          {plans.map((plan, idx) => (
             <motion.div
-              key={plan.name}
-              className={`relative rounded-2xl p-6 flex flex-col ${
-                plan.popular
-                  ? 'bg-blue-600/10 border-2 border-blue-500/50 shadow-lg shadow-blue-500/10'
-                  : 'bg-white/[0.03] border border-white/[0.06]'
-              }`}
+              key={idx}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.5, delay: i * 0.1 }}
+              viewport={{ once: true }}
+              transition={{ delay: idx * 0.1 }}
+              className={`relative flex flex-col bg-white rounded-3xl p-6 md:p-8 transition-all duration-300 ${
+                plan.highlight
+                  ? 'ring-2 ring-orange-500 shadow-2xl shadow-orange-900/10 scale-100 lg:scale-105 z-10'
+                  : 'border border-slate-200 shadow-lg shadow-slate-200/50 hover:shadow-xl hover:-translate-y-1'
+              }`}
             >
-              {plan.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-blue-600 text-white text-xs font-semibold rounded-full shadow-lg">
-                  PHỔ BIẾN NHẤT
+              {plan.highlight && plan.badge && (
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-orange-500 to-rose-500 text-white px-4 py-1 rounded-full text-sm font-bold flex items-center gap-1 shadow-md whitespace-nowrap">
+                  <Star className="w-4 h-4 fill-white" />
+                  {plan.badge}
                 </div>
               )}
 
-              <div className="mb-5">
-                <h3 className="text-lg font-semibold text-white">{plan.name}</h3>
-                <div className="mt-3 flex items-baseline gap-1">
-                  <span className="text-3xl font-bold text-white">{plan.price}</span>
-                  <span className="text-sm text-slate-400">đ{plan.period}</span>
-                </div>
+              <div className="mb-6">
+                <h3 className="text-2xl font-bold text-slate-900 mb-2">{plan.name}</h3>
+                <p className="text-sm text-slate-500 min-h-[40px]">{plan.desc}</p>
               </div>
 
-              <ul className="space-y-3 flex-1 mb-6">
+              <div className="bg-orange-50 rounded-2xl p-4 text-center mb-8 border border-orange-100/50">
+                <div className="flex items-center justify-center gap-1">
+                  <span className="text-3xl lg:text-4xl font-black text-orange-600">{plan.price}</span>
+                  <span className="text-xl font-bold text-orange-600 underline decoration-2 underline-offset-4">đ</span>
+                </div>
+                <div className="text-sm text-slate-500 font-medium mt-1">{plan.period}</div>
+              </div>
+
+              <ul className="space-y-4 mb-8 flex-grow">
                 {plan.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-sm text-slate-300">
-                    <Check size={16} className="shrink-0 mt-0.5 text-blue-400" />
-                    {f}
+                  <li key={f} className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-orange-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Check className="w-3.5 h-3.5 text-orange-500" />
+                    </div>
+                    <span className="text-slate-700">{f}</span>
                   </li>
                 ))}
               </ul>
 
               <Link
                 to="/login"
-                className={`block text-center py-2.5 rounded-xl text-sm font-medium transition-all ${
-                  plan.popular
-                    ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/25'
-                    : 'bg-white/5 hover:bg-white/10 text-white border border-white/10'
+                className={`block text-center w-full py-3.5 rounded-xl font-bold transition-all duration-300 ${
+                  plan.highlight
+                    ? 'bg-gradient-to-r from-orange-500 to-rose-500 text-white shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 hover:-translate-y-0.5'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
-                {plan.cta} <ArrowRight size={14} className="inline ml-1" />
+                {plan.highlight ? 'Bắt đầu ngay' : plan.name === 'Business' ? 'Liên hệ' : 'Bắt đầu'}
               </Link>
             </motion.div>
           ))}
@@ -797,57 +964,47 @@ function PricingSection() {
 
 function FAQSection() {
   const [open, setOpen] = useState<Set<number>>(new Set());
-
   const toggle = (i: number) => {
     setOpen((prev) => {
       const next = new Set(prev);
-      if (next.has(i)) next.delete(i);
-      else next.add(i);
+      if (next.has(i)) next.delete(i); else next.add(i);
       return next;
     });
   };
 
   return (
-    <section id="faq" className="relative py-20 md:py-28 bg-slate-900">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          className="text-center mb-14"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-        >
-          <h2 className="text-3xl md:text-4xl font-bold text-white">
+    <section id="faq" className="py-24 bg-white">
+      <div className="max-w-3xl mx-auto px-4 md:px-8 lg:px-12">
+        <div className="text-center mb-16">
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-4xl md:text-5xl font-black text-slate-900 leading-tight"
+          >
             Câu hỏi thường gặp
-          </h2>
-        </motion.div>
+          </motion.h2>
+        </div>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           {faqs.map((faq, i) => (
             <motion.div
               key={i}
-              className="border border-white/[0.06] rounded-xl overflow-hidden"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.4, delay: i * 0.05 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.05 }}
+              className="bg-slate-50 rounded-2xl border border-slate-100 overflow-hidden"
             >
               <button
                 onClick={() => toggle(i)}
-                className="w-full flex items-center justify-between px-5 py-4 text-left text-white hover:bg-white/[0.02] transition-colors"
+                className="w-full flex items-center justify-between px-6 py-5 text-left hover:bg-slate-100/50 transition-colors"
               >
-                <span className="text-sm sm:text-base font-medium pr-4">{faq.q}</span>
-                <ChevronDown
-                  size={18}
-                  className={`shrink-0 text-slate-400 transition-transform duration-300 ${open.has(i) ? 'rotate-180' : ''}`}
-                />
+                <span className="text-base font-bold text-slate-900 pr-4">{faq.q}</span>
+                <ChevronDown className={`shrink-0 w-5 h-5 text-slate-400 transition-transform duration-300 ${open.has(i) ? 'rotate-180' : ''}`} />
               </button>
-              <div
-                className={`overflow-hidden transition-all duration-300 ${
-                  open.has(i) ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'
-                }`}
-              >
-                <p className="px-5 pb-4 text-sm text-slate-400 leading-relaxed">{faq.a}</p>
+              <div className={`overflow-hidden transition-all duration-300 ${open.has(i) ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
+                <p className="px-6 pb-5 text-slate-600 leading-relaxed">{faq.a}</p>
               </div>
             </motion.div>
           ))}
@@ -857,55 +1014,44 @@ function FAQSection() {
   );
 }
 
-function FooterCTA() {
+function FooterSection() {
   return (
-    <section className="relative py-20 md:py-28 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 overflow-hidden">
-      {/* Decorative */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white/5 via-transparent to-transparent" />
-
-      <div className="relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-        >
-          <h2 className="text-3xl md:text-4xl font-bold text-white">
-            Sẵn sàng tự động hoá?
-          </h2>
-          <p className="text-blue-100/80 mt-4 text-lg">
-            Bắt đầu miễn phí. Không cần thẻ tín dụng.
-          </p>
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              to="/login"
-              className="group inline-flex items-center gap-2 px-8 py-3.5 bg-white text-blue-700 font-semibold rounded-xl hover:bg-blue-50 transition-colors shadow-lg text-base"
-            >
-              Tạo tài khoản miễn phí
-              <ArrowRight size={18} className="group-hover:translate-x-0.5 transition-transform" />
-            </Link>
+    <footer className="bg-gray-900 text-white pt-24 pb-12">
+      <div className="w-full px-4 md:px-8 lg:px-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+          <div className="lg:col-span-2">
+            <div className="flex items-center gap-2 mb-6">
+              <img src="/favico.png" alt="Phone Agent" className="w-8 h-8 object-contain brightness-0 invert" />
+              <span className="font-bold text-2xl tracking-tight">Phone Agent</span>
+            </div>
+            <p className="text-gray-400 mb-8 max-w-sm">
+              Nền tảng quản lý & tự động hoá iPhone hàng đầu Việt Nam. Script editor kéo thả, lịch trình 24/7, proxy thông minh.
+            </p>
           </div>
-          <p className="text-blue-200/60 text-sm mt-6">
-            Hoặc liên hệ tư vấn: <span className="text-white/80 font-medium">support@phoneagent.io.vn</span>
-          </p>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
 
-function Footer() {
-  return (
-    <footer className="py-8 bg-slate-950 border-t border-white/5">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <img src="/favico.png" alt="Phone Agent" className="w-7 h-7 object-contain brightness-0 invert opacity-60" />
-            <span className="text-sm text-slate-500">&copy; 2026 Phone Agent. All rights reserved.</span>
+          <div>
+            <h4 className="font-bold text-lg mb-6">Sản phẩm</h4>
+            <ul className="space-y-4">
+              <li><button onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })} className="text-gray-400 hover:text-white transition-colors">Tính năng</button></li>
+              <li><button onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })} className="text-gray-400 hover:text-white transition-colors">Bảng giá</button></li>
+              <li><button onClick={() => document.getElementById('faq')?.scrollIntoView({ behavior: 'smooth' })} className="text-gray-400 hover:text-white transition-colors">FAQ</button></li>
+            </ul>
           </div>
+
+          <div>
+            <h4 className="font-bold text-lg mb-6">Liên hệ</h4>
+            <ul className="space-y-4">
+              <li><span className="text-gray-400">support@phoneagent.io.vn</span></li>
+              <li><Link to="/login" className="text-gray-400 hover:text-white transition-colors">Đăng nhập</Link></li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-gray-500 text-sm">&copy; {new Date().getFullYear()} Phone Agent. All rights reserved.</p>
           <div className="flex items-center gap-6">
-            <a href="#" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Điều khoản</a>
-            <a href="#" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Chính sách bảo mật</a>
+            <a href="#" className="text-gray-500 hover:text-gray-300 text-sm transition-colors">Điều khoản</a>
+            <a href="#" className="text-gray-500 hover:text-gray-300 text-sm transition-colors">Chính sách bảo mật</a>
           </div>
         </div>
       </div>
@@ -913,24 +1059,28 @@ function Footer() {
   );
 }
 
-/* ─────────────────────────────────────
+/* ═══════════════════════════════════════
    MAIN COMPONENT
-   ───────────────────────────────────── */
+   ═══════════════════════════════════════ */
 
-export default function LandingPage() {
+export default function LandingPageV2() {
+  // Scroll to top on mount
+  useEffect(() => { window.scrollTo(0, 0); }, []);
+
   return (
-    <div className="bg-slate-950 text-white overflow-x-hidden">
-      <Header />
+    <div className="min-h-screen bg-white font-sans text-gray-900">
+      <Navbar />
       <HeroSection />
-      <StatsSection />
-      <PainPointSection />
-      <FeaturesSection />
-      <HowItWorksSection />
-      <DemoSection />
+      <IntrigueBulletsSection />
+      <PainPointsSection />
+      <SolutionSection />
+      <CredibilitySection />
+      <BenefitsSection />
+      <UseCasesSection />
+      <SocialProofSection />
       <PricingSection />
       <FAQSection />
-      <FooterCTA />
-      <Footer />
+      <FooterSection />
     </div>
   );
 }

@@ -12,7 +12,6 @@ import SharedScripts from './components/SharedScripts';
 import UserManagement from './components/UserManagement';
 import Login from './components/Login';
 import LandingPage from './components/LandingPage';
-import LandingPageV2 from './components/LandingPageV2';
 import RequireAuth from './components/RequireAuth';
 import ToastContainer from './components/Toast';
 import ScriptEditorPage from './components/ScriptEditor/ScriptEditorPage';
@@ -53,7 +52,6 @@ export default function App() {
     <Routes>
       {/* Public routes */}
       <Route path="/" element={<LandingPage />} />
-      <Route path="/landing" element={<LandingPageV2 />} />
       <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
 
       {/* Authenticated fullscreen routes (no sidebar) */}
