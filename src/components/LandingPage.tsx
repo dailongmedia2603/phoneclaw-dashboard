@@ -18,8 +18,8 @@ import {
 const bullets = [
   {
     icon: <Wand2 className="w-6 h-6 text-rose-500" />,
-    title: 'Script Editor trực quan',
-    description: 'Kéo thả để tạo kịch bản tự động: tap, swipe, gõ text, mở app, chờ, lặp lại — không cần viết một dòng code nào.',
+    title: 'Trình tạo kịch bản kéo thả',
+    description: 'Tạo kịch bản tự động chỉ bằng kéo thả: bấm, vuốt, gõ chữ, mở app, chờ, lặp lại — không cần viết một dòng code nào.',
     bgColor: 'bg-rose-50',
   },
   {
@@ -47,15 +47,15 @@ const pains = [
   },
   {
     icon: <AlertCircle className="w-8 h-8 text-rose-600" />,
-    text: 'Tài khoản liên tục bị ban vì dùng chung IP, cùng vị trí cho nhiều máy — và bạn không biết cách giả lập proxy hay GPS?',
+    text: 'Tài khoản liên tục bị ban vì dùng chung IP, cùng vị trí cho nhiều máy — và bạn không biết cách đổi địa chỉ mạng hay giả lập vị trí?',
   },
 ];
 
 const benefits = [
   {
     id: 'script-editor',
-    title: 'Script Editor kéo thả',
-    desc: 'Tạo kịch bản tự động bằng node-based editor trực quan. Hỗ trợ tap, swipe, type, launch app, wait, repeat, if/else, biến — không cần viết code.',
+    title: 'Trình tạo kịch bản kéo thả',
+    desc: 'Tạo kịch bản tự động bằng cách ghép các bước như xếp hình. Hỗ trợ bấm, vuốt, gõ chữ, mở app, chờ, lặp lại, rẽ nhánh điều kiện — không cần viết code.',
     icon: <Wand2 className="w-8 h-8 text-blue-600" />,
     bg: 'bg-blue-50',
     border: 'border-blue-100',
@@ -64,8 +64,8 @@ const benefits = [
   },
   {
     id: 'auto-schedule',
-    title: 'Lịch trình Cron thông minh',
-    desc: 'Đặt lịch chạy script tự động theo giờ, ngày, tuần. Hệ thống tự chạy 24/7 và gửi thông báo qua Telegram khi hoàn thành.',
+    title: 'Lịch trình tự động thông minh',
+    desc: 'Đặt lịch chạy kịch bản tự động theo giờ, ngày, tuần. Hệ thống tự chạy 24/7 và gửi thông báo qua Telegram khi hoàn thành.',
     icon: <Zap className="w-8 h-8 text-orange-500" />,
     bg: 'bg-orange-50',
     border: 'border-orange-100',
@@ -75,7 +75,7 @@ const benefits = [
   {
     id: 'remote-control',
     title: 'Điều khiển từ xa',
-    desc: 'Xem live screenshot, tap, swipe, gõ text trực tiếp từ trình duyệt. Kiểm soát thiết bị ở bất kỳ đâu, bất kỳ lúc nào.',
+    desc: 'Xem màn hình trực tiếp, bấm, vuốt, gõ chữ ngay từ trình duyệt web. Kiểm soát thiết bị ở bất kỳ đâu, bất kỳ lúc nào.',
     icon: <Monitor className="w-8 h-8 text-emerald-600" />,
     bg: 'bg-emerald-50',
     border: 'border-emerald-100',
@@ -84,8 +84,8 @@ const benefits = [
   },
   {
     id: 'proxy',
-    title: 'Proxy & GPS Spoof',
-    desc: 'Route traffic qua VN/US. Giả lập GPS, timezone, locale cho từng thiết bị riêng biệt. Bảo vệ tài khoản an toàn.',
+    title: 'Đổi IP & giả lập vị trí',
+    desc: 'Mỗi máy một địa chỉ mạng riêng (VN/US). Giả lập vị trí, múi giờ cho từng thiết bị riêng biệt. Bảo vệ tài khoản an toàn.',
     icon: <Shield className="w-8 h-8 text-purple-600" />,
     bg: 'bg-purple-50',
     border: 'border-purple-100',
@@ -125,7 +125,7 @@ const industries = [
     name: 'MMO Freelancer',
     icon: Globe,
     problem: 'Farm nhiều tài khoản cần thao tác khác nhau trên từng máy, dễ bị ban vì hành vi giống nhau hoặc trùng IP.',
-    solution: 'Phone Agent + Proxy GPS Spoof: mỗi máy một IP riêng, GPS riêng, thao tác ngẫu nhiên hóa. Script có biến random để tạo hành vi tự nhiên.',
+    solution: 'Phone Agent + đổi IP & giả lập vị trí: mỗi máy một địa chỉ mạng riêng, vị trí riêng, thao tác ngẫu nhiên hoá. Kịch bản tự tạo hành vi tự nhiên, khó bị phát hiện.',
     notLose: 'Không mất tài khoản đã nuôi lâu vì bị phát hiện dùng tool.',
     gain: 'Scale số lượng tài khoản gấp 5-10 lần mà vẫn an toàn.',
   },
@@ -159,19 +159,19 @@ const testimonials = [
   {
     name: 'Anh Minh Đức',
     role: 'Chủ Agency TikTok',
-    content: 'Từ ngày dùng Phone Agent, đội ngũ 3 người quản được 80 máy. Trước phải thuê 10 người làm thủ công. Script Editor kéo thả quá tiện, nhân viên mới vào 1 ngày là dùng được.',
+    content: 'Từ ngày dùng Phone Agent, đội ngũ 3 người quản được 80 máy. Trước phải thuê 10 người làm thủ công. Trình tạo kịch bản kéo thả quá tiện, nhân viên mới vào 1 ngày là dùng được.',
     avatar: 'https://i.pravatar.cc/150?img=11',
   },
   {
     name: 'Chị Thu Hằng',
     role: 'Dropshipper TikTok Shop',
-    content: 'Đăng sản phẩm lên 30 tài khoản mỗi ngày giờ chỉ mất 5 phút thay vì cả buổi sáng. Tính năng lịch trình Cron là "game changer" — đặt lịch đăng lúc 7h tối rồi đi ngủ.',
+    content: 'Đăng sản phẩm lên 30 tài khoản mỗi ngày giờ chỉ mất 5 phút thay vì cả buổi sáng. Tính năng đặt lịch tự động là "vũ khí bí mật" — đặt lịch đăng lúc 7h tối rồi đi ngủ.',
     avatar: 'https://i.pravatar.cc/150?img=5',
   },
   {
     name: 'Anh Hoàng Nam',
     role: 'Freelancer MMO',
-    content: 'Proxy + GPS Spoof cứu tài khoản mình nhiều lần. Trước farm 20 nick bị ban hết, giờ chạy 50 nick ổn định nhờ mỗi máy 1 IP riêng. Rất đáng tiền gói Pro!',
+    content: 'Tính năng đổi IP + giả lập vị trí cứu tài khoản mình nhiều lần. Trước nuôi 20 nick bị khoá hết, giờ chạy 50 nick ổn định nhờ mỗi máy 1 địa chỉ mạng riêng. Rất đáng tiền gói Pro!',
     avatar: 'https://i.pravatar.cc/150?img=14',
   },
   {
@@ -196,7 +196,7 @@ const plans = [
     desc: 'Dành cho cá nhân cần quản lý nhiều thiết bị hơn.',
     price: '99.000',
     period: '/ tháng',
-    features: ['3 thiết bị', '15 kịch bản tự tạo', '5 lịch trình', '2 GB video', 'Proxy management', 'Hỗ trợ email'],
+    features: ['3 thiết bị', '15 kịch bản tự tạo', '5 lịch trình', '2 GB video', 'Đổi IP cho thiết bị', 'Hỗ trợ email'],
     highlight: false,
   },
   {
@@ -205,7 +205,7 @@ const plans = [
     desc: 'Gói tối ưu cho team và freelancer chuyên nghiệp.',
     price: '249.000',
     period: '/ tháng',
-    features: ['10 thiết bị', 'Không giới hạn kịch bản', '20 lịch trình', '10 GB video', 'Proxy + GPS Spoof', 'Hỗ trợ ưu tiên'],
+    features: ['10 thiết bị', 'Không giới hạn kịch bản', '20 lịch trình', '10 GB video', 'Đổi IP + giả lập vị trí', 'Hỗ trợ ưu tiên'],
     highlight: true,
   },
   {
@@ -552,7 +552,7 @@ function SolutionSection() {
             </p>
 
             <p className="text-lg text-slate-600 mb-10 leading-relaxed">
-              Không chỉ là tool quản lý thiết bị, Phone Agent mang đến một <strong className="text-orange-600 text-xl mx-1">"trung tâm điều khiển"</strong> toàn diện: script editor kéo thả, lịch trình cron, proxy thông minh — tất cả trên một dashboard duy nhất.
+              Không chỉ là công cụ quản lý thiết bị, Phone Agent mang đến một <strong className="text-orange-600 text-xl mx-1">"trung tâm điều khiển"</strong> toàn diện: tạo kịch bản kéo thả, đặt lịch tự động, đổi IP thông minh — tất cả trên một màn hình duy nhất.
             </p>
 
             <div className="space-y-6">
@@ -561,8 +561,8 @@ function SolutionSection() {
                   <Wand2 className="w-7 h-7 text-orange-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-slate-900 mb-2">Script Editor kéo thả</h3>
-                  <p className="text-slate-600 leading-relaxed">Tạo kịch bản tự động chỉ bằng kéo thả. Tap, swipe, type, launch app, wait, repeat — ai cũng dùng được, không cần biết code.</p>
+                  <h3 className="text-xl font-bold text-slate-900 mb-2">Tạo kịch bản kéo thả</h3>
+                  <p className="text-slate-600 leading-relaxed">Tạo kịch bản tự động chỉ bằng kéo thả. Bấm, vuốt, gõ chữ, mở app, chờ, lặp lại — ai cũng dùng được, không cần biết code.</p>
                 </div>
               </div>
 
@@ -571,7 +571,7 @@ function SolutionSection() {
                   <CalendarDays className="w-7 h-7 text-yellow-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-slate-900 mb-2">Lịch trình Cron 24/7</h3>
+                  <h3 className="text-xl font-bold text-slate-900 mb-2">Đặt lịch tự động 24/7</h3>
                   <p className="text-slate-600 leading-relaxed">Đặt lịch tự chạy theo giờ, ngày, tuần. Hệ thống tự vận hành ngay cả khi bạn đang ngủ, và báo cáo kết quả qua Telegram.</p>
                 </div>
               </div>
@@ -1023,7 +1023,7 @@ function FooterSection() {
               <img src="/logo.png" alt="Phone Agent" className="h-10 object-contain brightness-0 invert" />
             </div>
             <p className="text-gray-400 mb-8 max-w-sm">
-              Nền tảng quản lý & tự động hoá iPhone hàng đầu Việt Nam. Script editor kéo thả, lịch trình 24/7, proxy thông minh.
+              Nền tảng quản lý & tự động hoá iPhone hàng đầu Việt Nam. Tạo kịch bản kéo thả, đặt lịch tự động 24/7, đổi IP thông minh.
             </p>
           </div>
 
