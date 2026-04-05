@@ -18,20 +18,20 @@ import {
 const bullets = [
   {
     icon: <Wand2 className="w-6 h-6 text-rose-500" />,
-    title: 'Trình tạo kịch bản kéo thả',
-    description: 'Tạo kịch bản tự động chỉ bằng kéo thả: bấm, vuốt, gõ chữ, mở app, chờ, lặp lại — không cần viết một dòng code nào.',
+    title: 'Kéo — thả — chạy. Hết.',
+    description: 'Tạo kịch bản tự động bằng cách kéo thả như xếp lego. Bấm, vuốt, gõ chữ, mở app, chờ, lặp lại — không cần viết 1 dòng code. Người mới 15 phút là làm được.',
     bgColor: 'bg-rose-50',
   },
   {
     icon: <Cpu className="w-6 h-6 text-orange-500" />,
-    title: 'Quản lý đa thiết bị',
-    description: 'Theo dõi hàng trăm iPhone cùng lúc. Trạng thái online/offline, pin, nhóm thiết bị — tất cả trên một dashboard duy nhất.',
+    title: '100 máy, 1 màn hình',
+    description: 'Quản lý toàn bộ dàn iPhone từ một màn hình duy nhất. Xem trạng thái, chạy kịch bản, điều khiển từ xa — ngay trên trình duyệt. Không cần ngồi cạnh dàn máy.',
     bgColor: 'bg-orange-50',
   },
   {
     icon: <CalendarDays className="w-6 h-6 text-orange-500" />,
-    title: 'Lịch trình tự động 24/7',
-    description: 'Đặt lịch chạy script theo giờ, ngày, tuần. Hệ thống tự chạy ngay cả khi bạn đang ngủ, và báo cáo kết quả qua Telegram.',
+    title: 'Đặt lịch rồi đi ngủ',
+    description: 'Hẹn giờ chạy kịch bản theo giờ, ngày, tuần. Máy tự lướt FYP lúc 2h sáng, tự đăng video lúc 6h, tự tương tác lúc 9h. Bạn thức dậy — mọi thứ đã xong.',
     bgColor: 'bg-orange-50',
   },
 ];
@@ -39,145 +39,145 @@ const bullets = [
 const pains = [
   {
     icon: <MonitorSmartphone className="w-8 h-8 text-rose-600" />,
-    text: 'Bạn có đang mệt mỏi vì phải lặp đi lặp lại cùng một thao tác trên từng máy — lướt, like, follow, đăng video — hàng chục lần mỗi ngày?',
-  },
-  {
-    icon: <Clock className="w-8 h-8 text-rose-600" />,
-    text: 'Bạn có đang thức đêm để chạy chiến dịch đúng "giờ vàng" vì không có hệ thống lịch trình tự động nào đủ thông minh?',
+    text: 'Nuôi 10 nick đã muốn phát điên — mỗi ngày phải lướt FYP từng máy, đăng video từng máy, tương tác từng máy. Thuê thêm người thì chi phí ăn hết lợi nhuận affiliate.',
   },
   {
     icon: <AlertCircle className="w-8 h-8 text-rose-600" />,
-    text: 'Tài khoản liên tục bị ban vì dùng chung IP, cùng vị trí cho nhiều máy — và bạn không biết cách đổi địa chỉ mạng hay giả lập vị trí?',
+    text: 'Nick die hàng loạt vì cùng IP, cùng hành vi — bao nhiêu công nuôi nick mấy tháng trời bay sạch trong 1 đêm. Dùng tool trên PC thì bị phát hiện ngay vì fingerprint ảo.',
+  },
+  {
+    icon: <Clock className="w-8 h-8 text-rose-600" />,
+    text: 'Muốn scale lên 50-100 máy nhưng không biết bắt đầu từ đâu. Mỗi máy một kịch bản, mỗi máy một lịch khác nhau — càng nhiều máy càng rối, không có hệ thống.',
   },
 ];
 
 const benefits = [
   {
-    id: 'script-editor',
-    title: 'Trình tạo kịch bản kéo thả',
-    desc: 'Tạo kịch bản tự động bằng cách ghép các bước như xếp hình. Hỗ trợ bấm, vuốt, gõ chữ, mở app, chờ, lặp lại, rẽ nhánh điều kiện — không cần viết code.',
-    icon: <Wand2 className="w-8 h-8 text-blue-600" />,
+    id: 'scale',
+    title: 'Gấp 10 tài khoản, giữ nguyên 1 người',
+    desc: 'Trước cần 5 người ngồi bấm 50 máy. Giờ 1 mình bạn quản lý 100 máy từ laptop. Cắt chi phí nhân sự, giữ nguyên output — thậm chí tốt hơn vì máy không nghỉ.',
+    icon: <Users className="w-8 h-8 text-blue-600" />,
     bg: 'bg-blue-50',
     border: 'border-blue-100',
     colSpan: 'md:col-span-2',
-    highlight: 'Không cần code',
+    highlight: 'Tiết kiệm 80% chi phí nhân sự',
   },
   {
-    id: 'auto-schedule',
-    title: 'Lịch trình tự động thông minh',
-    desc: 'Đặt lịch chạy kịch bản tự động theo giờ, ngày, tuần. Hệ thống tự chạy 24/7 và gửi thông báo qua Telegram khi hoàn thành.',
-    icon: <Zap className="w-8 h-8 text-orange-500" />,
+    id: 'safe',
+    title: 'Nick sống lâu, không lo die hàng loạt',
+    desc: 'Chạy trên iPhone thật, mỗi máy một IP, một vị trí, hành vi ngẫu nhiên hoá. Nền tảng không thể phân biệt với người dùng bình thường.',
+    icon: <Shield className="w-8 h-8 text-orange-500" />,
     bg: 'bg-orange-50',
     border: 'border-orange-100',
     colSpan: 'md:col-span-1',
-    highlight: 'Tự động 100%',
+    highlight: 'Giảm 90% tỷ lệ die nick',
   },
   {
-    id: 'remote-control',
-    title: 'Điều khiển từ xa',
-    desc: 'Xem màn hình trực tiếp, bấm, vuốt, gõ chữ ngay từ trình duyệt web. Kiểm soát thiết bị ở bất kỳ đâu, bất kỳ lúc nào.',
-    icon: <Monitor className="w-8 h-8 text-emerald-600" />,
+    id: 'auto-247',
+    title: 'Máy chạy 24/7, kể cả khi bạn ngủ',
+    desc: 'Đặt lịch một lần, máy tự chạy theo giờ bạn muốn. Lướt FYP lúc nửa đêm, đăng video lúc sáng sớm, tương tác suốt ngày. Bạn chỉ cần kiểm tra kết quả.',
+    icon: <CalendarDays className="w-8 h-8 text-emerald-600" />,
     bg: 'bg-emerald-50',
     border: 'border-emerald-100',
     colSpan: 'md:col-span-1',
-    highlight: 'Real-time',
+    highlight: 'Hoạt động 24/7 không nghỉ',
   },
   {
-    id: 'proxy',
-    title: 'Đổi IP & giả lập vị trí',
-    desc: 'Mỗi máy một địa chỉ mạng riêng (VN/US). Giả lập vị trí, múi giờ cho từng thiết bị riêng biệt. Bảo vệ tài khoản an toàn.',
-    icon: <Shield className="w-8 h-8 text-purple-600" />,
+    id: 'scale-no-limit',
+    title: 'Scale từ 10 lên 100 máy không vỡ quy trình',
+    desc: 'Tạo kịch bản 1 lần, phát cho bao nhiêu máy cũng được. Thêm máy mới — kết nối, gán kịch bản, chạy. Hệ thống thiết kế để scale, không phải để dùng lẻ tẻ.',
+    icon: <Zap className="w-8 h-8 text-purple-600" />,
     bg: 'bg-purple-50',
     border: 'border-purple-100',
     colSpan: 'md:col-span-1',
-    highlight: 'An toàn tuyệt đối',
+    highlight: 'Scale không giới hạn',
   },
   {
-    id: 'shared-scripts',
-    title: 'Kho kịch bản sẵn',
-    desc: 'Thư viện kịch bản được tạo sẵn cho TikTok, Facebook, Instagram. Chỉ cần chọn và chạy ngay lập tức.',
-    icon: <BookOpen className="w-8 h-8 text-rose-600" />,
+    id: 'monitor',
+    title: 'Biết ngay chuyện gì đang xảy ra',
+    desc: 'Thông báo Telegram khi kịch bản chạy xong, khi máy gặp lỗi. Xem màn hình từ xa bất cứ lúc nào. Không bao giờ bị "mù" về trạng thái dàn máy.',
+    icon: <Monitor className="w-8 h-8 text-rose-600" />,
     bg: 'bg-rose-50',
     border: 'border-rose-100',
     colSpan: 'md:col-span-1',
-    highlight: 'Chạy ngay',
+    highlight: 'Giám sát real-time',
   },
 ];
 
 const industries = [
   {
-    name: 'TikTok Agency',
+    name: 'Affiliate TikTok VN',
     icon: Video,
-    problem: 'Quản lý hàng chục tài khoản TikTok trên nhiều máy, phải thủ công lướt, like, follow từng cái một. Nhân viên không đủ để vận hành 24/7.',
-    solution: 'Phone Agent tự động hoá toàn bộ: lướt FYP, like video, follow theo kịch bản, đăng video tự động. Chạy song song trên hàng trăm máy cùng lúc.',
-    notLose: 'Không bỏ lỡ "giờ vàng" đăng bài hay thời điểm tương tác cao nhất trong ngày.',
-    gain: 'Gấp 10x năng suất vận hành TikTok với cùng số nhân viên.',
+    problem: 'Nuôi 30-50 nick TikTok VN bằng tay, mỗi ngày mất 6-8 tiếng lướt FYP, đăng video, like, comment. Thuê 2-3 người phụ mà vẫn không đủ, chi phí ăn hết commission.',
+    solution: 'Tạo kịch bản "nuôi nick TikTok": tự mở app → lướt FYP 10 phút → like ngẫu nhiên → xem video đến hết → follow → nghỉ → lặp lại. Đặt lịch chạy 3 lần/ngày, mỗi lần cách nhau 4 tiếng.',
+    notLose: '6 tiếng/ngày ngồi bấm tay. Chi phí 2-3 nhân sự thao tác thủ công.',
+    gain: '50 nick hoạt động tự nhiên 24/7. Thời gian nghiên cứu sản phẩm hot, tối ưu nội dung affiliate.',
   },
   {
-    name: 'Dropshipper',
-    icon: ShoppingCart,
-    problem: 'Phải đăng sản phẩm thủ công lên nhiều tài khoản, lặp đi lặp lại cùng thao tác hàng trăm lần mỗi ngày trên từng điện thoại.',
-    solution: 'Tạo script đăng sản phẩm một lần, chạy trên tất cả thiết bị. Đặt lịch đăng tự động theo giờ, Phone Agent làm hết phần còn lại.',
-    notLose: 'Không mất thời gian đăng bài thủ công — dành thời gian cho chiến lược và chốt đơn.',
-    gain: 'Đăng sản phẩm trên 50+ tài khoản chỉ trong vài phút thay vì cả ngày.',
-  },
-  {
-    name: 'MMO Freelancer',
+    name: 'Affiliate TikTok US',
     icon: Globe,
-    problem: 'Farm nhiều tài khoản cần thao tác khác nhau trên từng máy, dễ bị ban vì hành vi giống nhau hoặc trùng IP.',
-    solution: 'Phone Agent + đổi IP & giả lập vị trí: mỗi máy một địa chỉ mạng riêng, vị trí riêng, thao tác ngẫu nhiên hoá. Kịch bản tự tạo hành vi tự nhiên, khó bị phát hiện.',
-    notLose: 'Không mất tài khoản đã nuôi lâu vì bị phát hiện dùng tool.',
-    gain: 'Scale số lượng tài khoản gấp 5-10 lần mà vẫn an toàn.',
+    problem: 'Muốn làm affiliate TikTok Shop US nhưng cần nick US, IP US, vị trí US. Mua nick ngoài thì không kiểm soát, tự nuôi thì không biết set IP sao cho đúng.',
+    solution: 'Giả lập vị trí GPS sang Mỹ + đổi IP US cho từng máy. Kịch bản nuôi nick theo hành vi người Mỹ: lướt content tiếng Anh, follow creator US, tương tác trending US. Nick trust cao, đăng video affiliate lên FYP US.',
+    notLose: 'Tiền mua nick US chất lượng kém, nick die liên tục vì hành vi bất thường.',
+    gain: 'Dàn nick US tự nuôi, ổn định, sẵn sàng đăng video affiliate hàng xoá trên TikTok Shop.',
   },
   {
-    name: 'Livestream',
-    icon: Users,
-    problem: 'Cần "đổ view" và tương tác cho nhiều phiên live cùng lúc, nhưng không đủ người để thao tác trên từng máy.',
-    solution: 'Kịch bản tự động vào live, bình luận, thả tim, ở lại phiên live. Chạy đồng thời trên hàng chục thiết bị với nội dung bình luận random.',
-    notLose: 'Không để phiên live "ế" vì thiếu tương tác ban đầu.',
-    gain: 'Tạo hiệu ứng đám đông ngay từ những phút đầu tiên của mỗi phiên live.',
+    name: 'Affiliate Shopee/Facebook',
+    icon: ShoppingCart,
+    problem: 'Chạy affiliate Shopee cần nhiều acc Facebook để đăng link, tham gia nhóm, tương tác. Mỗi acc phải hoạt động tự nhiên nếu không muốn bị checkpoint và khoá.',
+    solution: 'Nuôi hàng loạt acc Facebook trên iPhone thật. Mỗi acc một IP riêng. Kịch bản: mở Facebook → lướt feed → like vài post → vào nhóm → đăng bài kèm link affiliate → nghỉ. Đặt lịch đăng theo khung giờ vàng.',
+    notLose: 'Hàng chục acc Facebook bị checkpoint/khoá mỗi tuần. Thời gian đăng link thủ công.',
+    gain: 'Dàn acc Facebook sống lâu, đăng link affiliate Shopee đều đặn, chốt đơn tự động.',
   },
   {
-    name: 'Marketing Agency',
-    icon: Megaphone,
-    problem: 'Chạy chiến dịch seeding, tạo buzz trên nhiều nền tảng đòi hỏi nhân sự vận hành lớn và chi phí cao.',
-    solution: 'Tự động hoá seeding: like, comment, share theo kịch bản trên hàng trăm tài khoản. Đặt lịch chạy theo timeline chiến dịch.',
-    notLose: 'Không tốn chi phí thuê nhân sự thủ công cho các chiến dịch lặp đi lặp lại.',
-    gain: 'Giảm 80% chi phí vận hành seeding với hiệu quả tương đương.',
-  },
-  {
-    name: 'E-commerce',
+    name: 'TikTok US → Shopify',
     icon: Briefcase,
-    problem: 'Quản lý nhiều shop trên các sàn TMĐT, phải đăng nhập từng tài khoản, cập nhật giá, trả lời chat thủ công.',
-    solution: 'Phone Agent quản lý tất cả thiết bị đăng nhập các shop. Script tự động cập nhật sản phẩm, respond chat, check đơn hàng.',
-    notLose: 'Không bỏ lỡ đơn hàng hay chat khách vì phản hồi chậm.',
-    gain: 'Vận hành 10+ shop online chỉ với 1-2 nhân viên giám sát.',
+    problem: 'Muốn xây kênh TikTok nội dung tiếng Anh để kéo traffic về Shopify, nhưng cần nhiều kênh test sản phẩm. Mỗi kênh nuôi riêng, quá mất thời gian.',
+    solution: 'Mỗi iPhone là 1 kênh, IP US, vị trí US. Kịch bản: đăng video sản phẩm → pin link Shopify vào bio → lướt FYP để tăng trust → tương tác video cùng niche. Quản lý 20-30 kênh test song song.',
+    notLose: 'Hàng tháng test 2-3 kênh bằng tay mà không biết sản phẩm nào ăn.',
+    gain: '20-30 kênh test song song, tìm winning product nhanh gấp 10 lần, scale kênh thắng ngay lập tức.',
+  },
+  {
+    name: 'Team & Agency',
+    icon: Megaphone,
+    problem: 'Agency quản lý dàn máy cho nhiều khách hàng. Mỗi khách một kịch bản, một lịch khác nhau. Nhân viên nghỉ là rối loạn — phụ thuộc vào con người quá lớn.',
+    solution: 'Dashboard tập trung: phân nhóm máy theo khách hàng, gán kịch bản riêng, lịch trình riêng. Telegram thông báo khi có lỗi. Mở rộng team mà không cần tuyển thêm người thao tác.',
+    notLose: 'Sự phụ thuộc vào nhân sự. Rủi ro sai sót khi quản lý nhiều khách hàng cùng lúc.',
+    gain: 'Quy trình chuẩn, nhận thêm khách mà không tăng chi phí vận hành.',
+  },
+  {
+    name: 'Livestream & Seeding',
+    icon: Users,
+    problem: 'Livestream bán hàng cần người xem, cần comment, cần tương tác để đẩy thuật toán. Mỗi phiên live phải huy động cả team vào seeding — tốn kém và khó kiểm soát.',
+    solution: 'Dàn máy tự vào phòng live, tự comment theo kịch bản ngẫu nhiên, tự thả tim, tự chia sẻ. Đặt lịch vào phòng live đúng giờ bắt đầu, thoát khi kết thúc.',
+    notLose: 'Chi phí thuê người seeding mỗi phiên live. Tình trạng phòng live "trống trơn" lúc đầu.',
+    gain: 'Phòng live luôn sôi động từ phút đầu, thuật toán đẩy lên FYP, viewer thật tăng, chốt đơn nhiều hơn.',
   },
 ];
 
 const testimonials = [
   {
-    name: 'Anh Minh Đức',
-    role: 'Chủ Agency TikTok',
-    content: 'Từ ngày dùng Phone Agent, đội ngũ 3 người quản được 80 máy. Trước phải thuê 10 người làm thủ công. Trình tạo kịch bản kéo thả quá tiện, nhân viên mới vào 1 ngày là dùng được.',
+    name: 'Minh Quân',
+    role: 'Affiliate TikTok, 25 điện thoại',
+    content: 'Trước tôi thuê 2 đứa em ngồi bấm từng máy, tốn 15 triệu/tháng tiền lương mà vẫn không xuể. Giờ 1 mình quản hết 25 máy, mỗi ngày chỉ mất 30 phút kiểm tra. Tháng đầu tiên đã thu hồi vốn.',
     avatar: 'https://i.pravatar.cc/150?img=11',
   },
   {
-    name: 'Chị Thu Hằng',
-    role: 'Dropshipper TikTok Shop',
-    content: 'Đăng sản phẩm lên 30 tài khoản mỗi ngày giờ chỉ mất 5 phút thay vì cả buổi sáng. Tính năng đặt lịch tự động là "vũ khí bí mật" — đặt lịch đăng lúc 7h tối rồi đi ngủ.',
-    avatar: 'https://i.pravatar.cc/150?img=5',
-  },
-  {
-    name: 'Anh Hoàng Nam',
-    role: 'Freelancer MMO',
-    content: 'Tính năng đổi IP + giả lập vị trí cứu tài khoản mình nhiều lần. Trước nuôi 20 nick bị khoá hết, giờ chạy 50 nick ổn định nhờ mỗi máy 1 địa chỉ mạng riêng. Rất đáng tiền gói Pro!',
+    name: 'Hải Long',
+    role: 'Team trưởng, dàn 60 máy TikTok US',
+    content: 'Làm thị trường US nên cần IP Mỹ, vị trí Mỹ. Phone Agent là tool duy nhất giải quyết được cả 2 cái đó trên iPhone thật. Nick sống lâu hẳn, tỷ lệ die giảm từ 30% xuống dưới 5%.',
     avatar: 'https://i.pravatar.cc/150?img=14',
   },
   {
-    name: 'Chị Ngọc Ánh',
-    role: 'Marketing Manager',
-    content: 'Chạy chiến dịch seeding cho khách hàng giờ nhẹ nhàng hơn nhiều. Kho kịch bản sẵn cho TikTok và Facebook giúp tiết kiệm cả tuần setup. Recommend cho mọi agency!',
+    name: 'Thu Hằng',
+    role: 'CEO agency, quản lý 120 thiết bị',
+    content: 'Chúng tôi quản lý dàn máy cho 8 khách hàng khác nhau. Trước dùng 4 nhân viên, giờ chỉ cần 1 người giám sát. Cắt 70% chi phí vận hành mà output còn tốt hơn vì máy chạy 24/7 không nghỉ.',
+    avatar: 'https://i.pravatar.cc/150?img=5',
+  },
+  {
+    name: 'Đức Anh',
+    role: 'Dropship Shopify US, 40 điện thoại',
+    content: 'Tôi xây 40 kênh TikTok test sản phẩm song song. Trước mỗi tháng test 3-4 sản phẩm, giờ test 15-20 cùng lúc. Tìm winning product nhanh hơn hẳn, doanh thu tháng rồi x3.',
     avatar: 'https://i.pravatar.cc/150?img=9',
   },
 ];
@@ -185,46 +185,46 @@ const testimonials = [
 const plans = [
   {
     name: 'Starter',
-    desc: 'Gói trải nghiệm cho cá nhân mới bắt đầu.',
+    desc: 'Dùng thử, cảm nhận sức mạnh tự động hoá.',
     price: '49.000',
     period: '/ tháng',
-    features: ['1 thiết bị', '5 kịch bản tự tạo', '2 lịch trình', '500 MB video', 'Kho kịch bản chia sẻ', 'VNC Remote'],
+    features: ['1 thiết bị', '5 kịch bản tuỳ chỉnh', '2 lịch trình tự động', 'Điều khiển từ xa', 'Kho kịch bản mẫu TikTok & Facebook', 'Thông báo Telegram'],
     highlight: false,
   },
   {
     name: 'Basic',
-    desc: 'Dành cho cá nhân cần quản lý nhiều thiết bị hơn.',
+    desc: 'Bắt đầu scale, nuôi nick nghiêm túc.',
     price: '99.000',
     period: '/ tháng',
-    features: ['3 thiết bị', '15 kịch bản tự tạo', '5 lịch trình', '2 GB video', 'Đổi IP cho thiết bị', 'Hỗ trợ email'],
+    features: ['3 thiết bị', '15 kịch bản tuỳ chỉnh', '5 lịch trình tự động', 'Đổi IP cho từng thiết bị', 'Kho kịch bản mẫu TikTok & Facebook', 'Thông báo Telegram'],
     highlight: false,
   },
   {
     name: 'Pro',
     badge: 'Phổ biến nhất',
-    desc: 'Gói tối ưu cho team và freelancer chuyên nghiệp.',
+    desc: 'Lựa chọn số 1 của dân affiliate chuyên nghiệp.',
     price: '249.000',
     period: '/ tháng',
-    features: ['10 thiết bị', 'Không giới hạn kịch bản', '20 lịch trình', '10 GB video', 'Đổi IP + giả lập vị trí', 'Hỗ trợ ưu tiên'],
+    features: ['10 thiết bị', 'Không giới hạn kịch bản', '20 lịch trình tự động', 'Đổi IP + giả lập vị trí (VN/US)', 'Kịch bản rẽ nhánh nâng cao', 'Hỗ trợ ưu tiên 1-1'],
     highlight: true,
   },
   {
     name: 'Business',
-    desc: 'Dành cho doanh nghiệp và agency quy mô lớn.',
+    desc: 'Dành cho team và agency muốn kiểm soát toàn bộ.',
     price: '499.000',
     period: '/ tháng',
-    features: ['30 thiết bị', 'Không giới hạn kịch bản', 'Không giới hạn lịch trình', '50 GB video', 'API tokens', 'Chat trực tiếp'],
+    features: ['30 thiết bị', 'Không giới hạn kịch bản & lịch trình', 'Đổi IP + giả lập vị trí (VN/US)', 'API tokens tích hợp hệ thống', 'Hỗ trợ 1-1 + setup ban đầu', 'Tư vấn quy trình cho team'],
     highlight: false,
   },
 ];
 
 const faqs = [
-  { q: 'Phone Agent hoạt động như thế nào?', a: 'Phone Agent kết nối với iPhone thật qua mạng nội bộ Tailscale. Bạn tạo kịch bản trên web, hệ thống gửi lệnh đến từng thiết bị để thực hiện thao tác tự động.' },
-  { q: 'Có cần jailbreak iPhone không?', a: 'Cần cài đặt một ứng dụng automation trên iPhone để nhận lệnh từ server. Chi tiết hướng dẫn sẽ được cung cấp sau khi đăng ký.' },
-  { q: 'Tôi có thể quản lý bao nhiêu thiết bị?', a: 'Tuỳ gói — từ 1 (Starter) đến 30 (Business). Cần nhiều hơn? Liên hệ để được tư vấn gói Enterprise.' },
-  { q: 'Dữ liệu có an toàn không?', a: 'Toàn bộ kết nối qua Tailscale VPN (mã hoá end-to-end). Dữ liệu lưu trên VPS riêng, không chia sẻ với bên thứ 3.' },
-  { q: 'Có hỗ trợ API không?', a: 'Có. Gói Business bao gồm API tokens để tích hợp với hệ thống của bạn qua REST API.' },
-  { q: 'Tôi có được dùng thử không?', a: 'Có! Đăng ký gói Starter và trải nghiệm 7 ngày miễn phí trước khi quyết định.' },
+  { q: 'Phone Agent có phải giả lập không? Có bị nền tảng phát hiện không?', a: 'Không. Phone Agent chạy trực tiếp trên iPhone thật, không phải giả lập. Mỗi máy có IP riêng, vị trí riêng, fingerprint thiết bị thật. Hành vi được ngẫu nhiên hoá nên nền tảng rất khó phân biệt với người dùng bình thường. Đây là lý do tỷ lệ die nick thấp hơn hẳn so với bot trên máy tính.' },
+  { q: 'Tôi không biết code, có dùng được không?', a: 'Hoàn toàn được. Toàn bộ kịch bản tạo bằng cách kéo thả — giống xếp lego. Ngoài ra có sẵn kho kịch bản mẫu cho TikTok và Facebook, chỉ cần chọn và chỉnh nhẹ là dùng được ngay. Đa số anh em tạo kịch bản đầu tiên trong vòng 15 phút.' },
+  { q: 'Cần loại iPhone nào? iPhone cũ có chạy được không?', a: 'iPhone đời cũ (6s trở lên) vẫn chạy tốt cho các tác vụ nuôi nick, lướt FYP, đăng bài. Bạn không cần mua iPhone đời mới — dàn iPhone cũ giá 1-2 triệu/máy là đủ dùng.' },
+  { q: 'Tôi muốn làm thị trường US, có hỗ trợ IP và vị trí Mỹ không?', a: 'Có. Từ gói Pro trở lên, bạn có thể đổi IP sang US và giả lập vị trí GPS ở bất kỳ tiểu bang nào của Mỹ cho từng thiết bị riêng biệt. Nick TikTok US, Facebook US nuôi trên Phone Agent sẽ có vị trí và IP hoàn toàn giống người dùng tại Mỹ.' },
+  { q: 'Nếu dàn máy nhiều hơn 30 thiết bị thì sao?', a: 'Gói Business hỗ trợ 30 thiết bị. Nếu cần nhiều hơn, liên hệ đội ngũ để nhận báo giá Enterprise tuỳ chỉnh — hỗ trợ lên đến hàng trăm thiết bị với giá ưu đãi theo số lượng và setup chuyên biệt cho team.' },
+  { q: 'Tôi có thể huỷ bất cứ lúc nào không?', a: 'Có, huỷ bất cứ lúc nào không cần lý do. Kịch bản và dữ liệu vẫn được lưu 30 ngày sau khi huỷ để bạn có thể quay lại. Không khoá dữ liệu, không phí huỷ, không cam kết dài hạn.' },
 ];
 
 /* ═══════════════════════════════════════
@@ -306,20 +306,19 @@ function HeroSection() {
           className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md border border-white/30 rounded-full px-5 py-2 text-sm md:text-base font-semibold text-white mb-8 shadow-sm"
         >
           <Zap className="w-5 h-5 text-yellow-400 fill-current" />
-          NỀN TẢNG #1 TỰ ĐỘNG HOÁ iPHONE TẠI VIỆT NAM
+          HƠN 500+ ANH EM AFFILIATE ĐANG DÙNG MỖI NGÀY
         </motion.div>
 
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-tight mb-8 max-w-5xl mx-auto"
+          className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-tight mb-8 max-w-6xl mx-auto"
         >
-          Quản lý hàng trăm iPhone{' '}
-          <span className="bg-white text-orange-600 px-4 py-1 rounded-md inline-block mt-2 md:mt-0 shadow-sm">từ một màn hình</span>{' '}
-          duy nhất
+          Biến 1 người thành{' '}
+          <span className="bg-white text-orange-600 px-4 py-1 rounded-md inline-block mt-2 md:mt-0 shadow-sm">đội quân 100 điện thoại</span>
           <span className="text-3xl md:text-4xl lg:text-5xl font-medium opacity-90 block mt-4">
-            — Tự động hoá mọi thao tác, chạy 24/7
+            — chạy affiliate 24/7 không cần chạm tay
           </span>
         </motion.h1>
 
@@ -329,7 +328,7 @@ function HeroSection() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="text-lg md:text-xl text-orange-50 mb-12 max-w-4xl mx-auto leading-relaxed font-medium"
         >
-          Từ lướt TikTok, đăng video, farm tài khoản đến quản lý hàng loạt thiết bị — <strong className="text-yellow-300">Phone Agent</strong> biến điện thoại của bạn thành đội quân tự động. Không cần code. Không cần giám sát.
+          <strong className="text-yellow-300">Phone Agent</strong> giúp bạn nuôi nick, đăng video, lướt FYP, tương tác tự động trên hàng trăm iPhone thật cùng lúc. Ngồi 1 chỗ, quản lý tất cả từ trình duyệt. Không cần code. Không cần thuê thêm người.
         </motion.p>
 
         <motion.div
@@ -340,14 +339,14 @@ function HeroSection() {
         >
           <Link to="/login" className="w-full sm:w-auto bg-yellow-400 text-orange-900 hover:bg-yellow-300 px-8 py-4 rounded-full text-lg font-bold transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 flex items-center justify-center gap-2">
             <Bot className="w-6 h-6" />
-            Dùng thử miễn phí
+            Dùng thử miễn phí ngay
           </Link>
           <button
             onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}
             className="w-full sm:w-auto bg-white/10 backdrop-blur-sm border border-white/30 text-white hover:bg-white/20 px-8 py-4 rounded-full text-lg font-medium transition-all flex items-center justify-center gap-2"
           >
             <MessageSquare className="w-5 h-5" />
-            Xem demo
+            Xem demo 2 phút
           </button>
         </motion.div>
       </div>
@@ -361,7 +360,7 @@ function IntrigueBulletsSection() {
       <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-5xl font-bold text-gray-900 max-w-4xl mx-auto leading-tight">
-            Những tính năng bạn sẽ <span className="text-orange-600">yêu thích</span>
+            Tại sao dân affiliate chuyển sang <span className="text-orange-600">Phone Agent</span>?
           </h2>
         </div>
 
@@ -404,7 +403,7 @@ function PainPointsSection() {
             className="lg:col-span-7"
           >
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 leading-tight mb-10">
-              Sự thật <span className="text-rose-600">đau lòng</span> về việc quản lý iPhone thủ công
+              Làm affiliate mà cứ phải <span className="text-rose-600">ngồi bấm tay</span> từng máy... bao giờ mới scale?
             </h2>
 
             <div className="space-y-8">
@@ -438,13 +437,13 @@ function PainPointsSection() {
               <div className="absolute top-0 right-0 w-32 h-32 bg-rose-50 rounded-bl-full" />
               <TrendingDown className="w-16 h-16 text-rose-500 mb-8" />
               <p className="text-2xl md:text-3xl font-medium text-slate-900 leading-relaxed mb-10">
-                "Đó là lý do tại sao <span className="text-rose-600 font-bold">90%</span> thời gian của bạn đang bị lãng phí vào những <span className="text-rose-600 font-bold">thao tác lặp đi lặp lại</span>."
+                "<span className="text-rose-600 font-bold">73%</span> anh em affiliate nói rằng họ mất hơn <span className="text-rose-600 font-bold">5 tiếng mỗi ngày</span> chỉ để thao tác thủ công — thời gian đáng ra dùng để nghiên cứu sản phẩm và scale doanh thu."
               </p>
               <div className="mt-auto">
                 <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden mb-3">
                   <motion.div
                     initial={{ width: 0 }}
-                    whileInView={{ width: '90%' }}
+                    whileInView={{ width: '73%' }}
                     viewport={{ once: true }}
                     transition={{ duration: 1.5, delay: 0.8, ease: 'easeOut' }}
                     className="h-full bg-gradient-to-r from-rose-500 to-rose-400 rounded-full"
@@ -452,7 +451,7 @@ function PainPointsSection() {
                 </div>
                 <div className="flex justify-between text-sm font-bold text-slate-500 uppercase tracking-wider">
                   <span>Thời gian hiệu quả</span>
-                  <span className="text-rose-600">Lãng phí (90%)</span>
+                  <span className="text-rose-600">Thao tác thủ công (73%)</span>
                 </div>
               </div>
             </div>
@@ -618,7 +617,7 @@ function SolutionSection() {
           >
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-100 text-orange-700 font-bold text-sm mb-6 uppercase tracking-wider border border-orange-200">
               <Zap className="w-4 h-4" />
-              Giải pháp đột phá
+              Giải pháp cho dân affiliate chuyên nghiệp
             </div>
 
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 leading-[1.1] mb-6">
@@ -629,11 +628,11 @@ function SolutionSection() {
             </h2>
 
             <p className="text-2xl text-slate-800 font-bold mb-6 leading-snug">
-              Nền tảng quản lý & tự động hoá iPhone mạnh mẽ nhất hiện nay.
+              Tự động hoá mọi thao tác trên iPhone thật. Quản lý tập trung. Scale không giới hạn.
             </p>
 
             <p className="text-lg text-slate-600 mb-10 leading-relaxed">
-              Không chỉ là công cụ quản lý thiết bị, Phone Agent mang đến một <strong className="text-orange-600 text-xl mx-1">"trung tâm điều khiển"</strong> toàn diện: tạo kịch bản kéo thả, đặt lịch tự động, đổi IP thông minh — tất cả trên một màn hình duy nhất.
+              Phone Agent không phải giả lập, không phải bot trên PC. Đây là nền tảng chạy trực tiếp trên <strong className="text-orange-600 text-xl mx-1">iPhone thật</strong> — mỗi máy một IP riêng, hành vi như người dùng thật. Tạo kịch bản kéo thả, đặt lịch 24/7, nhận thông báo Telegram khi xong.
             </p>
 
             <div className="space-y-6">
@@ -642,8 +641,8 @@ function SolutionSection() {
                   <Wand2 className="w-7 h-7 text-orange-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-slate-900 mb-2">Tạo kịch bản kéo thả</h3>
-                  <p className="text-slate-600 leading-relaxed">Tạo kịch bản tự động chỉ bằng kéo thả. Bấm, vuốt, gõ chữ, mở app, chờ, lặp lại — ai cũng dùng được, không cần biết code.</p>
+                  <h3 className="text-xl font-bold text-slate-900 mb-2">Kịch bản kéo thả — ai cũng tạo được</h3>
+                  <p className="text-slate-600 leading-relaxed">Giao diện trực quan, kéo thả các bước: mở TikTok → lướt FYP → like → follow → lặp lại. Có sẵn kho kịch bản mẫu cho TikTok, Facebook — chỉ cần chỉnh nhẹ là dùng.</p>
                 </div>
               </div>
 
@@ -652,8 +651,8 @@ function SolutionSection() {
                   <CalendarDays className="w-7 h-7 text-yellow-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-slate-900 mb-2">Đặt lịch tự động 24/7</h3>
-                  <p className="text-slate-600 leading-relaxed">Đặt lịch tự chạy theo giờ, ngày, tuần. Hệ thống tự vận hành ngay cả khi bạn đang ngủ, và báo cáo kết quả qua Telegram.</p>
+                  <h3 className="text-xl font-bold text-slate-900 mb-2">Mỗi máy một "nhân dạng" riêng</h3>
+                  <p className="text-slate-600 leading-relaxed">Đổi IP và giả lập vị trí GPS cho từng iPhone. Máy 1 ở Hà Nội, máy 2 ở Sài Gòn, máy 3 ở Texas — nền tảng thấy mỗi máy là một người dùng hoàn toàn khác nhau.</p>
                 </div>
               </div>
             </div>
@@ -684,23 +683,23 @@ function CredibilitySection() {
           </div>
 
           <h2 className="text-3xl md:text-4xl lg:text-[2.75rem] font-medium text-white leading-[1.4] mb-14">
-            "Phone Agent sử dụng các công nghệ <span className="font-bold text-yellow-300">bảo mật và hiệu suất cao</span><br className="hidden lg:block" /> đảm bảo thiết bị của bạn luôn <span className="font-bold text-orange-200">an toàn và ổn định</span>."
+            "Phone Agent chạy trên <span className="font-bold text-yellow-300">iPhone thật, IP thật, vị trí thật</span> — không phải giả lập.<br className="hidden lg:block" /> Đây là lý do nick <span className="font-bold text-orange-200">sống lâu hơn bất kỳ tool nào</span> trên thị trường."
           </h2>
 
           <div className="flex flex-wrap justify-center items-center gap-6 md:gap-12">
             <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-8 py-4 rounded-2xl shadow-lg border border-white/20 hover:bg-white/20 transition-colors">
-              <Lock className="w-8 h-8 text-emerald-300" />
-              <span className="font-bold text-white text-xl tracking-tight">Tailscale VPN</span>
+              <Smartphone className="w-8 h-8 text-emerald-300" />
+              <span className="font-bold text-white text-xl tracking-tight">Chạy trên iPhone thật</span>
             </div>
 
             <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-8 py-4 rounded-2xl shadow-lg border border-white/20 hover:bg-white/20 transition-colors">
-              <Zap className="w-8 h-8 text-yellow-300" />
-              <span className="font-bold text-white text-xl tracking-tight">WebSocket Real-time</span>
+              <Lock className="w-8 h-8 text-yellow-300" />
+              <span className="font-bold text-white text-xl tracking-tight">Mã hoá đầu cuối</span>
             </div>
 
             <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-8 py-4 rounded-2xl shadow-lg border border-white/20 hover:bg-white/20 transition-colors">
               <CheckCircle2 className="w-8 h-8 text-emerald-400" />
-              <span className="font-bold text-white text-xl tracking-tight">E2E Encryption</span>
+              <span className="font-bold text-white text-xl tracking-tight">API mở & Webhook</span>
             </div>
           </div>
         </motion.div>
@@ -720,7 +719,7 @@ function BenefitsSection() {
             viewport={{ once: true }}
             className="text-4xl md:text-5xl font-black text-slate-900 leading-tight mb-6"
           >
-            Biến tính năng thành <span className="text-orange-600">hiệu quả</span>
+            Không phải tính năng. Đây là thứ bạn <span className="text-orange-600">THẬT SỰ được</span>
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -729,7 +728,7 @@ function BenefitsSection() {
             transition={{ delay: 0.1 }}
             className="text-lg text-slate-600 max-w-2xl mx-auto"
           >
-            Phone Agent không chỉ là công cụ, mà là một hệ thống tối ưu hóa toàn bộ quy trình vận hành iPhone của bạn.
+            Mỗi tính năng của Phone Agent đều quy về một thứ: giúp bạn kiếm nhiều hơn, làm ít hơn.
           </motion.p>
         </div>
 
@@ -788,8 +787,8 @@ function UseCasesSection() {
             transition={{ delay: 0.1 }}
             className="text-4xl md:text-5xl font-black text-slate-900 leading-tight mb-6"
           >
-            Ứng dụng thực tế trong{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-rose-500">Đa Ngành</span>
+            Anh em đang dùng Phone Agent để{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-rose-500">làm gì?</span>
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -798,7 +797,7 @@ function UseCasesSection() {
             transition={{ delay: 0.2 }}
             className="text-lg text-slate-600 max-w-2xl mx-auto"
           >
-            Dù bạn kinh doanh trong lĩnh vực nào, Phone Agent đều có kịch bản và giải pháp tối ưu dành riêng cho bạn.
+            6 cách kiếm tiền phổ biến nhất với Phone Agent — chọn cái phù hợp với bạn.
           </motion.p>
         </div>
 
@@ -916,8 +915,7 @@ function SocialProofSection() {
             transition={{ delay: 0.1 }}
             className="text-4xl md:text-5xl font-black text-slate-900 leading-tight mb-6"
           >
-            Hàng trăm người đã <span className="text-orange-600">tiết kiệm thời gian</span>
-            <br className="hidden md:block" /> nhờ Phone Agent
+            Anh em trong nghề <span className="text-orange-600">nói gì?</span>
           </motion.h2>
         </div>
 
@@ -966,7 +964,7 @@ function PricingSection() {
             viewport={{ once: true }}
             className="text-4xl md:text-5xl font-black text-slate-900 leading-tight mb-6"
           >
-            Bảng giá <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-rose-500">đơn giản, minh bạch</span>
+            Đầu tư ít hơn <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-rose-500">một bữa cà phê mỗi ngày</span>
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -975,7 +973,7 @@ function PricingSection() {
             transition={{ delay: 0.1 }}
             className="text-lg text-slate-600 max-w-2xl mx-auto"
           >
-            Chọn gói dịch vụ phù hợp với quy mô của bạn. Nâng cấp hoặc hủy bất kỳ lúc nào.
+            Tính nhanh: 1 nhân sự thao tác tốn ít nhất 7-8 triệu/tháng. Phone Agent quản lý 30 máy chỉ 499K. Bạn tiết kiệm hơn 90%.
           </motion.p>
         </div>
 
@@ -1094,6 +1092,36 @@ function FAQSection() {
   );
 }
 
+function FooterCTA() {
+  return (
+    <section className="py-20 md:py-28 bg-gradient-to-br from-[#f97316] via-[#ea580c] to-[#c2410c] relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-yellow-400/20 rounded-full mix-blend-screen filter blur-[100px] opacity-50 pointer-events-none" />
+      <div className="max-w-3xl mx-auto px-4 md:px-8 lg:px-12 relative z-10 text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-black text-white leading-tight mb-6">
+            Mỗi ngày bạn chưa dùng Phone Agent là một ngày đối thủ chạy trước bạn 100 máy
+          </h2>
+          <p className="text-orange-100/90 text-lg mb-10">
+            Đăng ký ngay hôm nay. 5 phút setup. Chạy kịch bản đầu tiên trong 15 phút. Không cần thẻ tín dụng.
+          </p>
+          <Link
+            to="/login"
+            className="inline-flex items-center gap-2 bg-white text-orange-700 hover:bg-orange-50 px-10 py-4 rounded-full text-lg font-bold transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1"
+          >
+            <Bot className="w-6 h-6" />
+            Bắt đầu miễn phí — Không cần thẻ
+          </Link>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
 function FooterSection() {
   return (
     <footer className="bg-gray-900 text-white pt-24 pb-12">
@@ -1104,7 +1132,7 @@ function FooterSection() {
               <img src="/logo.png" alt="Phone Agent" className="h-10 object-contain brightness-0 invert" />
             </div>
             <p className="text-gray-400 mb-8 max-w-sm">
-              Nền tảng quản lý & tự động hoá iPhone hàng đầu Việt Nam. Tạo kịch bản kéo thả, đặt lịch tự động 24/7, đổi IP thông minh.
+              Nền tảng tự động hoá iPhone cho dân affiliate. Nuôi nick, đăng video, lướt FYP, tương tác — tất cả chạy tự động trên iPhone thật.
             </p>
           </div>
 
@@ -1159,6 +1187,7 @@ export default function LandingPageV2() {
       <SocialProofSection />
       <PricingSection />
       <FAQSection />
+      <FooterCTA />
       <FooterSection />
     </div>
   );
