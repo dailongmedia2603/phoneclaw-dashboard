@@ -11,29 +11,32 @@ import ProxyManager from './components/ProxyManager';
 import SharedScripts from './components/SharedScripts';
 import UserManagement from './components/UserManagement';
 import Login from './components/Login';
+import LandingPage from './components/LandingPage';
+import RequireAuth from './components/RequireAuth';
 import ToastContainer from './components/Toast';
 import ScriptEditorPage from './components/ScriptEditor/ScriptEditorPage';
 import { useAuth } from './hooks/useAuth';
-import { Loader2 } from 'lucide-react';
 
-function Layout({ onLogout, userName, userRole }: { onLogout: () => void; userName: string; userRole: string }) {
+function Layout() {
+  const { logout, user } = useAuth();
+
   return (
     <div className="flex h-screen bg-[#F8FAFC] font-sans text-slate-800 overflow-hidden">
-      <Sidebar onLogout={onLogout} userName={userName} userRole={userRole} />
+      <Sidebar onLogout={logout} userName={user!.name} userRole={user!.role} />
       <div className="flex-1 flex flex-col overflow-hidden">
         <main className="flex-1 overflow-hidden p-6">
           <Routes>
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/thiet-bi" element={<Devices />} />
             <Route path="/proxy" element={<ProxyManager />} />
             <Route path="/kich-ban" element={<Scripts />} />
-            <Route path="/kho-kich-ban" element={<SharedScripts userRole={userRole} />} />
+            <Route path="/kho-kich-ban" element={<SharedScripts userRole={user!.role} />} />
             <Route path="/lich-trinh" element={<Schedules />} />
             <Route path="/nhat-ky" element={<Logs />} />
             <Route path="/thu-vien-video" element={<VideoLibrary />} />
             <Route path="/nguoi-dung" element={<UserManagement />} />
             <Route path="/cai-dat" element={<Settings />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>
       </div>
@@ -43,30 +46,26 @@ function Layout({ onLogout, userName, userRole }: { onLogout: () => void; userNa
 }
 
 export default function App() {
-  const { user, loading, login, logout } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-slate-900">
-        <Loader2 size={32} className="animate-spin text-blue-500" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Login onLogin={login} />;
-  }
+  const { user } = useAuth();
 
   return (
     <Routes>
-      {/* Script editor: full-screen, no sidebar */}
-      <Route path="/kich-ban/tao-moi" element={<><ScriptEditorPage /><ToastContainer /></>} />
-      <Route path="/kich-ban/:scriptId" element={<><ScriptEditorPage /><ToastContainer /></>} />
-      {/* Shared script editor */}
-      <Route path="/kho-kich-ban/tao-moi" element={<><ScriptEditorPage apiType="shared" /><ToastContainer /></>} />
-      <Route path="/kho-kich-ban/:scriptId" element={<><ScriptEditorPage apiType="shared" /><ToastContainer /></>} />
-      {/* All other pages: sidebar layout */}
-      <Route path="/*" element={<Layout onLogout={logout} userName={user.name} userRole={user.role} />} />
+      {/* Public routes */}
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
+
+      {/* Authenticated fullscreen routes (no sidebar) */}
+      <Route path="/kich-ban/tao-moi" element={<RequireAuth><ScriptEditorPage /><ToastContainer /></RequireAuth>} />
+      <Route path="/kich-ban/:scriptId" element={<RequireAuth><ScriptEditorPage /><ToastContainer /></RequireAuth>} />
+      <Route path="/kho-kich-ban/tao-moi" element={<RequireAuth><ScriptEditorPage apiType="shared" /><ToastContainer /></RequireAuth>} />
+      <Route path="/kho-kich-ban/:scriptId" element={<RequireAuth><ScriptEditorPage apiType="shared" /><ToastContainer /></RequireAuth>} />
+
+      {/* Authenticated sidebar layout (all other routes) */}
+      <Route path="/*" element={
+        <RequireAuth>
+          <Layout />
+        </RequireAuth>
+      } />
     </Routes>
   );
 }

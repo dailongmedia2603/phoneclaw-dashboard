@@ -9,7 +9,7 @@ interface SidebarProps {
 }
 
 const navItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', to: '/' },
+  { icon: LayoutDashboard, label: 'Dashboard', to: '/dashboard' },
   { icon: Cpu, label: 'Thiết bị', to: '/thiet-bi' },
   { icon: Shield, label: 'Proxy', to: '/proxy' },
   { icon: Wand2, label: 'Kịch bản', to: '/kich-ban' },
@@ -51,7 +51,7 @@ export default function Sidebar({ onLogout, userName, userRole }: SidebarProps) 
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.to === '/'}
+              end={item.to === '/dashboard'}
               className={({ isActive }) =>
                 `relative group w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-2.5 rounded-xl text-sm font-medium transition-colors ${
                   isActive

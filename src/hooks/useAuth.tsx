@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, createContext, useContext, type ReactNode } from 'react';
 
 interface AuthUser {
   id: string;
@@ -16,7 +16,21 @@ interface AuthState {
 
 const TOKEN_KEY = 'phoneclaw_token';
 
-export function useAuth() {
+// Add auth header to all API calls
+const originalFetch = window.fetch;
+window.fetch = function (input: RequestInfo | URL, init?: RequestInit) {
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (token && typeof input === 'string' && input.startsWith('/api/')) {
+    init = init || {};
+    init.headers = {
+      ...init.headers,
+      Authorization: `Bearer ${token}`,
+    };
+  }
+  return originalFetch(input, init);
+};
+
+function useAuthInternal() {
   const [state, setState] = useState<AuthState>({
     user: null,
     token: localStorage.getItem(TOKEN_KEY),
@@ -76,16 +90,17 @@ export function useAuth() {
   return { ...state, login, logout };
 }
 
-// Add auth header to all API calls
-const originalFetch = window.fetch;
-window.fetch = function (input: RequestInfo | URL, init?: RequestInit) {
-  const token = localStorage.getItem(TOKEN_KEY);
-  if (token && typeof input === 'string' && input.startsWith('/api/')) {
-    init = init || {};
-    init.headers = {
-      ...init.headers,
-      Authorization: `Bearer ${token}`,
-    };
-  }
-  return originalFetch(input, init);
-};
+type AuthContextType = ReturnType<typeof useAuthInternal>;
+
+const AuthContext = createContext<AuthContextType | null>(null);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const auth = useAuthInternal();
+  return <AuthContext.Provider value={auth}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth(): AuthContextType {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  return ctx;
+}

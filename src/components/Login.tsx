@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { Lock, Mail, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Lock, Mail, Eye, EyeOff, Loader2, ArrowLeft } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
-interface LoginProps {
-  onLogin: (email: string, password: string) => Promise<string | null>;
-}
+export default function Login() {
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-export default function Login({ onLogin }: LoginProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -20,14 +22,27 @@ export default function Login({ onLogin }: LoginProps) {
     }
     setError('');
     setLoading(true);
-    const err = await onLogin(email, password);
+    const err = await login(email, password);
     setLoading(false);
-    if (err) setError(err);
+    if (err) {
+      setError(err);
+    } else {
+      const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/dashboard';
+      navigate(from, { replace: true });
+    }
   };
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
+        {/* Back to landing */}
+        <div className="mb-6">
+          <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 transition-colors">
+            <ArrowLeft size={16} />
+            Về trang chủ
+          </Link>
+        </div>
+
         {/* Logo */}
         <div className="text-center mb-8">
           <img src="/logo.png" alt="Phone Agent" className="h-16 mx-auto mb-3" />
