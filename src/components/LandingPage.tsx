@@ -252,8 +252,7 @@ function Navbar() {
         scrolled ? 'bg-white/90 border-gray-200 shadow-md' : 'bg-white/80 border-white/20'
       }`}>
         <Link to="/" className="flex items-center gap-2">
-          <img src="/favico.png" alt="Phone Agent" className="w-7 h-7 object-contain" />
-          <span className="font-bold text-xl tracking-tight text-gray-900">Phone Agent</span>
+          <img src="/logo.png" alt="Phone Agent" className="h-9 object-contain" />
         </Link>
 
         <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
@@ -1021,8 +1020,7 @@ function FooterSection() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
           <div className="lg:col-span-2">
             <div className="flex items-center gap-2 mb-6">
-              <img src="/favico.png" alt="Phone Agent" className="w-8 h-8 object-contain brightness-0 invert" />
-              <span className="font-bold text-2xl tracking-tight">Phone Agent</span>
+              <img src="/logo.png" alt="Phone Agent" className="h-10 object-contain brightness-0 invert" />
             </div>
             <p className="text-gray-400 mb-8 max-w-sm">
               Nền tảng quản lý & tự động hoá iPhone hàng đầu Việt Nam. Script editor kéo thả, lịch trình 24/7, proxy thông minh.
