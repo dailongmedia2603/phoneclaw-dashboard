@@ -470,7 +470,7 @@ function SolutionSection() {
 
       <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
-          {/* Left: Dashboard mockup */}
+          {/* Left: SVG Illustration */}
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -480,50 +480,131 @@ function SolutionSection() {
           >
             <div className="relative w-full max-w-lg mx-auto">
               <div className="absolute inset-0 bg-gradient-to-tr from-orange-400 to-yellow-300 rounded-[3rem] transform -rotate-3 scale-105 opacity-20 blur-xl" />
-              <div className="absolute inset-0 bg-white rounded-[3rem] shadow-2xl border border-orange-100 overflow-hidden flex flex-col">
-                {/* Browser header */}
-                <div className="bg-slate-900 p-5 flex items-center gap-4 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/20 rounded-full blur-2xl" />
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-lg relative z-10">
-                    <Smartphone className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="relative z-10">
-                    <h3 className="text-white font-bold text-lg">Phone Agent</h3>
-                    <p className="text-orange-200 text-sm flex items-center gap-1.5 mt-0.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                      24 thiết bị online
-                    </p>
-                  </div>
-                </div>
-                {/* Dashboard body */}
-                <div className="flex-1 p-5 bg-slate-50 flex flex-col gap-4">
-                  <div className="grid grid-cols-3 gap-2">
-                    {[{ v: '24', l: 'Online', c: 'text-emerald-600' }, { v: '8', l: 'Running', c: 'text-blue-600' }, { v: '15', l: 'Scripts', c: 'text-orange-600' }].map((s) => (
-                      <div key={s.l} className="bg-white rounded-xl p-3 text-center border border-slate-100 shadow-sm">
-                        <div className={`text-xl font-bold ${s.c}`}>{s.v}</div>
-                        <div className="text-xs text-slate-500 mt-0.5">{s.l}</div>
-                      </div>
-                    ))}
-                  </div>
-                  {[
-                    { name: 'iPhone 15 Pro #1', status: 'running', script: 'TikTok Auto' },
-                    { name: 'iPhone 14 #3', status: 'online', script: 'FB Post' },
-                    { name: 'iPhone 13 #7', status: 'online', script: 'Idle' },
-                  ].map((d) => (
-                    <div key={d.name} className="flex items-center justify-between px-4 py-3 bg-white rounded-xl border border-slate-100 shadow-sm">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-2.5 h-2.5 rounded-full ${d.status === 'running' ? 'bg-blue-500 animate-pulse' : 'bg-emerald-400'}`} />
-                        <span className="text-sm font-medium text-slate-700">{d.name}</span>
-                      </div>
-                      <span className="text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded-lg">{d.script}</span>
-                    </div>
-                  ))}
-                  <div className="mx-auto mt-2 bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 shadow-sm">
-                    <ShieldCheck className="w-4 h-4" />
-                    Mã hoá end-to-end qua Tailscale VPN
-                  </div>
-                </div>
-              </div>
+              <svg viewBox="0 0 520 480" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto relative z-10 drop-shadow-xl">
+                {/* Background card */}
+                <rect x="10" y="10" width="500" height="460" rx="32" fill="white" stroke="#fed7aa" strokeWidth="1.5"/>
+
+                {/* Central monitor */}
+                <rect x="130" y="50" width="260" height="170" rx="16" fill="#1e293b"/>
+                <rect x="142" y="62" width="236" height="134" rx="8" fill="#0f172a"/>
+                {/* Monitor stand */}
+                <rect x="230" y="220" width="60" height="16" rx="2" fill="#94a3b8"/>
+                <rect x="210" y="232" width="100" height="8" rx="4" fill="#cbd5e1"/>
+
+                {/* Screen content — stats */}
+                <rect x="154" y="74" width="64" height="36" rx="6" fill="#1e3a5f"/>
+                <text x="186" y="95" textAnchor="middle" fill="#34d399" fontSize="16" fontWeight="bold">24</text>
+                <text x="186" y="106" textAnchor="middle" fill="#94a3b8" fontSize="7">Online</text>
+
+                <rect x="226" y="74" width="64" height="36" rx="6" fill="#1e3a5f"/>
+                <text x="258" y="95" textAnchor="middle" fill="#60a5fa" fontSize="16" fontWeight="bold">8</text>
+                <text x="258" y="106" textAnchor="middle" fill="#94a3b8" fontSize="7">Đang chạy</text>
+
+                <rect x="298" y="74" width="64" height="36" rx="6" fill="#1e3a5f"/>
+                <text x="330" y="95" textAnchor="middle" fill="#fb923c" fontSize="16" fontWeight="bold">15</text>
+                <text x="330" y="106" textAnchor="middle" fill="#94a3b8" fontSize="7">Kịch bản</text>
+
+                {/* Screen content — device rows */}
+                {[
+                  { y: 120, name: 'iPhone 15 Pro #1', color: '#60a5fa', status: 'TikTok Auto' },
+                  { y: 142, name: 'iPhone 14 #3', color: '#34d399', status: 'FB Post' },
+                  { y: 164, name: 'iPhone 13 #7', color: '#34d399', status: 'Chờ lệnh' },
+                ].map((d) => (
+                  <g key={d.name}>
+                    <rect x="154" y={d.y} width="210" height="18" rx="4" fill="#1e3a5f" opacity="0.6"/>
+                    <circle cx="164" cy={d.y + 9} r="3" fill={d.color}>
+                      {d.color === '#60a5fa' && <animate attributeName="opacity" values="1;0.4;1" dur="1.5s" repeatCount="indefinite"/>}
+                    </circle>
+                    <text x="174" y={d.y + 13} fill="#e2e8f0" fontSize="8" fontWeight="500">{d.name}</text>
+                    <text x="354" y={d.y + 13} textAnchor="end" fill="#94a3b8" fontSize="7">{d.status}</text>
+                  </g>
+                ))}
+
+                {/* Phones around — Left column */}
+                {[
+                  { x: 30, y: 80, label: '#1', color: '#34d399' },
+                  { x: 30, y: 190, label: '#2', color: '#60a5fa' },
+                  { x: 30, y: 300, label: '#3', color: '#34d399' },
+                ].map((p, i) => (
+                  <g key={`left-${i}`}>
+                    <rect x={p.x} y={p.y} width="52" height="84" rx="10" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="1.5"/>
+                    <rect x={p.x + 4} y={p.y + 10} width="44" height="58" rx="4" fill="#f1f5f9"/>
+                    <circle cx={p.x + 26} cy={p.y + 76} r="4" fill="#e2e8f0"/>
+                    <circle cx={p.x + 42} cy={p.y + 6} r="2.5" fill={p.color}>
+                      <animate attributeName="opacity" values="1;0.3;1" dur={`${2 + i * 0.5}s`} repeatCount="indefinite"/>
+                    </circle>
+                    <text x={p.x + 26} y={p.y + 44} textAnchor="middle" fill="#94a3b8" fontSize="10" fontWeight="bold">{p.label}</text>
+                    {/* Connection line to center */}
+                    <line x1={p.x + 52} y1={p.y + 42} x2="130" y2="135" stroke="#fdba74" strokeWidth="1" strokeDasharray="4 3" opacity="0.5">
+                      <animate attributeName="strokeDashoffset" from="0" to="-14" dur="2s" repeatCount="indefinite"/>
+                    </line>
+                  </g>
+                ))}
+
+                {/* Phones around — Right column */}
+                {[
+                  { x: 438, y: 80, label: '#4', color: '#34d399' },
+                  { x: 438, y: 190, label: '#5', color: '#fb923c' },
+                  { x: 438, y: 300, label: '#6', color: '#34d399' },
+                ].map((p, i) => (
+                  <g key={`right-${i}`}>
+                    <rect x={p.x} y={p.y} width="52" height="84" rx="10" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="1.5"/>
+                    <rect x={p.x + 4} y={p.y + 10} width="44" height="58" rx="4" fill="#f1f5f9"/>
+                    <circle cx={p.x + 26} cy={p.y + 76} r="4" fill="#e2e8f0"/>
+                    <circle cx={p.x + 42} cy={p.y + 6} r="2.5" fill={p.color}>
+                      <animate attributeName="opacity" values="1;0.3;1" dur={`${2.2 + i * 0.4}s`} repeatCount="indefinite"/>
+                    </circle>
+                    <text x={p.x + 26} y={p.y + 44} textAnchor="middle" fill="#94a3b8" fontSize="10" fontWeight="bold">{p.label}</text>
+                    {/* Connection line to center */}
+                    <line x1={p.x} y1={p.y + 42} x2="390" y2="135" stroke="#fdba74" strokeWidth="1" strokeDasharray="4 3" opacity="0.5">
+                      <animate attributeName="strokeDashoffset" from="0" to="-14" dur="2s" repeatCount="indefinite"/>
+                    </line>
+                  </g>
+                ))}
+
+                {/* Bottom section — command flow */}
+                <rect x="100" y="270" width="320" height="80" rx="16" fill="#fff7ed" stroke="#fed7aa" strokeWidth="1"/>
+
+                {/* Flow steps */}
+                <rect x="118" y="286" width="72" height="48" rx="10" fill="white" stroke="#fdba74" strokeWidth="1"/>
+                <text x="154" y="306" textAnchor="middle" fill="#ea580c" fontSize="8" fontWeight="bold">Tạo kịch bản</text>
+                <text x="154" y="318" textAnchor="middle" fill="#9ca3af" fontSize="7">Kéo & thả</text>
+
+                {/* Arrow 1 */}
+                <path d="M194 310 L212 310" stroke="#fb923c" strokeWidth="1.5" markerEnd="url(#arrowOrange)"/>
+
+                <rect x="216" y="286" width="72" height="48" rx="10" fill="white" stroke="#fdba74" strokeWidth="1"/>
+                <text x="252" y="306" textAnchor="middle" fill="#ea580c" fontSize="8" fontWeight="bold">Đặt lịch</text>
+                <text x="252" y="318" textAnchor="middle" fill="#9ca3af" fontSize="7">Tự động 24/7</text>
+
+                {/* Arrow 2 */}
+                <path d="M292 310 L310 310" stroke="#fb923c" strokeWidth="1.5" markerEnd="url(#arrowOrange)"/>
+
+                <rect x="314" y="286" width="88" height="48" rx="10" fill="white" stroke="#fdba74" strokeWidth="1"/>
+                <text x="358" y="306" textAnchor="middle" fill="#ea580c" fontSize="8" fontWeight="bold">Chạy tự động</text>
+                <text x="358" y="318" textAnchor="middle" fill="#9ca3af" fontSize="7">Trên hàng trăm máy</text>
+
+                {/* Bottom label */}
+                <rect x="160" y="370" width="200" height="32" rx="16" fill="#ecfdf5" stroke="#a7f3d0" strokeWidth="1"/>
+                <text x="260" y="391" textAnchor="middle" fill="#047857" fontSize="9" fontWeight="bold">Kết nối bảo mật qua VPN</text>
+
+                {/* Pulsing signal rings from center monitor */}
+                <circle cx="260" cy="135" r="30" fill="none" stroke="#fb923c" strokeWidth="0.8" opacity="0.3">
+                  <animate attributeName="r" values="30;60;30" dur="3s" repeatCount="indefinite"/>
+                  <animate attributeName="opacity" values="0.3;0;0.3" dur="3s" repeatCount="indefinite"/>
+                </circle>
+                <circle cx="260" cy="135" r="30" fill="none" stroke="#fb923c" strokeWidth="0.5" opacity="0.2">
+                  <animate attributeName="r" values="30;80;30" dur="3s" begin="0.5s" repeatCount="indefinite"/>
+                  <animate attributeName="opacity" values="0.2;0;0.2" dur="3s" begin="0.5s" repeatCount="indefinite"/>
+                </circle>
+
+                {/* Arrow marker definition */}
+                <defs>
+                  <marker id="arrowOrange" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                    <path d="M0,0 L8,3 L0,6" fill="#fb923c"/>
+                  </marker>
+                </defs>
+              </svg>
             </div>
           </motion.div>
 
