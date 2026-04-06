@@ -972,17 +972,35 @@ function SocialProofSection() {
   );
 }
 
+const planOptions = [
+  'Starter — 49.000đ/tháng',
+  'Basic — 99.000đ/tháng',
+  'Pro — 249.000đ/tháng',
+  'Business — 499.000đ/tháng',
+];
+
 function RegisterModal({ isOpen, onClose, defaultPlan }: { isOpen: boolean; onClose: () => void; defaultPlan: string }) {
   const [form, setForm] = useState({ name: '', phone: '', plan: defaultPlan, purpose: '' });
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen) {
       setForm((prev) => ({ ...prev, plan: defaultPlan }));
       setSuccess(false);
+      setDropdownOpen(false);
     }
   }, [isOpen, defaultPlan]);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setDropdownOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
 
   if (!isOpen) return null;
 
@@ -1086,18 +1104,35 @@ function RegisterModal({ isOpen, onClose, defaultPlan }: { isOpen: boolean; onCl
               />
             </div>
 
-            <div>
+            <div ref={dropdownRef} className="relative">
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Gói đăng ký</label>
-              <select
-                value={form.plan}
-                onChange={(e) => setForm({ ...form, plan: e.target.value })}
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all bg-white"
+              <button
+                type="button"
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-left bg-white flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
               >
-                <option value="Starter — 49.000đ/tháng">Starter — 49.000đ/tháng</option>
-                <option value="Basic — 99.000đ/tháng">Basic — 99.000đ/tháng</option>
-                <option value="Pro — 249.000đ/tháng">Pro — 249.000đ/tháng</option>
-                <option value="Business — 499.000đ/tháng">Business — 499.000đ/tháng</option>
-              </select>
+                <span>{form.plan}</span>
+                <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {dropdownOpen && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden z-10">
+                  {planOptions.map((opt) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => { setForm({ ...form, plan: opt }); setDropdownOpen(false); }}
+                      className={`w-full px-4 py-2.5 text-sm text-left flex items-center gap-2 transition-colors ${
+                        form.plan === opt
+                          ? 'bg-orange-50 text-orange-600 font-semibold'
+                          : 'text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      {form.plan === opt && <Check className="w-3.5 h-3.5 text-orange-500" />}
+                      <span className={form.plan !== opt ? 'ml-5.5' : ''}>{opt}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div>
