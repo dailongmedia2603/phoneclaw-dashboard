@@ -1333,26 +1333,31 @@ function FAQSection() {
 
 function FooterCTA() {
   return (
-    <section className="py-20 md:py-28 bg-gradient-to-br from-[#f97316] via-[#ea580c] to-[#c2410c] relative overflow-hidden">
-      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-yellow-400/20 rounded-full mix-blend-screen filter blur-[100px] opacity-50 pointer-events-none" />
-      <div className="max-w-3xl mx-auto px-4 md:px-8 lg:px-12 relative z-10 text-center">
+    <section className="py-16 md:py-20 bg-gradient-to-br from-[#f97316] via-[#ea580c] to-[#c2410c] relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-[400px] h-[400px] bg-yellow-400/20 rounded-full mix-blend-screen filter blur-[100px] opacity-50 pointer-events-none" />
+      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-orange-300/20 rounded-full mix-blend-screen filter blur-[100px] opacity-50 pointer-events-none" />
+
+      <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
+          className="flex flex-col lg:flex-row items-center justify-between gap-8"
         >
-          <h2 className="font-black text-white leading-tight mb-6" style={{ fontSize: '32px' }}>
-            Mỗi ngày bạn chưa dùng Phone Agent là một ngày đối thủ chạy trước bạn 100 máy
-          </h2>
-          <p className="text-orange-100/90 text-lg mb-10">
-            Càng chần chừ, đối thủ càng bỏ xa bạn. Liên hệ ngay để được tư vấn giải pháp phù hợp nhất.
-          </p>
+          <div className="lg:max-w-2xl text-center lg:text-left">
+            <h2 className="font-black text-white leading-tight mb-4" style={{ fontSize: '32px' }}>
+              Mỗi ngày bạn chưa dùng Phone Agent là một ngày đối thủ chạy trước bạn 100 máy
+            </h2>
+            <p className="text-orange-100/90 text-lg">
+              Càng chần chừ, đối thủ càng bỏ xa bạn. Liên hệ ngay để được tư vấn giải pháp phù hợp nhất.
+            </p>
+          </div>
           <a
             href="https://t.me/phoneagentsupport_bot"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-white text-orange-700 hover:bg-orange-50 px-10 py-4 rounded-full text-lg font-bold transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1"
+            className="inline-flex items-center gap-2 bg-white text-orange-700 hover:bg-orange-50 px-10 py-4 rounded-full text-lg font-bold transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 shrink-0"
           >
             <MessageSquare className="w-6 h-6" />
             Tư vấn thêm
@@ -1407,8 +1412,8 @@ export default function LandingPageV2() {
       <UseCasesSection />
       <SocialProofSection />
       <PricingSection />
-      <FAQSection />
       <FooterCTA />
+      <FAQSection />
       <FooterSection />
     </div>
   );
