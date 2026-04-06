@@ -44,15 +44,15 @@ const bullets = [
 
 const pains = [
   {
-    icon: <MonitorSmartphone className="w-8 h-8 text-rose-600" />,
+    icon: <MonitorSmartphone className="w-6 h-6 text-rose-600" />,
     text: 'Nuôi 10 nick đã muốn phát điên — mỗi ngày phải lướt FYP từng máy, đăng video từng máy, tương tác từng máy. Thuê thêm người thì chi phí ăn hết lợi nhuận affiliate.',
   },
   {
-    icon: <AlertCircle className="w-8 h-8 text-rose-600" />,
+    icon: <AlertCircle className="w-6 h-6 text-rose-600" />,
     text: 'Nick die hàng loạt vì cùng IP, cùng hành vi — bao nhiêu công nuôi nick mấy tháng trời bay sạch trong 1 đêm. Dùng tool trên PC thì bị phát hiện ngay vì fingerprint ảo.',
   },
   {
-    icon: <Clock className="w-8 h-8 text-rose-600" />,
+    icon: <Clock className="w-6 h-6 text-rose-600" />,
     text: 'Muốn scale lên 50-100 máy nhưng không biết bắt đầu từ đâu. Mỗi máy một kịch bản, mỗi máy một lịch khác nhau — càng nhiều máy càng rối, không có hệ thống.',
   },
 ];
@@ -409,11 +409,11 @@ function PainPointsSection() {
             transition={{ duration: 0.6 }}
             className="lg:col-span-7"
           >
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 leading-tight mb-10">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-black text-slate-900 leading-tight mb-8">
               Làm affiliate mà cứ phải <span className="text-rose-600">ngồi bấm tay</span> từng máy... bao giờ mới scale?
             </h2>
 
-            <div className="space-y-8">
+            <div className="space-y-5">
               {pains.map((pain, idx) => (
                 <motion.div
                   key={idx}
@@ -421,12 +421,12 @@ function PainPointsSection() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: idx * 0.15 + 0.3 }}
-                  className="flex gap-6 items-start group"
+                  className="flex gap-4 items-start group"
                 >
-                  <div className="w-16 h-16 rounded-2xl bg-white border border-rose-100 flex items-center justify-center flex-shrink-0 group-hover:bg-rose-50 transition-colors shadow-lg shadow-rose-900/5">
+                  <div className="w-12 h-12 rounded-xl bg-white border border-rose-100 flex items-center justify-center flex-shrink-0 group-hover:bg-rose-50 transition-colors shadow-md shadow-rose-900/5">
                     {pain.icon}
                   </div>
-                  <p className="text-lg md:text-xl text-slate-700 leading-relaxed pt-1 font-medium">{pain.text}</p>
+                  <p className="text-sm md:text-base text-slate-700 leading-relaxed pt-0.5 font-medium">{pain.text}</p>
                 </motion.div>
               ))}
             </div>
