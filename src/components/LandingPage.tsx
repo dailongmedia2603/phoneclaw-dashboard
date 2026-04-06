@@ -672,10 +672,10 @@ function SolutionSection() {
 
 function CredibilitySection() {
   const stats = [
-    { value: '500+', label: 'Người dùng đang hoạt động', icon: <Users className="w-6 h-6" /> },
-    { value: '95%', label: 'Tỷ lệ nick sống sau 30 ngày', icon: <ShieldCheck className="w-6 h-6" /> },
+    { value: 'x10', label: 'Số kênh quản lý cùng 1 người', icon: <Smartphone className="w-6 h-6" /> },
     { value: '80%', label: 'Chi phí nhân sự tiết kiệm', icon: <Zap className="w-6 h-6" /> },
     { value: '24/7', label: 'Hệ thống tự vận hành', icon: <Clock className="w-6 h-6" /> },
+    { value: '100%', label: 'Hành vi tự nhiên như người thật', icon: <ShieldCheck className="w-6 h-6" /> },
   ];
 
   return (
