@@ -672,8 +672,8 @@ function SolutionSection() {
 
 function CredibilitySection() {
   const stats = [
-    { value: 'x10', label: 'Số kênh quản lý cùng 1 người', icon: <Smartphone className="w-6 h-6" /> },
-    { value: '80%', label: 'Chi phí nhân sự tiết kiệm', icon: <Zap className="w-6 h-6" /> },
+    { value: 'x100', label: 'Số kênh quản lý cùng 1 người', icon: <Smartphone className="w-6 h-6" /> },
+    { value: '95%', label: 'Tiết kiệm công sức', icon: <Zap className="w-6 h-6" /> },
     { value: '24/7', label: 'Hệ thống tự vận hành', icon: <Clock className="w-6 h-6" /> },
     { value: '100%', label: 'Hành vi tự nhiên như người thật', icon: <ShieldCheck className="w-6 h-6" /> },
   ];
@@ -695,7 +695,7 @@ function CredibilitySection() {
             <Sparkles className="w-4 h-4 text-yellow-300" />
             Con số biết nói
           </div>
-          <h2 className="font-bold text-white leading-snug max-w-4xl mx-auto" style={{ fontSize: '28px' }}>
+          <h2 className="font-bold text-white leading-snug max-w-4xl mx-auto" style={{ fontSize: '32px' }}>
             "Không phải lời hứa — đây là kết quả thực tế<br className="hidden md:block" /> từ anh em đang dùng Phone Agent mỗi ngày."
           </h2>
         </motion.div>
