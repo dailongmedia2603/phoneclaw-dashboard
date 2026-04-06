@@ -60,7 +60,7 @@ const pains = [
 const benefits = [
   {
     id: 'scale',
-    title: 'Gấp 10 tài khoản, giữ nguyên 1 người',
+    title: 'Gấp 100 tài khoản, giữ nguyên 1 người',
     desc: 'Trước cần 5 người ngồi bấm 50 máy. Giờ 1 mình bạn quản lý 100 máy từ laptop. Cắt chi phí nhân sự, giữ nguyên output — thậm chí tốt hơn vì máy không nghỉ.',
     icon: <Users className="w-8 h-8 text-blue-600" />,
     bg: 'bg-blue-50',
@@ -70,13 +70,13 @@ const benefits = [
   },
   {
     id: 'safe',
-    title: 'Nick sống lâu, không lo die hàng loạt',
+    title: 'Kênh chất lượng, hiệu quả',
     desc: 'Chạy trên iPhone thật, mỗi máy một IP, một vị trí, hành vi ngẫu nhiên hoá. Nền tảng không thể phân biệt với người dùng bình thường.',
     icon: <Shield className="w-8 h-8 text-orange-500" />,
     bg: 'bg-orange-50',
     border: 'border-orange-100',
     colSpan: 'md:col-span-1',
-    highlight: 'Giảm 90% tỷ lệ die nick',
+    highlight: 'Không bị bóp view',
   },
   {
     id: 'auto-247',
@@ -725,7 +725,7 @@ function CredibilitySection() {
 
 function BenefitsSection() {
   return (
-    <section id="features" className="py-24 bg-white relative">
+    <section id="features" className="py-16 bg-white relative">
       <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12">
         <div className="text-center mb-16">
           <motion.h2
@@ -767,8 +767,8 @@ function BenefitsSection() {
                     {b.highlight}
                   </span>
                 </div>
-                <h3 className="font-bold text-slate-900 mb-3" style={{ fontSize: '20px' }}>{b.title}</h3>
-                <p className="text-slate-700 leading-relaxed font-medium mt-auto">{b.desc}</p>
+                <h3 className="font-bold text-slate-900 mb-2" style={{ fontSize: '20px' }}>{b.title}</h3>
+                <p className="text-slate-700 leading-relaxed font-medium" style={{ fontSize: '15px' }}>{b.desc}</p>
               </div>
             </motion.div>
           ))}
@@ -782,7 +782,7 @@ function UseCasesSection() {
   const [activeTab, setActiveTab] = useState(0);
 
   return (
-    <section className="py-24 bg-white relative overflow-hidden">
+    <section className="py-16 bg-white relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 relative z-10">
         <div className="text-center mb-16">
           <motion.div
