@@ -272,9 +272,9 @@ function Navbar() {
 
         <div className="hidden md:flex items-center gap-3">
           <Link to="/login" className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">Đăng nhập</Link>
-          <Link to="/login" className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-full text-sm font-medium transition-colors">
-            Dùng thử miễn phí
-          </Link>
+          <a href="https://t.me/phoneagentsupport_bot" target="_blank" rel="noopener noreferrer" className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-full text-sm font-medium transition-colors">
+            Tư vấn thêm
+          </a>
         </div>
 
         <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden p-2 text-gray-600">
@@ -294,7 +294,7 @@ function Navbar() {
             <button onClick={() => scrollTo('faq')} className="text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-xl">FAQ</button>
             <hr className="my-2 border-gray-100" />
             <Link to="/login" className="text-center px-4 py-2.5 text-sm text-gray-700 font-medium">Đăng nhập</Link>
-            <Link to="/login" className="text-center px-4 py-2.5 text-sm bg-orange-500 text-white rounded-xl font-medium">Dùng thử miễn phí</Link>
+            <a href="https://t.me/phoneagentsupport_bot" target="_blank" rel="noopener noreferrer" className="text-center px-4 py-2.5 text-sm bg-orange-500 text-white rounded-xl font-medium">Tư vấn thêm</a>
           </div>
         </div>
       )}
@@ -1053,6 +1053,14 @@ function PricingSection() {
               >
                 {plan.highlight ? 'Bắt đầu ngay' : plan.name === 'Business' ? 'Liên hệ' : 'Bắt đầu'}
               </Link>
+              <a
+                href="https://t.me/phoneagentsupport_bot"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-center w-full py-2 text-orange-500 hover:text-orange-600 text-sm font-medium transition-colors mt-2"
+              >
+                Tư vấn thêm
+              </a>
             </motion.div>
           ))}
         </div>
