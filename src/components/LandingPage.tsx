@@ -1346,15 +1346,17 @@ function FooterCTA() {
             Mỗi ngày bạn chưa dùng Phone Agent là một ngày đối thủ chạy trước bạn 100 máy
           </h2>
           <p className="text-orange-100/90 text-lg mb-10">
-            Đăng ký ngay hôm nay. 5 phút setup. Chạy kịch bản đầu tiên trong 15 phút. Không cần thẻ tín dụng.
+            Càng chần chừ, đối thủ càng bỏ xa bạn. Liên hệ ngay để được tư vấn giải pháp phù hợp nhất.
           </p>
-          <Link
-            to="/login"
+          <a
+            href="https://t.me/phoneagentsupport_bot"
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center gap-2 bg-white text-orange-700 hover:bg-orange-50 px-10 py-4 rounded-full text-lg font-bold transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1"
           >
-            <Bot className="w-6 h-6" />
-            Bắt đầu miễn phí — Không cần thẻ
-          </Link>
+            <MessageSquare className="w-6 h-6" />
+            Tư vấn thêm
+          </a>
         </motion.div>
       </div>
     </section>
