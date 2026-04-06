@@ -315,8 +315,9 @@ function HeroSection() {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-tight mb-8 max-w-6xl mx-auto"
         >
-          Biến 1 người thành{' '}
-          <span className="bg-white text-orange-600 px-4 py-1 rounded-md inline-block mt-2 md:mt-0 shadow-sm">đội quân 100 điện thoại</span>
+          Biến 1 người thành
+          <br />
+          <span className="bg-white text-orange-600 px-4 py-1 rounded-md inline-block mt-3 shadow-sm">đội quân 100 điện thoại</span>
           <span className="text-3xl md:text-4xl lg:text-5xl font-medium opacity-90 block mt-4">
             — chạy affiliate 24/7 không cần chạm tay
           </span>
