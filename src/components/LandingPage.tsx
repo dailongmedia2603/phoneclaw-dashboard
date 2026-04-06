@@ -17,9 +17,15 @@ import {
 
 const bullets = [
   {
+    icon: <Globe className="w-6 h-6 text-blue-500" />,
+    title: 'Xây hàng trăm kênh DỄ DÀNG',
+    description: 'Mỗi iPhone là một kênh TikTok hoặc Facebook. Nuôi nick, đăng video, lướt FYP đồng loạt — xây dàn kênh affiliate nhanh gấp 10 lần làm tay.',
+    bgColor: 'bg-blue-50',
+  },
+  {
     icon: <Wand2 className="w-6 h-6 text-rose-500" />,
-    title: 'Kéo — thả — chạy. Hết.',
-    description: 'Tạo kịch bản tự động bằng cách kéo thả như xếp lego. Bấm, vuốt, gõ chữ, mở app, chờ, lặp lại — không cần viết 1 dòng code. Người mới 15 phút là làm được.',
+    title: 'Tự tạo kịch bản theo ý muốn',
+    description: 'Kéo thả để tạo kịch bản riêng cho mình: mở app, lướt, like, follow, đăng video, chờ, lặp lại — muốn gì làm nấy, không cần biết code.',
     bgColor: 'bg-rose-50',
   },
   {
@@ -360,12 +366,12 @@ function IntrigueBulletsSection() {
     <section className="py-24 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-5xl font-bold text-gray-900 max-w-4xl mx-auto leading-tight">
-            Tại sao dân affiliate chuyển sang <span className="text-orange-600">Phone Agent</span>?
+          <h2 className="text-2xl md:text-4xl font-bold text-gray-900 max-w-4xl mx-auto leading-tight">
+            Tại sao dân affiliate dùng <span className="text-orange-600">Phone Agent</span>?
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {bullets.map((bullet, index) => (
             <motion.div
               key={index}
