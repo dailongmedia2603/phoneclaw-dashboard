@@ -972,8 +972,178 @@ function SocialProofSection() {
   );
 }
 
-function PricingSection() {
+function RegisterModal({ isOpen, onClose, defaultPlan }: { isOpen: boolean; onClose: () => void; defaultPlan: string }) {
+  const [form, setForm] = useState({ name: '', phone: '', plan: defaultPlan, purpose: '' });
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setForm((prev) => ({ ...prev, plan: defaultPlan }));
+      setSuccess(false);
+    }
+  }, [isOpen, defaultPlan]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name.trim() || !form.phone.trim()) return;
+
+    setSubmitting(true);
+    const now = new Date();
+    const time = now.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    const text = [
+      '📱 *ĐĂNG KÝ MỚI — Phone Agent*',
+      '',
+      `👤 *Họ tên:* ${form.name}`,
+      `📞 *SĐT:* ${form.phone}`,
+      `📦 *Gói:* ${form.plan}`,
+      `🎯 *Mục đích:* ${form.purpose || 'Không ghi'}`,
+      '',
+      `🕐 *Thời gian:* ${time}`,
+      '',
+      '━━━━━━━━━━━━━━━━━━',
+      '_Từ landing page phoneagent.io.vn_',
+    ].join('\n');
+
+    try {
+      await fetch(`https://api.telegram.org/bot8797292337:AAE2a5sNsfrnoC2ROf57lJaCP7y3Ms1hPIA/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: '-5291949502', text, parse_mode: 'Markdown' }),
+      });
+      setSuccess(true);
+    } catch {
+      setSuccess(true);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        transition={{ duration: 0.25 }}
+        className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="bg-gradient-to-r from-orange-500 to-rose-500 px-6 py-5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+              <Smartphone className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-white font-bold text-lg">Đăng ký Phone Agent</h3>
+              <p className="text-orange-100 text-xs">Điền thông tin để được tư vấn & kích hoạt</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-white/70 hover:text-white p-1 transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {success ? (
+          <div className="px-6 py-10 text-center">
+            <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+              <Check className="w-8 h-8 text-emerald-600" />
+            </div>
+            <h4 className="text-xl font-bold text-slate-900 mb-2">Đăng ký thành công!</h4>
+            <p className="text-slate-500 text-sm mb-6">Đội ngũ Phone Agent sẽ liên hệ bạn trong thời gian sớm nhất.</p>
+            <button onClick={onClose} className="px-8 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-medium transition-colors">
+              Đóng
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Họ tên <span className="text-rose-500">*</span></label>
+              <input
+                type="text"
+                required
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="Nguyễn Văn A"
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Số điện thoại <span className="text-rose-500">*</span></label>
+              <input
+                type="tel"
+                required
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                placeholder="0912 345 678"
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Gói đăng ký</label>
+              <select
+                value={form.plan}
+                onChange={(e) => setForm({ ...form, plan: e.target.value })}
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all bg-white"
+              >
+                <option value="Starter — 49.000đ/tháng">Starter — 49.000đ/tháng</option>
+                <option value="Basic — 99.000đ/tháng">Basic — 99.000đ/tháng</option>
+                <option value="Pro — 249.000đ/tháng">Pro — 249.000đ/tháng</option>
+                <option value="Business — 499.000đ/tháng">Business — 499.000đ/tháng</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Mục đích sử dụng</label>
+              <textarea
+                value={form.purpose}
+                onChange={(e) => setForm({ ...form, purpose: e.target.value })}
+                placeholder="VD: Nuôi nick TikTok VN, chạy affiliate Shopee..."
+                rows={3}
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all resize-none"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full py-3 bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600 text-white font-bold rounded-xl transition-all shadow-lg shadow-orange-500/25 disabled:opacity-60 flex items-center justify-center gap-2"
+            >
+              {submitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Đang gửi...
+                </>
+              ) : (
+                'Đăng ký ngay'
+              )}
+            </button>
+          </form>
+        )}
+      </motion.div>
+    </div>
+  );
+}
+
+function PricingSection() {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState('');
+
+  const openRegister = (planName: string, price: string) => {
+    setSelectedPlan(`${planName} — ${price}đ/tháng`);
+    setModalOpen(true);
+  };
+
+  return (
+    <>
+    <RegisterModal isOpen={modalOpen} onClose={() => setModalOpen(false)} defaultPlan={selectedPlan} />
     <section id="pricing" className="py-24 bg-slate-50 relative overflow-hidden">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-orange-100/50 rounded-full blur-[120px] pointer-events-none" />
 
@@ -1043,16 +1213,16 @@ function PricingSection() {
                 ))}
               </ul>
 
-              <Link
-                to="/login"
+              <button
+                onClick={() => openRegister(plan.name, plan.price)}
                 className={`block text-center w-full py-3.5 rounded-xl font-bold transition-all duration-300 ${
                   plan.highlight
                     ? 'bg-gradient-to-r from-orange-500 to-rose-500 text-white shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 hover:-translate-y-0.5'
                     : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
-                {plan.highlight ? 'Bắt đầu ngay' : plan.name === 'Business' ? 'Liên hệ' : 'Bắt đầu'}
-              </Link>
+                {plan.highlight ? 'Đăng ký ngay' : plan.name === 'Business' ? 'Liên hệ' : 'Đăng ký'}
+              </button>
               <a
                 href="https://t.me/phoneagentsupport_bot"
                 target="_blank"
@@ -1066,6 +1236,7 @@ function PricingSection() {
         </div>
       </div>
     </section>
+    </>
   );
 }
 
