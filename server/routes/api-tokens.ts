@@ -9,6 +9,7 @@
 
 import { Router, Request, Response } from 'express';
 import { createToken, listTokens, revokeToken, regenerateToken } from '../services/api-token';
+import { checkFeature } from '../helpers/check-quota';
 
 const router = Router();
 
@@ -38,6 +39,10 @@ router.post('/', async (req: Request, res: Response) => {
   const tokenName = name?.trim() || 'API Token';
 
   try {
+    // Enforce API tokens feature
+    const tokenCheck = await checkFeature(req, 'apiTokens');
+    if (!tokenCheck.allowed) return res.status(403).json({ success: false, error: tokenCheck.error });
+
     // Max 5 active tokens per user
     const existing = await listTokens(userId);
     const activeTokens = existing.filter((t: any) => !t.revokedAt);

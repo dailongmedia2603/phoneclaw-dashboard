@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { callDeviceApi, findDeviceGlobal, updateDeviceForTenant } from '../services/device-manager';
 import { getAuthUserId } from '../helpers/get-user';
+import { checkFeature } from '../helpers/check-quota';
 import type { ProxyConfig } from '../../src/types';
 
 const router = Router();
@@ -61,6 +62,10 @@ async function verifyBatchOwnership(req: Request, deviceIds: string[]): Promise<
 
 // POST /api/proxy/batch/config
 router.post('/batch/config', async (req, res) => {
+  // Enforce proxy feature
+  const proxyCheck = await checkFeature(req, 'proxy');
+  if (!proxyCheck.allowed) return res.status(403).json({ success: false, error: proxyCheck.error });
+
   const { deviceIds, ip, port, username, password, mode } = req.body;
   if (!deviceIds?.length || !ip || !port) {
     return res.json({ success: false, error: 'Missing deviceIds, ip, or port' });
@@ -196,6 +201,10 @@ router.get('/:deviceId/status', verifyDeviceAccess, async (req, res) => {
 
 // POST /api/proxy/:deviceId/config
 router.post('/:deviceId/config', verifyDeviceAccess, async (req, res) => {
+  // Enforce proxy feature
+  const proxyCheck = await checkFeature(req, 'proxy');
+  if (!proxyCheck.allowed) return res.status(403).json({ success: false, error: proxyCheck.error });
+
   const tid = (req as any).deviceTenantId as string;
   const { ip, port, username, password, mode } = req.body;
   if (!ip || !port) {
@@ -270,6 +279,10 @@ router.post('/:deviceId/stop', verifyDeviceAccess, async (req, res) => {
 
 // POST /api/proxy/:deviceId/spoof
 router.post('/:deviceId/spoof', verifyDeviceAccess, async (req, res) => {
+  // Enforce GPS spoof feature
+  const gpsCheck = await checkFeature(req, 'gpsSpoof');
+  if (!gpsCheck.allowed) return res.status(403).json({ success: false, error: gpsCheck.error });
+
   const tid = (req as any).deviceTenantId as string;
   const { timezone, locale, latitude, longitude, mode } = req.body;
 

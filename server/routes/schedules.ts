@@ -3,6 +3,7 @@ import * as sched from '../services/scheduler';
 import { getScriptsForTenant } from '../services/script-engine';
 import { findDeviceGlobal, getGroupsForTenant } from '../services/device-manager';
 import { getTenantId, getAuthUserId } from '../helpers/get-user';
+import { checkQuota } from '../helpers/check-quota';
 
 const router = Router();
 
@@ -25,6 +26,10 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   const userId = getAuthUserId(req);
   if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+  // Enforce schedules quota
+  const quota = await checkQuota(req, 'schedules');
+  if (!quota.allowed) return res.status(403).json({ success: false, error: quota.error });
 
   const { name, scriptId, scriptName, targetType, targetId, targetName, cron, enabled } = req.body;
   if (!name || !scriptId || !cron) {

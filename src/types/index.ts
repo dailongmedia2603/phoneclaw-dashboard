@@ -23,6 +23,12 @@ export interface Package {
   id: string;
   name: string;
   maxDevices: number;
+  maxScripts: number;         // -1 = không giới hạn
+  maxSchedules: number;       // -1 = không giới hạn
+  proxyEnabled: boolean;
+  gpsSpoofEnabled: boolean;
+  apiTokensEnabled: boolean;
+  maxVideoStorageMB: number;  // -1 = không giới hạn
   createdAt: string;
 }
 

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import * as se from '../services/script-engine';
 import { findDeviceGlobal } from '../services/device-manager';
 import { getTenantId, getAuthUserId } from '../helpers/get-user';
+import { checkQuota } from '../helpers/check-quota';
 
 const router = Router();
 
@@ -24,6 +25,10 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   const userId = getAuthUserId(req);
   if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+  // Enforce scripts quota
+  const quota = await checkQuota(req, 'scripts');
+  if (!quota.allowed) return res.status(403).json({ success: false, error: quota.error });
 
   const { name, description, steps, channel, graphData } = req.body;
   if (!name) return res.status(400).json({ success: false, error: 'name is required' });

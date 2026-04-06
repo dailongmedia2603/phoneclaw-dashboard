@@ -205,10 +205,11 @@ export const proxy = {
 // ============================================================
 export const packages = {
   getAll: () => get<Package[]>('/api/packages'),
-  create: (data: { name: string; maxDevices: number }) => post<Package>('/api/packages', data),
+  create: (data: Partial<Package>) => post<Package>('/api/packages', data),
   update: (id: string, data: Partial<Package>) => put<Package>(`/api/packages/${id}`, data),
   remove: (id: string) => del<void>(`/api/packages/${id}`),
   requestUpgrade: () => post<void>('/api/packages/upgrade-request'),
+  getMyLimits: () => get<{ package: Package; usage: { devices: number; scripts: number; schedules: number; videoStorageMB: number } } | null>('/api/packages/my-limits'),
 };
 
 // ============================================================

@@ -4,6 +4,7 @@ import { readUserCollection, writeUserCollection, generateId } from '../store';
 import { uploadToR2, deleteFromR2 } from '../services/r2-storage';
 import { findDeviceGlobal } from '../services/device-manager';
 import { getTenantId, getAuthUserId } from '../helpers/get-user';
+import { checkVideoStorage } from '../helpers/check-quota';
 
 interface Video {
   id: string;
@@ -36,6 +37,10 @@ router.post('/upload', upload.single('video'), async (req, res) => {
 
   const file = req.file;
   if (!file) return res.json({ success: false, error: 'Không có file được chọn' });
+
+  // Enforce video storage quota
+  const storageCheck = await checkVideoStorage(req, file.size);
+  if (!storageCheck.allowed) return res.status(403).json({ success: false, error: storageCheck.error });
 
   const ext = file.originalname.split('.').pop() || 'mp4';
   const id = generateId();

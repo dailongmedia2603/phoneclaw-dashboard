@@ -2,6 +2,7 @@ import { Router } from 'express';
 import * as dm from '../services/device-manager';
 import { readCollection } from '../store';
 import { getTenantId, getAuthUserId, isAdmin } from '../helpers/get-user';
+import { checkQuota } from '../helpers/check-quota';
 
 const router = Router();
 
@@ -41,24 +42,9 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ success: false, error: 'name and tailscaleIp are required' });
   }
 
-  // Enforce device limit for non-admin users
-  if (!isAdmin(req)) {
-    const users = await readCollection<{ id: string; packageId?: string }>('users');
-    const user = users.find(u => u.id === userId);
-    if (user?.packageId) {
-      const packages = await readCollection<{ id: string; name: string; maxDevices: number }>('packages');
-      const pkg = packages.find(p => p.id === user.packageId);
-      if (pkg) {
-        const userDevices = await dm.getDevicesForTenant(userId);
-        if (userDevices.length >= pkg.maxDevices) {
-          return res.status(403).json({
-            success: false,
-            error: `Đã đạt giới hạn ${pkg.maxDevices} thiết bị (gói ${pkg.name})`,
-          });
-        }
-      }
-    }
-  }
+  // Enforce device limit
+  const quota = await checkQuota(req, 'devices');
+  if (!quota.allowed) return res.status(403).json({ success: false, error: quota.error });
 
   const device = await dm.createDeviceForTenant(userId, {
     name,
