@@ -261,7 +261,9 @@ function Navbar() {
           <img src="/logo.png" alt="Phone Agent" className="h-9 object-contain" />
         </Link>
 
-        <div className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
+        <div className="hidden lg:flex items-center gap-5 text-sm font-medium text-gray-600">
+          <button onClick={() => scrollTo('why')} className="hover:text-gray-900 transition-colors">Tại sao dùng</button>
+          <button onClick={() => scrollTo('painpoints')} className="hover:text-gray-900 transition-colors">Vấn đề</button>
           <button onClick={() => scrollTo('demo')} className="hover:text-gray-900 transition-colors">Giới thiệu</button>
           <button onClick={() => scrollTo('features')} className="hover:text-gray-900 transition-colors">Lợi ích</button>
           <button onClick={() => scrollTo('usecases')} className="hover:text-gray-900 transition-colors">Ứng dụng</button>
@@ -270,22 +272,24 @@ function Navbar() {
           <button onClick={() => scrollTo('faq')} className="hover:text-gray-900 transition-colors">FAQ</button>
         </div>
 
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden lg:flex items-center gap-3">
           <Link to="/login" className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">Đăng nhập</Link>
           <a href="https://t.me/phoneagentsupport_bot" target="_blank" rel="noopener noreferrer" className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-full text-sm font-medium transition-colors">
             Tư vấn thêm
           </a>
         </div>
 
-        <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden p-2 text-gray-600">
+        <button onClick={() => setMobileOpen(!mobileOpen)} className="lg:hidden p-2 text-gray-600">
           {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
       </div>
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="absolute top-full left-4 right-4 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 md:hidden">
+        <div className="absolute top-full left-4 right-4 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 lg:hidden">
           <div className="flex flex-col gap-2">
+            <button onClick={() => scrollTo('why')} className="text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-xl">Tại sao dùng</button>
+            <button onClick={() => scrollTo('painpoints')} className="text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-xl">Vấn đề</button>
             <button onClick={() => scrollTo('demo')} className="text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-xl">Giới thiệu</button>
             <button onClick={() => scrollTo('features')} className="text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-xl">Lợi ích</button>
             <button onClick={() => scrollTo('usecases')} className="text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-xl">Ứng dụng</button>
@@ -369,7 +373,7 @@ function HeroSection() {
 
 function IntrigueBulletsSection() {
   return (
-    <section className="py-24 bg-gray-50">
+    <section id="why" className="py-24 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12">
         <div className="text-center mb-16">
           <h2 className="text-2xl md:text-4xl font-bold text-gray-900 max-w-4xl mx-auto leading-tight">
