@@ -409,7 +409,7 @@ function PainPointsSection() {
             transition={{ duration: 0.6 }}
             className="lg:col-span-7"
           >
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-black text-slate-900 leading-tight mb-8">
+            <h2 style={{ fontSize: '45px' }} className="font-black text-slate-900 leading-tight mb-8">
               Làm affiliate mà cứ phải <span className="text-rose-600">ngồi bấm tay</span> từng máy... bao giờ mới scale?
             </h2>
 
@@ -426,7 +426,7 @@ function PainPointsSection() {
                   <div className="w-12 h-12 rounded-xl bg-white border border-rose-100 flex items-center justify-center flex-shrink-0 group-hover:bg-rose-50 transition-colors shadow-md shadow-rose-900/5">
                     {pain.icon}
                   </div>
-                  <p className="text-sm md:text-base text-slate-700 leading-relaxed pt-0.5 font-medium">{pain.text}</p>
+                  <p style={{ fontSize: '20px' }} className="text-slate-700 leading-relaxed pt-0.5 font-medium">{pain.text}</p>
                 </motion.div>
               ))}
             </div>
@@ -456,7 +456,7 @@ function PainPointsSection() {
                     className="h-full bg-gradient-to-r from-rose-500 to-rose-400 rounded-full"
                   />
                 </div>
-                <div className="flex justify-between text-sm font-bold text-slate-500 uppercase tracking-wider">
+                <div className="flex justify-between text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wide whitespace-nowrap">
                   <span>Thời gian hiệu quả</span>
                   <span className="text-rose-600">Thao tác thủ công (73%)</span>
                 </div>
