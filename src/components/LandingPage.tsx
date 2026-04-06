@@ -130,10 +130,10 @@ const industries = [
   {
     name: 'Affiliate Shopee/Facebook',
     icon: ShoppingCart,
-    problem: 'Chạy affiliate Shopee cần nhiều acc Facebook để đăng link, tham gia nhóm, đăng bài. Mỗi ngày phải ngồi đăng thủ công từng nhóm, từng acc — chưa kể acc bị checkpoint liên tục.',
-    solution: 'Nuôi acc Facebook trên iPhone thật, mỗi acc một IP riêng. Lên lịch đăng bài affiliate vào các nhóm theo khung giờ vàng — chuẩn bị nội dung cả tuần, hẹn giờ đăng tự động. Acc hoạt động tự nhiên nên ít bị checkpoint.',
-    notLose: 'Hàng chục acc bị khoá mỗi tuần. Thời gian ngồi đăng link thủ công từng nhóm.',
-    gain: 'Dàn acc Facebook sống lâu, bài affiliate được đăng đều đặn đúng giờ, không cần ngồi canh.',
+    problem: 'Chạy affiliate Shopee qua Facebook cần nhiều acc để đăng bài, quay Reels giới thiệu sản phẩm. Mỗi ngày phải ngồi đăng thủ công trên từng acc, quay Reels rồi up từng cái — mệt mỏi, tốn thời gian mà không scale nổi.',
+    solution: 'Chuẩn bị sẵn video Reels và bài đăng cả tuần hoặc cả tháng. Hẹn lịch đăng lên profile cá nhân và Reels tự động đúng giờ vàng. Máy tự mở Facebook, tự đăng bài, tự up Reels — bạn chỉ cần chuẩn bị content một lần rồi đi làm việc khác.',
+    notLose: 'Thời gian ngồi đăng bài thủ công từng acc. Sự mệt mỏi khi lặp đi lặp lại mỗi ngày.',
+    gain: 'Content Reels và bài đăng affiliate chạy tự động 24/7. Bạn chỉ cần tập trung chọn sản phẩm hot và tạo content chất lượng.',
   },
   {
     name: 'TikTok US → Shopify',
