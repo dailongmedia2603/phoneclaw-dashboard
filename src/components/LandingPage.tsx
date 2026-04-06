@@ -261,8 +261,11 @@ function Navbar() {
           <img src="/logo.png" alt="Phone Agent" className="h-9 object-contain" />
         </Link>
 
-        <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
-          <button onClick={() => scrollTo('features')} className="hover:text-gray-900 transition-colors">Tính năng</button>
+        <div className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
+          <button onClick={() => scrollTo('demo')} className="hover:text-gray-900 transition-colors">Giới thiệu</button>
+          <button onClick={() => scrollTo('features')} className="hover:text-gray-900 transition-colors">Lợi ích</button>
+          <button onClick={() => scrollTo('usecases')} className="hover:text-gray-900 transition-colors">Ứng dụng</button>
+          <button onClick={() => scrollTo('reviews')} className="hover:text-gray-900 transition-colors">Đánh giá</button>
           <button onClick={() => scrollTo('pricing')} className="hover:text-gray-900 transition-colors">Bảng giá</button>
           <button onClick={() => scrollTo('faq')} className="hover:text-gray-900 transition-colors">FAQ</button>
         </div>
@@ -283,7 +286,10 @@ function Navbar() {
       {mobileOpen && (
         <div className="absolute top-full left-4 right-4 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 md:hidden">
           <div className="flex flex-col gap-2">
-            <button onClick={() => scrollTo('features')} className="text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-xl">Tính năng</button>
+            <button onClick={() => scrollTo('demo')} className="text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-xl">Giới thiệu</button>
+            <button onClick={() => scrollTo('features')} className="text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-xl">Lợi ích</button>
+            <button onClick={() => scrollTo('usecases')} className="text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-xl">Ứng dụng</button>
+            <button onClick={() => scrollTo('reviews')} className="text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-xl">Đánh giá</button>
             <button onClick={() => scrollTo('pricing')} className="text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-xl">Bảng giá</button>
             <button onClick={() => scrollTo('faq')} className="text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-xl">FAQ</button>
             <hr className="my-2 border-gray-100" />
@@ -396,7 +402,7 @@ function IntrigueBulletsSection() {
 
 function PainPointsSection() {
   return (
-    <section className="py-24 bg-slate-50 relative overflow-hidden">
+    <section id="painpoints" className="py-24 bg-slate-50 relative overflow-hidden">
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-rose-200/50 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3 pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-orange-200/50 rounded-full blur-[100px] translate-y-1/3 -translate-x-1/4 pointer-events-none" />
 
@@ -782,7 +788,7 @@ function UseCasesSection() {
   const [activeTab, setActiveTab] = useState(0);
 
   return (
-    <section className="py-16 bg-white relative overflow-hidden">
+    <section id="usecases" className="py-16 bg-white relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 relative z-10">
         <div className="text-center mb-16">
           <motion.div
@@ -910,7 +916,7 @@ function UseCasesSection() {
 
 function SocialProofSection() {
   return (
-    <section className="py-24 bg-slate-50 relative overflow-hidden">
+    <section id="reviews" className="py-24 bg-slate-50 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 relative z-10">
         <div className="text-center mb-16">
           <motion.div
