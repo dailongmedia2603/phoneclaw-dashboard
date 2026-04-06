@@ -627,18 +627,18 @@ function SolutionSection() {
               Giải pháp cho dân affiliate chuyên nghiệp
             </div>
 
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 leading-[1.1] mb-6">
+            <h2 className="font-black text-slate-900 leading-[1.1] mb-6" style={{ fontSize: '45px' }}>
               Giới thiệu{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-yellow-500">
                 Phone Agent
               </span>
             </h2>
 
-            <p className="text-2xl text-slate-800 font-bold mb-6 leading-snug">
+            <p className="text-slate-800 font-bold mb-6 leading-snug" style={{ fontSize: '22px' }}>
               Tự động hoá mọi thao tác trên iPhone thật. Quản lý tập trung. Scale không giới hạn.
             </p>
 
-            <p className="text-lg text-slate-600 mb-10 leading-relaxed">
+            <p className="text-slate-600 mb-10 leading-relaxed" style={{ fontSize: '20px' }}>
               Phone Agent không phải giả lập, không phải bot trên PC. Đây là nền tảng chạy trực tiếp trên <strong className="text-orange-600 text-xl mx-1">iPhone thật</strong> — mỗi máy một IP riêng, hành vi như người dùng thật. Tạo kịch bản kéo thả, đặt lịch 24/7, nhận thông báo Telegram khi xong.
             </p>
 
@@ -648,8 +648,8 @@ function SolutionSection() {
                   <Wand2 className="w-7 h-7 text-orange-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-slate-900 mb-2">Kịch bản kéo thả — ai cũng tạo được</h3>
-                  <p className="text-slate-600 leading-relaxed">Giao diện trực quan, kéo thả các bước: mở TikTok → lướt FYP → like → follow → lặp lại. Có sẵn kho kịch bản mẫu cho TikTok, Facebook — chỉ cần chỉnh nhẹ là dùng.</p>
+                  <h3 className="font-bold text-slate-900 mb-2" style={{ fontSize: '20px' }}>Kịch bản kéo thả — ai cũng tạo được</h3>
+                  <p className="text-slate-600 leading-relaxed" style={{ fontSize: '16px' }}>Giao diện trực quan, kéo thả các bước: mở TikTok → lướt FYP → like → follow → lặp lại. Có sẵn kho kịch bản mẫu cho TikTok, Facebook — chỉ cần chỉnh nhẹ là dùng.</p>
                 </div>
               </div>
 
@@ -658,8 +658,8 @@ function SolutionSection() {
                   <CalendarDays className="w-7 h-7 text-yellow-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-slate-900 mb-2">Mỗi máy một "nhân dạng" riêng</h3>
-                  <p className="text-slate-600 leading-relaxed">Đổi IP và giả lập vị trí GPS cho từng iPhone. Máy 1 ở Hà Nội, máy 2 ở Sài Gòn, máy 3 ở Texas — nền tảng thấy mỗi máy là một người dùng hoàn toàn khác nhau.</p>
+                  <h3 className="font-bold text-slate-900 mb-2" style={{ fontSize: '20px' }}>Mỗi máy một "nhân dạng" riêng</h3>
+                  <p className="text-slate-600 leading-relaxed" style={{ fontSize: '16px' }}>Đổi IP và giả lập vị trí GPS cho từng iPhone. Máy 1 ở Hà Nội, máy 2 ở Sài Gòn, máy 3 ở Texas — nền tảng thấy mỗi máy là một người dùng hoàn toàn khác nhau.</p>
                 </div>
               </div>
             </div>
@@ -689,7 +689,7 @@ function CredibilitySection() {
             Công nghệ hàng đầu
           </div>
 
-          <h2 className="text-3xl md:text-4xl lg:text-[2.75rem] font-medium text-white leading-[1.4] mb-14">
+          <h2 className="font-medium text-white leading-[1.4] mb-14" style={{ fontSize: '24px' }}>
             "Phone Agent chạy trên <span className="font-bold text-yellow-300">iPhone thật, IP thật, vị trí thật</span> — không phải giả lập.<br className="hidden lg:block" /> Đây là lý do nick <span className="font-bold text-orange-200">sống lâu hơn bất kỳ tool nào</span> trên thị trường."
           </h2>
 
@@ -724,7 +724,7 @@ function BenefitsSection() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-4xl md:text-5xl font-black text-slate-900 leading-tight mb-6"
+            className="font-black text-slate-900 leading-tight mb-6" style={{ fontSize: '45px' }}
           >
             Không phải tính năng. Đây là thứ bạn <span className="text-orange-600">THẬT SỰ được</span>
           </motion.h2>
@@ -733,7 +733,7 @@ function BenefitsSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="text-lg text-slate-600 max-w-2xl mx-auto"
+            className="text-slate-600 max-w-2xl mx-auto" style={{ fontSize: '20px' }}
           >
             Mỗi tính năng của Phone Agent đều quy về một thứ: giúp bạn kiếm nhiều hơn, làm ít hơn.
           </motion.p>
@@ -759,7 +759,7 @@ function BenefitsSection() {
                     {b.highlight}
                   </span>
                 </div>
-                <h3 className="text-2xl font-bold text-slate-900 mb-3">{b.title}</h3>
+                <h3 className="font-bold text-slate-900 mb-3" style={{ fontSize: '20px' }}>{b.title}</h3>
                 <p className="text-slate-700 leading-relaxed font-medium mt-auto">{b.desc}</p>
               </div>
             </motion.div>
@@ -792,7 +792,7 @@ function UseCasesSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="text-4xl md:text-5xl font-black text-slate-900 leading-tight mb-6"
+            className="font-black text-slate-900 leading-tight mb-6" style={{ fontSize: '45px' }}
           >
             Anh em đang dùng Phone Agent để{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-rose-500">làm gì?</span>
@@ -802,7 +802,7 @@ function UseCasesSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2 }}
-            className="text-lg text-slate-600 max-w-2xl mx-auto"
+            className="text-slate-600 max-w-2xl mx-auto" style={{ fontSize: '20px' }}
           >
             6 cách kiếm tiền phổ biến nhất với Phone Agent — chọn cái phù hợp với bạn.
           </motion.p>
@@ -848,7 +848,7 @@ function UseCasesSection() {
                   <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500 to-rose-500 flex items-center justify-center shadow-lg shadow-orange-500/30">
                     {(() => { const Icon = industries[activeTab].icon; return <Icon className="w-8 h-8 text-white" />; })()}
                   </div>
-                  <h3 className="text-2xl md:text-3xl font-black text-slate-900">{industries[activeTab].name}</h3>
+                  <h3 className="font-black text-slate-900" style={{ fontSize: '24px' }}>{industries[activeTab].name}</h3>
                 </div>
 
                 <div className="flex flex-col gap-6">
@@ -860,7 +860,7 @@ function UseCasesSection() {
                       </div>
                       <h4 className="text-xl font-bold text-slate-900">Vấn đề</h4>
                     </div>
-                    <p className="text-slate-600 text-base md:text-lg leading-relaxed">{industries[activeTab].problem}</p>
+                    <p className="text-slate-600 leading-relaxed" style={{ fontSize: '16px' }}>{industries[activeTab].problem}</p>
                   </div>
 
                   <div className="bg-gradient-to-br from-blue-50/80 to-indigo-50/80 rounded-2xl p-6 md:p-8 shadow-sm border border-blue-200 relative overflow-hidden">
@@ -871,7 +871,7 @@ function UseCasesSection() {
                       </div>
                       <h4 className="text-xl font-bold text-slate-900">Giải pháp Phone Agent</h4>
                     </div>
-                    <p className="text-slate-800 text-base md:text-lg leading-relaxed font-medium">{industries[activeTab].solution}</p>
+                    <p className="text-slate-800 leading-relaxed font-medium" style={{ fontSize: '16px' }}>{industries[activeTab].solution}</p>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -920,7 +920,7 @@ function SocialProofSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="text-4xl md:text-5xl font-black text-slate-900 leading-tight mb-6"
+            className="font-black text-slate-900 leading-tight mb-6" style={{ fontSize: '45px' }}
           >
             Anh em trong nghề <span className="text-orange-600">nói gì?</span>
           </motion.h2>
@@ -969,7 +969,7 @@ function PricingSection() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-4xl md:text-5xl font-black text-slate-900 leading-tight mb-6"
+            className="font-black text-slate-900 leading-tight mb-6" style={{ fontSize: '45px' }}
           >
             Đầu tư ít hơn <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-rose-500">một bữa cà phê mỗi ngày</span>
           </motion.h2>
@@ -978,7 +978,7 @@ function PricingSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="text-lg text-slate-600 max-w-2xl mx-auto"
+            className="text-slate-600 max-w-2xl mx-auto" style={{ fontSize: '20px' }}
           >
             Tính nhanh: 1 nhân sự thao tác tốn ít nhất 7-8 triệu/tháng. Phone Agent quản lý 30 máy chỉ 499K. Bạn tiết kiệm hơn 90%.
           </motion.p>
@@ -1065,7 +1065,7 @@ function FAQSection() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-4xl md:text-5xl font-black text-slate-900 leading-tight"
+            className="font-black text-slate-900 leading-tight" style={{ fontSize: '45px' }}
           >
             Câu hỏi thường gặp
           </motion.h2>
@@ -1110,7 +1110,7 @@ function FooterCTA() {
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-black text-white leading-tight mb-6">
+          <h2 className="font-black text-white leading-tight mb-6" style={{ fontSize: '32px' }}>
             Mỗi ngày bạn chưa dùng Phone Agent là một ngày đối thủ chạy trước bạn 100 máy
           </h2>
           <p className="text-orange-100/90 text-lg mb-10">
