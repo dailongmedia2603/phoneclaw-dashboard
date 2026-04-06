@@ -1363,42 +1363,22 @@ function FooterCTA() {
 
 function FooterSection() {
   return (
-    <footer className="bg-gray-900 text-white pt-24 pb-12">
-      <div className="w-full px-4 md:px-8 lg:px-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
-          <div className="lg:col-span-2">
-            <div className="flex items-center gap-2 mb-6">
-              <img src="/logo.png" alt="Phone Agent" className="h-10 object-contain brightness-0 invert" />
-            </div>
-            <p className="text-gray-400 mb-8 max-w-sm">
-              Nền tảng tự động hoá iPhone cho dân affiliate. Nuôi nick, đăng video, lướt FYP, tương tác — tất cả chạy tự động trên iPhone thật.
-            </p>
-          </div>
-
-          <div>
-            <h4 className="font-bold text-lg mb-6">Sản phẩm</h4>
-            <ul className="space-y-4">
-              <li><button onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })} className="text-gray-400 hover:text-white transition-colors">Tính năng</button></li>
-              <li><button onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })} className="text-gray-400 hover:text-white transition-colors">Bảng giá</button></li>
-              <li><button onClick={() => document.getElementById('faq')?.scrollIntoView({ behavior: 'smooth' })} className="text-gray-400 hover:text-white transition-colors">FAQ</button></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-bold text-lg mb-6">Liên hệ</h4>
-            <ul className="space-y-4">
-              <li><span className="text-gray-400">support@phoneagent.io.vn</span></li>
-              <li><Link to="/login" className="text-gray-400 hover:text-white transition-colors">Đăng nhập</Link></li>
-            </ul>
+    <footer className="bg-gray-900 text-white py-10">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-8">
+          <img src="/logo.png" alt="Phone Agent" className="h-9 object-contain brightness-0 invert" />
+          <div className="flex items-center gap-6">
+            <a href="https://t.me/phoneagentsupport_bot" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white text-sm font-medium transition-colors flex items-center gap-1.5">
+              <MessageSquare className="w-4 h-4" />
+              Tư vấn qua Telegram
+            </a>
+            <Link to="/login" className="text-gray-400 hover:text-white text-sm font-medium transition-colors">
+              Đăng nhập
+            </Link>
           </div>
         </div>
-
-        <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="border-t border-gray-800 pt-6 text-center">
           <p className="text-gray-500 text-sm">&copy; {new Date().getFullYear()} Phone Agent. All rights reserved.</p>
-          <div className="flex items-center gap-6">
-            <a href="#" className="text-gray-500 hover:text-gray-300 text-sm transition-colors">Điều khoản</a>
-            <a href="#" className="text-gray-500 hover:text-gray-300 text-sm transition-colors">Chính sách bảo mật</a>
-          </div>
         </div>
       </div>
     </footer>
