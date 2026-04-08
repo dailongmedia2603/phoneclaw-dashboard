@@ -86,6 +86,17 @@ export async function initDb(): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_audit_logs_token ON api_audit_logs(token_id);
     `);
     console.log('[DB] API Token tables ensured');
+
+    // Ensure package limit columns exist (added in package-limits feature)
+    await client.query(`
+      ALTER TABLE packages ADD COLUMN IF NOT EXISTS max_scripts INTEGER NOT NULL DEFAULT -1;
+      ALTER TABLE packages ADD COLUMN IF NOT EXISTS max_schedules INTEGER NOT NULL DEFAULT -1;
+      ALTER TABLE packages ADD COLUMN IF NOT EXISTS proxy_enabled BOOLEAN NOT NULL DEFAULT true;
+      ALTER TABLE packages ADD COLUMN IF NOT EXISTS gps_spoof_enabled BOOLEAN NOT NULL DEFAULT true;
+      ALTER TABLE packages ADD COLUMN IF NOT EXISTS api_tokens_enabled BOOLEAN NOT NULL DEFAULT true;
+      ALTER TABLE packages ADD COLUMN IF NOT EXISTS max_video_storage_mb INTEGER NOT NULL DEFAULT -1;
+    `);
+    console.log('[DB] Package limit columns ensured');
   } finally {
     client.release();
   }
