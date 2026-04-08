@@ -1,13 +1,14 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Shield, ShieldCheck, ShieldOff, Play, Square, Settings2,
   Globe, MapPin, Clock, Loader2, CheckCircle, XCircle,
-  Smartphone, RefreshCw, ChevronDown, Wand2,
+  Smartphone, RefreshCw, Wand2, CheckSquare, Square as SquareIcon,
 } from 'lucide-react';
 import { devices as devicesApi, proxy } from '../services/api';
 import { useApi } from '../hooks/useApi';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { showToast } from './Toast';
+import CustomSelect from './CustomSelect';
 import type { Device, ProxyMode } from '../types';
 
 const US_TIMEZONES = [
@@ -30,58 +31,6 @@ const MODE_OPTIONS: { value: ProxyMode; label: string; desc: string; color: stri
   { value: 'vn', label: 'Proxy VN', desc: 'Route traffic qua VN + GPS khớp proxy + WiFi ẩn', color: 'emerald' },
   { value: 'none', label: 'Không proxy', desc: 'Tắt proxy, mọi thứ bình thường', color: 'slate' },
 ];
-
-// Custom dropdown component thay thế native <select>
-function CustomSelect({ value, onChange, options }: {
-  value: string;
-  onChange: (val: string) => void;
-  options: { value: string; label: string }[];
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
-  const selected = options.find(o => o.value === value);
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-left flex items-center justify-between bg-white hover:border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-      >
-        <span className="text-slate-700">{selected?.label || 'Chọn...'}</span>
-        <ChevronDown size={16} className={`text-slate-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
-      </button>
-      {open && (
-        <div className="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg py-1 max-h-60 overflow-auto">
-          {options.map(opt => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => { onChange(opt.value); setOpen(false); }}
-              className={`w-full px-3 py-2 text-sm text-left flex items-center gap-2 transition-colors ${
-                opt.value === value
-                  ? 'text-blue-600 bg-blue-50 font-medium'
-                  : 'text-slate-700 hover:bg-slate-50'
-              }`}
-            >
-              {opt.value === value && <CheckCircle size={14} className="shrink-0" />}
-              <span className={opt.value === value ? '' : 'pl-[22px]'}>{opt.label}</span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 // Tìm location gần nhất dựa trên tọa độ
 function findNearestLocation(lat: number, lon: number): string {
@@ -133,6 +82,7 @@ export default function ProxyManager() {
 
   const allDevices = deviceList || [];
   const onlineDevices = allDevices.filter(d => d.status !== 'offline');
+  const runningProxyCount = allDevices.filter(d => d.proxyStatus === 'running').length;
 
   const toggleSelect = (id: string) => {
     setSelectedDevices(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -168,7 +118,6 @@ export default function ProxyManager() {
         const { timezone: detectedTz, lat, lon, city, regionName } = res.data;
 
         if (proxyMode === 'us') {
-          // US mode: map to fixed US timezone/location lists
           const matchedTz = US_TIMEZONES.find(tz => tz.value === detectedTz);
           if (matchedTz) {
             setTimezone(matchedTz.value);
@@ -180,7 +129,6 @@ export default function ProxyManager() {
           const nearestLabel = US_LOCATIONS.find(l => l.value === nearest)?.label;
           showToast('success', `Đã phát hiện: ${matchedTz?.label || detectedTz} — ${nearestLabel}`);
         } else {
-          // VN mode: dùng trực tiếp tọa độ từ geolocate, không cần danh sách
           setVnDetected({ city: city || 'Unknown', region: regionName || '', lat, lon });
           showToast('success', `Đã phát hiện: ${city}, ${regionName} (${lat.toFixed(4)}, ${lon.toFixed(4)})`);
         }
@@ -249,7 +197,6 @@ export default function ProxyManager() {
       if (res.success) showToast('success', 'US spoof đã áp dụng');
       else showToast('error', res.error || 'Lỗi');
     } else if (proxyMode === 'vn') {
-      // mode=vn → GPS khớp proxy VN + WiFi ẩn
       let vnLat = vnDetected?.lat;
       let vnLon = vnDetected?.lon;
       if (vnLat == null || vnLon == null) {
@@ -262,7 +209,6 @@ export default function ProxyManager() {
       if (res.success) showToast('success', 'VN spoof đã áp dụng (GPS + WiFi ẩn)');
       else showToast('error', res.error || 'Lỗi');
     } else {
-      // mode=none → disable spoofing
       const res = await proxy.setSpoof(deviceId, { mode: proxyMode });
       if (res.success) showToast('success', 'Spoof đã tắt');
       else showToast('error', res.error || 'Lỗi');
@@ -300,7 +246,7 @@ export default function ProxyManager() {
           await proxy.setSpoof(deviceId, { mode: 'none' });
         }
       } else {
-        // Step 1: Config — gửi proxy config tới các thiết bị
+        // Step 1: Config
         const configRes = await proxy.batchConfig(selectedDevices, {
           ip: proxyIp, port: Number(proxyPort), username: proxyUser, password: proxyPass, mode: proxyMode,
         });
@@ -309,10 +255,10 @@ export default function ProxyManager() {
           showToast('error', errors[0] || configRes.error || 'Không gửi được config tới thiết bị');
           for (const id of selectedDevices) setDeviceLoading(id, false);
           refreshDevices();
-          return; // Dừng — không start nếu config thất bại
+          return;
         }
 
-        // Step 2: Start — khởi động proxy tunnel (server tự verify sing-box)
+        // Step 2: Start
         const startRes = await proxy.batchStart(selectedDevices);
         if (!startRes.success) {
           const { errors } = countResults(startRes.data);
@@ -320,7 +266,7 @@ export default function ProxyManager() {
           hasError = true;
         }
 
-        // Step 3: Spoof — chỉ chạy nếu start thành công
+        // Step 3: Spoof
         if (!hasError) {
           if (proxyMode === 'us') {
             const [lat, lon] = selectedLocation.split(',').map(Number);
@@ -333,22 +279,14 @@ export default function ProxyManager() {
               }
             }
           } else if (proxyMode === 'vn') {
-            // VN spoof: dùng tọa độ đã detect, hoặc geolocate nếu chưa detect
             let vnLat = vnDetected?.lat;
             let vnLon = vnDetected?.lon;
             if (vnLat == null || vnLon == null) {
               const geoRes = await proxy.geolocate(proxyIp);
-              if (geoRes.success) {
-                vnLat = geoRes.data.lat;
-                vnLon = geoRes.data.lon;
-              }
+              if (geoRes.success) { vnLat = geoRes.data.lat; vnLon = geoRes.data.lon; }
             }
             for (const deviceId of selectedDevices) {
-              const spoofRes = await proxy.setSpoof(deviceId, {
-                mode: 'vn',
-                latitude: vnLat,
-                longitude: vnLon,
-              });
+              const spoofRes = await proxy.setSpoof(deviceId, { mode: 'vn', latitude: vnLat, longitude: vnLon });
               if (!spoofRes.success) {
                 const dev = allDevices.find(d => d.id === deviceId);
                 showToast('error', `${dev?.name}: Lỗi VN spoof — ${spoofRes.error || 'Không xác định'}`);
@@ -377,7 +315,6 @@ export default function ProxyManager() {
     for (const id of selectedDevices) setDeviceLoading(id, true);
     const res = await proxy.batchStop(selectedDevices);
     for (const id of selectedDevices) setDeviceLoading(id, false);
-    for (const id of selectedDevices) setDeviceLoading(id, false);
     if (res.success) {
       showToast('success', `Đã tắt proxy cho ${selectedDevices.length} thiết bị`);
     } else {
@@ -389,278 +326,246 @@ export default function ProxyManager() {
   };
 
   return (
-    <div className="h-full flex flex-col gap-6 overflow-y-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="h-full flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden relative">
+      {/* Header — same style as Devices */}
+      <div className="px-6 pt-6 pb-4 border-b border-slate-100 flex justify-between items-center shrink-0">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Shield size={28} /> Proxy Manager
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Quản lý Proxy & Anti-detection cho TikTok
-          </p>
+          <h1 className="text-2xl font-bold text-slate-900 mb-1">Proxy Manager</h1>
+          <p className="text-sm text-slate-500">{allDevices.length} thiết bị | {onlineDevices.length} online | {runningProxyCount} proxy running</p>
         </div>
-        <button onClick={() => refreshDevices()} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50">
-          <RefreshCw size={16} /> Làm mới
+        <button
+          onClick={() => refreshDevices()}
+          className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 shadow-sm"
+        >
+          <RefreshCw size={16} className="text-slate-400" /> Làm mới
         </button>
       </div>
 
-      {/* Mode Selector */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <Settings2 size={18} className="text-slate-500" />
-          <span className="text-sm font-semibold text-slate-700">Chế độ hoạt động</span>
-        </div>
-        <div className="grid grid-cols-3 gap-3">
-          {MODE_OPTIONS.map(opt => (
-            <button
-              key={opt.value}
-              onClick={() => setProxyMode(opt.value)}
-              className={`p-3 rounded-xl border-2 text-left transition-all ${
-                proxyMode === opt.value
-                  ? opt.color === 'blue' ? 'border-blue-500 bg-blue-50'
-                    : opt.color === 'emerald' ? 'border-emerald-500 bg-emerald-50'
-                    : 'border-slate-400 bg-slate-50'
-                  : 'border-slate-200 hover:border-slate-300'
-              }`}
-            >
-              <p className={`text-sm font-semibold ${
-                proxyMode === opt.value
-                  ? opt.color === 'blue' ? 'text-blue-700'
-                    : opt.color === 'emerald' ? 'text-emerald-700'
-                    : 'text-slate-700'
-                  : 'text-slate-600'
-              }`}>{opt.label}</p>
-              <p className="text-xs text-slate-400 mt-0.5">{opt.desc}</p>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Config Panel - only show when mode is not "none" */}
-      {proxyMode !== 'none' && (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Proxy Config */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6">
-          <h2 className="text-lg font-semibold text-slate-700 flex items-center gap-2 mb-4">
-            <Globe size={20} /> Proxy Config ({proxyMode.toUpperCase()})
-          </h2>
-
-          {/* Quick paste */}
-          <div className="mb-4">
-            <label className="text-xs font-medium text-slate-500 mb-1 block">Dán nhanh (ip:port:user:pass)</label>
-            <input
-              type="text"
-              placeholder="1.2.3.4:8080:username:password"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              onPaste={(e) => {
-                e.preventDefault();
-                handleParseProxy(e.clipboardData.getData('text'));
-              }}
-              onChange={(e) => handleParseProxy(e.target.value)}
-            />
+      {/* Content — scrollable */}
+      <div className="flex-1 overflow-y-auto scrollbar-thin">
+        {/* Mode Selector */}
+        <div className="px-6 py-4 border-b border-slate-100">
+          <div className="flex items-center gap-2 mb-3">
+            <Settings2 size={18} className="text-slate-500" />
+            <span className="text-sm font-semibold text-slate-700">Chế độ hoạt động</span>
           </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-medium text-slate-500 mb-1 block">IP Address</label>
-              <input
-                type="text" value={proxyIp} onChange={e => setProxyIp(e.target.value)}
-                placeholder="1.2.3.4"
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-slate-500 mb-1 block">Port</label>
-              <input
-                type="number" value={proxyPort} onChange={e => setProxyPort(e.target.value)}
-                placeholder="8080"
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-slate-500 mb-1 block">Username</label>
-              <input
-                type="text" value={proxyUser} onChange={e => setProxyUser(e.target.value)}
-                placeholder="user"
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-slate-500 mb-1 block">Password</label>
-              <input
-                type="password" value={proxyPass} onChange={e => setProxyPass(e.target.value)}
-                placeholder="pass"
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
+          <div className="grid grid-cols-3 gap-3">
+            {MODE_OPTIONS.map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => setProxyMode(opt.value)}
+                className={`p-3 rounded-xl border-2 text-left transition-all ${
+                  proxyMode === opt.value
+                    ? opt.color === 'blue' ? 'border-blue-500 bg-blue-50'
+                      : opt.color === 'emerald' ? 'border-emerald-500 bg-emerald-50'
+                      : 'border-slate-400 bg-slate-50'
+                    : 'border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                <p className={`text-sm font-semibold ${
+                  proxyMode === opt.value
+                    ? opt.color === 'blue' ? 'text-blue-700'
+                      : opt.color === 'emerald' ? 'text-emerald-700'
+                      : 'text-slate-700'
+                    : 'text-slate-600'
+                }`}>{opt.label}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{opt.desc}</p>
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Anti-Detection / Spoof Config — only shown for US mode */}
-        {proxyMode === 'us' ? (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-slate-700 flex items-center gap-2">
-              <Settings2 size={20} /> Anti-Detection (US Spoof)
-            </h2>
-            <button
-              onClick={autoDetectFromIp}
-              disabled={autoDetecting || !proxyIp}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-50 text-blue-600 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {autoDetecting ? <Loader2 size={14} className="animate-spin" /> : <Wand2 size={14} />}
-              Tự động phát hiện
-            </button>
-          </div>
+        {/* Config Panels — only show when mode is not "none" */}
+        {proxyMode !== 'none' && (
+        <div className="px-6 py-4 border-b border-slate-100">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Proxy Config */}
+            <div className="bg-slate-50/80 rounded-xl border border-slate-100 p-5">
+              <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-4">
+                <Globe size={16} /> Proxy Config ({proxyMode.toUpperCase()})
+              </h2>
 
-          <div className="space-y-3">
-            <div>
-              <label className="text-xs font-medium text-slate-500 mb-1 flex items-center gap-1">
-                <Clock size={12} /> Timezone
-              </label>
-              <CustomSelect
-                value={timezone}
-                onChange={setTimezone}
-                options={US_TIMEZONES}
-              />
+              {/* Quick paste */}
+              <div className="mb-3">
+                <label className="text-xs font-medium text-slate-500 mb-1 block">Dán nhanh (ip:port:user:pass)</label>
+                <input
+                  type="text"
+                  placeholder="1.2.3.4:8080:username:password"
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm"
+                  onPaste={(e) => { e.preventDefault(); handleParseProxy(e.clipboardData.getData('text')); }}
+                  onChange={(e) => handleParseProxy(e.target.value)}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-slate-500 mb-1 block">IP Address</label>
+                  <input type="text" value={proxyIp} onChange={e => setProxyIp(e.target.value)} placeholder="1.2.3.4"
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-500 mb-1 block">Port</label>
+                  <input type="number" value={proxyPort} onChange={e => setProxyPort(e.target.value)} placeholder="8080"
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-500 mb-1 block">Username</label>
+                  <input type="text" value={proxyUser} onChange={e => setProxyUser(e.target.value)} placeholder="user"
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-500 mb-1 block">Password</label>
+                  <input type="password" value={proxyPass} onChange={e => setProxyPass(e.target.value)} placeholder="pass"
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm" />
+                </div>
+              </div>
             </div>
 
-            <div>
-              <label className="text-xs font-medium text-slate-500 mb-1 flex items-center gap-1">
-                <MapPin size={12} /> Vị trí GPS
-              </label>
-              <CustomSelect
-                value={selectedLocation}
-                onChange={setSelectedLocation}
-                options={US_LOCATIONS}
-              />
+            {/* Anti-Detection / Spoof Config */}
+            {proxyMode === 'us' ? (
+            <div className="bg-slate-50/80 rounded-xl border border-slate-100 p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                  <Settings2 size={16} /> Anti-Detection (US Spoof)
+                </h2>
+                <button onClick={autoDetectFromIp} disabled={autoDetecting || !proxyIp}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-50 text-blue-600 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                  {autoDetecting ? <Loader2 size={14} className="animate-spin" /> : <Wand2 size={14} />}
+                  Tự động phát hiện
+                </button>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-medium text-slate-500 mb-1 flex items-center gap-1"><Clock size={12} /> Timezone</label>
+                  <CustomSelect value={timezone} onChange={setTimezone} options={US_TIMEZONES} />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-500 mb-1 flex items-center gap-1"><MapPin size={12} /> Vị trí GPS</label>
+                  <CustomSelect value={selectedLocation} onChange={setSelectedLocation} options={US_LOCATIONS} />
+                </div>
+                <div className="pt-2 text-xs text-slate-400">
+                  <p>Locale: en_US | WiFi BSSID: ẩn | Cell: US (310/260)</p>
+                  <p>DNS: DoH qua proxy (1.1.1.1) - Tự động</p>
+                  <p>Tailscale: Loại trừ khỏi tunnel - Tự động</p>
+                </div>
+              </div>
             </div>
-
-            <div className="pt-2 text-xs text-slate-400">
-              <p>Locale: en_US | WiFi BSSID: ẩn | Cell: US (310/260)</p>
-              <p>DNS: DoH qua proxy (1.1.1.1) - Tự động</p>
-              <p>Tailscale: Loại trừ khỏi tunnel - Tự động</p>
+            ) : proxyMode === 'vn' ? (
+            <div className="bg-slate-50/80 rounded-xl border border-slate-100 p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                  <Settings2 size={16} /> Anti-Detection (VN Spoof)
+                </h2>
+                <button onClick={autoDetectFromIp} disabled={autoDetecting || !proxyIp}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-600 hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                  {autoDetecting ? <Loader2 size={14} className="animate-spin" /> : <Wand2 size={14} />}
+                  Tự động phát hiện
+                </button>
+              </div>
+              {vnDetected ? (
+              <div className="space-y-3">
+                <div className="bg-emerald-50 rounded-lg p-3">
+                  <p className="text-sm font-medium text-emerald-700 flex items-center gap-1">
+                    <MapPin size={14} /> {vnDetected.city}, {vnDetected.region}
+                  </p>
+                  <p className="text-xs text-emerald-600 mt-1">GPS: {vnDetected.lat.toFixed(4)}, {vnDetected.lon.toFixed(4)}</p>
+                </div>
+                <div className="pt-1 text-xs text-slate-400">
+                  <p>GPS: Khớp vị trí proxy | WiFi BSSID: ẩn</p>
+                  <p>Timezone/Locale/Cell: Giữ VN tự nhiên</p>
+                </div>
+              </div>
+              ) : (
+              <div className="text-center text-slate-400 py-4">
+                <MapPin size={24} className="mx-auto mb-2 opacity-50" />
+                <p className="text-xs">Bấm &quot;Tự động phát hiện&quot; để xác định vị trí proxy</p>
+              </div>
+              )}
             </div>
+            ) : null}
           </div>
         </div>
-        ) : proxyMode === 'vn' ? (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-slate-700 flex items-center gap-2">
-              <Settings2 size={20} /> Anti-Detection (VN Spoof)
-            </h2>
-            <button
-              onClick={autoDetectFromIp}
-              disabled={autoDetecting || !proxyIp}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-600 hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {autoDetecting ? <Loader2 size={14} className="animate-spin" /> : <Wand2 size={14} />}
-              Tự động phát hiện
-            </button>
-          </div>
+        )}
 
-          {vnDetected ? (
-          <div className="space-y-3">
-            <div className="bg-emerald-50 rounded-lg p-3">
-              <p className="text-sm font-medium text-emerald-700 flex items-center gap-1">
-                <MapPin size={14} /> {vnDetected.city}, {vnDetected.region}
-              </p>
-              <p className="text-xs text-emerald-600 mt-1">
-                GPS: {vnDetected.lat.toFixed(4)}, {vnDetected.lon.toFixed(4)}
-              </p>
-            </div>
-            <div className="pt-1 text-xs text-slate-400">
-              <p>GPS: Khớp vị trí proxy | WiFi BSSID: ẩn</p>
-              <p>Timezone/Locale/Cell: Giữ VN tự nhiên</p>
-            </div>
-          </div>
-          ) : (
-          <div className="text-center text-slate-400 py-4">
-            <MapPin size={24} className="mx-auto mb-2 opacity-50" />
-            <p className="text-xs">Bấm &quot;Tự động phát hiện&quot; để xác định vị trí proxy</p>
-          </div>
+        {/* Batch Actions — toolbar style */}
+        <div className="px-6 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3 flex-wrap">
+          <button onClick={selectAll}
+            className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 shadow-sm">
+            {selectedDevices.length === onlineDevices.length && onlineDevices.length > 0
+              ? <><CheckSquare size={16} className="text-blue-600" /> Bỏ chọn tất cả</>
+              : <><SquareIcon size={16} className="text-slate-400" /> Chọn tất cả</>}
+          </button>
+
+          <button onClick={batchApplyAndStart}
+            disabled={batchApplying || !selectedDevices.length || (proxyMode !== 'none' && !proxyIp) || selectedDevices.some(id => allDevices.find(d => d.id === id)?.proxyStatus === 'running')}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm">
+            {batchApplying ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
+            {batchApplying ? 'Đang áp dụng...' : `${proxyMode === 'none' ? 'Stop All' : `Apply ${proxyMode.toUpperCase()} & Start`} (${selectedDevices.length})`}
+          </button>
+
+          <button onClick={batchStop}
+            disabled={batchStopping || !selectedDevices.length}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm">
+            {batchStopping ? <Loader2 size={16} className="animate-spin" /> : <Square size={16} />}
+            {batchStopping ? 'Đang dừng...' : `Stop (${selectedDevices.length})`}
+          </button>
+
+          {selectedDevices.length > 0 && (
+            <span className="text-sm text-slate-500">Đã chọn {selectedDevices.length} thiết bị</span>
           )}
         </div>
-        ) : (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 flex items-center justify-center">
-          <div className="text-center text-slate-400">
-            <Globe size={32} className="mx-auto mb-2 opacity-50" />
-            <p className="text-sm font-medium">Không proxy</p>
-            <p className="text-xs mt-1">Tắt proxy, mọi thứ bình thường.</p>
-          </div>
-        </div>
-        )}
-      </div>
-      )}
 
-      {/* Batch Actions */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 flex items-center gap-3 flex-wrap">
-        <button onClick={selectAll}
-          className="px-3 py-2 rounded-lg text-sm border border-slate-200 text-slate-600 hover:bg-slate-50">
-          {selectedDevices.length === onlineDevices.length && onlineDevices.length > 0 ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
-        </button>
-
-        <button onClick={batchApplyAndStart}
-          disabled={batchApplying || !selectedDevices.length || (proxyMode !== 'none' && !proxyIp) || selectedDevices.some(id => allDevices.find(d => d.id === id)?.proxyStatus === 'running')}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed">
-          {batchApplying ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
-          {batchApplying ? 'Đang áp dụng...' : `${proxyMode === 'none' ? 'Stop All' : `Apply ${proxyMode.toUpperCase()} & Start`} (${selectedDevices.length})`}
-        </button>
-
-        <button onClick={batchStop}
-          disabled={batchStopping || !selectedDevices.length}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed">
-          {batchStopping ? <Loader2 size={16} className="animate-spin" /> : <Square size={16} />}
-          {batchStopping ? 'Đang dừng...' : `Stop (${selectedDevices.length})`}
-        </button>
-
-        {selectedDevices.length > 0 && (
-          <span className="text-sm text-slate-500">
-            Đã chọn {selectedDevices.length} thiết bị
-          </span>
-        )}
-      </div>
-
-      {/* Device List */}
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 border-b border-slate-200">
-            <tr>
-              <th className="px-4 py-3 text-left w-10">
-                <input type="checkbox" checked={selectedDevices.length === onlineDevices.length && onlineDevices.length > 0}
-                  onChange={selectAll} className="rounded" />
+        {/* Device Table — same style as Devices page */}
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="border-b border-slate-200 bg-slate-50/50 text-sm font-medium text-slate-500 sticky top-0 z-10">
+              <th className="py-3 pl-6 pr-4 w-12">
+                <button onClick={selectAll} className="text-slate-400 hover:text-blue-600">
+                  {selectedDevices.length === onlineDevices.length && onlineDevices.length > 0
+                    ? <CheckSquare size={18} className="text-blue-600" />
+                    : <SquareIcon size={18} />}
+                </button>
               </th>
-              <th className="px-4 py-3 text-left text-slate-600 font-medium">Thiết bị</th>
-              <th className="px-4 py-3 text-left text-slate-600 font-medium">Trạng thái</th>
-              <th className="px-4 py-3 text-left text-slate-600 font-medium">Proxy</th>
-              <th className="px-4 py-3 text-left text-slate-600 font-medium">Proxy Status</th>
-              <th className="px-4 py-3 text-right text-slate-600 font-medium">Hành động</th>
+              <th className="py-3 px-4">Thiết bị</th>
+              <th className="py-3 px-4">Trạng thái</th>
+              <th className="py-3 px-4">Proxy</th>
+              <th className="py-3 px-4">Proxy Status</th>
+              <th className="py-3 px-4 text-right pr-6">Hành động</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {allDevices.map(device => (
-              <tr key={device.id} className={`hover:bg-slate-50 ${device.status === 'offline' ? 'opacity-50' : ''}`}>
-                <td className="px-4 py-3">
-                  <input type="checkbox" checked={selectedDevices.includes(device.id)}
-                    onChange={() => toggleSelect(device.id)}
-                    disabled={device.status === 'offline'} className="rounded" />
+            {allDevices.length === 0 && (
+              <tr>
+                <td colSpan={6} className="text-center py-12 text-slate-400">
+                  <Smartphone size={32} className="mx-auto mb-2" />
+                  <p className="text-sm">Chưa có thiết bị nào</p>
                 </td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <Smartphone size={16} className="text-slate-400" />
+              </tr>
+            )}
+            {allDevices.map(device => (
+              <tr key={device.id} className={`hover:bg-slate-50 transition-colors group ${device.status === 'offline' ? 'opacity-50' : ''} ${selectedDevices.includes(device.id) ? 'bg-blue-50/30' : ''}`}>
+                <td className="py-3 pl-6 pr-4">
+                  <button onClick={() => toggleSelect(device.id)} disabled={device.status === 'offline'} className="text-slate-300 hover:text-blue-600">
+                    {selectedDevices.includes(device.id) ? <CheckSquare size={18} className="text-blue-600" /> : <SquareIcon size={18} />}
+                  </button>
+                </td>
+                <td className="py-3 px-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${device.status !== 'offline' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400'}`}>
+                      <Smartphone size={16} />
+                    </div>
                     <div>
-                      <p className="font-medium text-slate-700">{device.name}</p>
-                      <p className="text-xs text-slate-400">{device.tailscaleIp}</p>
+                      <div className="font-medium text-slate-900">{device.name}</div>
+                      <div className="text-xs text-slate-500">{device.tailscaleIp}</div>
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-3">
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                    device.status === 'online' ? 'bg-emerald-50 text-emerald-600' :
-                    device.status === 'running' ? 'bg-blue-50 text-blue-600' :
-                    device.status === 'connecting' ? 'bg-amber-50 text-amber-600' :
-                    'bg-slate-100 text-slate-400'
+                <td className="py-3 px-4">
+                  <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium border ${
+                    device.status === 'online' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+                    device.status === 'running' ? 'bg-blue-50 text-blue-700 border-blue-100' :
+                    device.status === 'connecting' ? 'bg-amber-50 text-amber-700 border-amber-100' :
+                    'bg-slate-50 text-slate-600 border-slate-200'
                   }`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${
                       device.status === 'online' ? 'bg-emerald-500' :
@@ -669,56 +574,47 @@ export default function ProxyManager() {
                       'bg-slate-300'
                     }`} />
                     {device.status}
-                  </span>
+                  </div>
                 </td>
-                <td className="px-4 py-3 text-xs text-slate-500">
+                <td className="py-3 px-4 text-xs text-slate-500">
                   {device.proxyConfig?.ip ? (
-                    <span>{device.proxyConfig.ip}:{device.proxyConfig.port}</span>
+                    <span className="font-mono">{device.proxyConfig.ip}:{device.proxyConfig.port}</span>
                   ) : (
                     <span className="text-slate-300">Chưa cấu hình</span>
                   )}
                 </td>
-                <td className="px-4 py-3">
+                <td className="py-3 px-4">
                   {device.proxyStatus === 'running' ? (
-                    <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
+                    <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
                       <ShieldCheck size={14} /> Running
-                    </span>
+                    </div>
                   ) : (
-                    <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-400">
+                    <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium bg-slate-50 text-slate-600 border border-slate-200">
                       <ShieldOff size={14} /> Stopped
-                    </span>
+                    </div>
                   )}
                 </td>
-                <td className="px-4 py-3">
+                <td className="py-3 px-4 text-right pr-6">
                   <div className="flex items-center justify-end gap-1">
                     {loading[device.id] ? (
                       <Loader2 size={16} className="animate-spin text-blue-500" />
                     ) : device.status !== 'offline' ? (
-                      <>
-                        {device.proxyStatus === 'running' ? (
-                          <button onClick={() => stopProxy(device.id)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100">
-                            <XCircle size={14} /> Dừng
-                          </button>
-                        ) : (
-                          <button onClick={() => startProxy(device.id)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-emerald-600 bg-emerald-50 hover:bg-emerald-100">
-                            <CheckCircle size={14} /> Kích hoạt
-                          </button>
-                        )}
-                      </>
+                      device.proxyStatus === 'running' ? (
+                        <button onClick={() => stopProxy(device.id)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 transition-colors opacity-0 group-hover:opacity-100">
+                          <XCircle size={14} /> Dừng
+                        </button>
+                      ) : (
+                        <button onClick={() => startProxy(device.id)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-colors opacity-0 group-hover:opacity-100">
+                          <CheckCircle size={14} /> Kích hoạt
+                        </button>
+                      )
                     ) : null}
                   </div>
                 </td>
               </tr>
             ))}
-            {allDevices.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
-                  Chưa có thiết bị nào
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
       </div>
