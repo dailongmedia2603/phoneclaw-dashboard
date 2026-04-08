@@ -75,7 +75,7 @@ router.post('/:id/run', async (req, res) => {
   const found = await findDeviceGlobal(deviceId);
   const tenantId = found?.tenantId || getAuthUserId(req);
 
-  await executeScriptDirect(script, deviceId, 'Shared: ' + script.name, undefined, tenantId).catch(err => {
+  await executeScriptDirect(script, deviceId, 'Shared: ' + script.name, undefined, tenantId, 0).catch(err => {
     console.error('Shared script execution error:', err);
   });
 

@@ -153,6 +153,18 @@ export const NODE_DEFS: Record<string, NodeDef> = {
     color: '#3b82f6', bgColor: '#eff6ff', icon: 'mail',
     stepType: 'launch', defaultParams: { bundleId: 'com.apple.mobilemail' }, fields: [],
   },
+  login_account: {
+    nodeType: 'login_account', label: 'Login tài khoản', category: 'apps',
+    color: '#059669', bgColor: '#ecfdf5', icon: 'log_in',
+    stepType: 'login_account',
+    defaultParams: { usernameX: 0.5, usernameY: 0.35, passwordX: 0.5, passwordY: 0.45, accountIds: [] },
+    fields: [
+      { key: 'usernameX', label: 'Username X', type: 'number' },
+      { key: 'usernameY', label: 'Username Y', type: 'number' },
+      { key: 'passwordX', label: 'Password X', type: 'number' },
+      { key: 'passwordY', label: 'Password Y', type: 'number' },
+    ],
+  },
 };
 
 export const NODE_CATEGORIES = [

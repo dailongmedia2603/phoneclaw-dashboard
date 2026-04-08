@@ -229,12 +229,12 @@ router.post('/scripts/:id/run', async (req: Request, res: Response) => {
         steps: injectVariables(script.steps, variables),
       };
       // Fire and forget (same pattern as scripts.ts:75)
-      executeScriptDirect(modifiedScript, deviceId, scheduleName, undefined, userId).catch(err => {
+      executeScriptDirect(modifiedScript, deviceId, scheduleName, undefined, userId, 0).catch(err => {
         console.error('[External API] Script execution error:', err.message);
       });
     } else {
       // No variables → use executeScript
-      executeScript(req.params.id, deviceId, scheduleName, undefined, userId).catch(err => {
+      executeScript(req.params.id, deviceId, scheduleName, undefined, userId, 0).catch(err => {
         console.error('[External API] Script execution error:', err.message);
       });
     }

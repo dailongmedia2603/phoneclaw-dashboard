@@ -147,9 +147,10 @@ export async function executeScriptDirect(
   deviceId: string,
   scheduleName: string,
   onProgress?: ProgressCallback,
-  tenantId?: string
+  tenantId?: string,
+  deviceIndex?: number
 ): Promise<ScheduleHistory> {
-  return _executeScript(script, deviceId, scheduleName, onProgress, tenantId);
+  return _executeScript(script, deviceId, scheduleName, onProgress, tenantId, deviceIndex);
 }
 
 export async function executeScript(
@@ -157,7 +158,8 @@ export async function executeScript(
   deviceId: string,
   scheduleName: string,
   onProgress?: ProgressCallback,
-  tenantId?: string
+  tenantId?: string,
+  deviceIndex?: number
 ): Promise<ScheduleHistory> {
   // Tìm script từ tenant nếu có, fallback legacy
   let script: Script | undefined;
@@ -168,7 +170,7 @@ export async function executeScript(
     script = await getScript(scriptId);
   }
   if (!script) throw new Error('Script not found');
-  return _executeScript(script, deviceId, scheduleName, onProgress, tenantId);
+  return _executeScript(script, deviceId, scheduleName, onProgress, tenantId, deviceIndex);
 }
 
 async function _executeScript(
@@ -176,7 +178,8 @@ async function _executeScript(
   deviceId: string,
   scheduleName: string,
   onProgress?: ProgressCallback,
-  tenantId?: string
+  tenantId?: string,
+  deviceIndex?: number
 ): Promise<ScheduleHistory> {
 
   // Tìm device: tenant storage trước, fallback legacy
@@ -213,7 +216,7 @@ async function _executeScript(
   await saveFn();
 
   try {
-    await executeSteps(script.steps, deviceId, execution, ctrl, onProgress, tenantId);
+    await executeSteps(script.steps, deviceId, execution, ctrl, onProgress, tenantId, deviceIndex);
     execution.status = 'success';
   } catch (err) {
     execution.status = 'error';
@@ -255,7 +258,8 @@ async function executeSteps(
   execution: ScheduleHistory,
   ctrl: { abort: boolean },
   onProgress?: ProgressCallback,
-  tenantId?: string
+  tenantId?: string,
+  deviceIndex?: number
 ) {
   const saveFn = tenantId
     ? () => saveExecutionForTenant(tenantId, execution)
@@ -275,7 +279,7 @@ async function executeSteps(
     onProgress?.(execution);
 
     try {
-      await executeStep(step, deviceId, execution, ctrl, onProgress, tenantId);
+      await executeStep(step, deviceId, execution, ctrl, onProgress, tenantId, deviceIndex);
       execStep.status = 'success';
       execStep.finishedAt = new Date().toISOString();
     } catch (err) {
@@ -299,7 +303,8 @@ async function executeStep(
   execution: ScheduleHistory,
   ctrl: { abort: boolean },
   onProgress?: ProgressCallback,
-  tenantId?: string
+  tenantId?: string,
+  deviceIndex?: number
 ) {
   const p = step.params;
 
@@ -433,7 +438,7 @@ async function executeStep(
       for (let i = 0; i < count; i++) {
         if (ctrl.abort) throw new Error('Execution aborted');
         if (step.children) {
-          await executeSteps(step.children, deviceId, execution, ctrl, onProgress, tenantId);
+          await executeSteps(step.children, deviceId, execution, ctrl, onProgress, tenantId, deviceIndex);
         }
       }
       break;
@@ -441,11 +446,63 @@ async function executeStep(
     case 'repeat_forever': {
       while (!ctrl.abort) {
         if (step.children) {
-          await executeSteps(step.children, deviceId, execution, ctrl, onProgress, tenantId);
+          await executeSteps(step.children, deviceId, execution, ctrl, onProgress, tenantId, deviceIndex);
         }
       }
       break;
     }
+    case 'login_account': {
+      const accountIds: string[] = Array.isArray(p.accountIds) ? p.accountIds as string[] : [];
+      if (accountIds.length === 0) {
+        throw new Error('Login account: không có tài khoản nào được chọn');
+      }
+
+      // Fetch accounts từ tenant storage
+      const allAccounts = tenantId
+        ? await readUserCollection<any>(tenantId, 'social-accounts')
+        : [];
+
+      // Filter chỉ accounts đã chọn, giữ đúng thứ tự
+      const selectedAccounts = accountIds
+        .map(id => allAccounts.find((a: any) => a.id === id))
+        .filter(Boolean);
+
+      if (selectedAccounts.length === 0) {
+        throw new Error('Login account: không tìm thấy tài khoản đã chọn');
+      }
+
+      // Round-robin: deviceIndex % số accounts
+      const accIdx = (deviceIndex ?? 0) % selectedAccounts.length;
+      const account = selectedAccounts[accIdx];
+
+      // 1. Tap vị trí username
+      await callDeviceApi(deviceId, 'POST', '/api/tap', {
+        x: Number(p.usernameX) || 0.5,
+        y: Number(p.usernameY) || 0.3,
+      });
+      await sleep(500);
+
+      // 2. Gõ username
+      await callDeviceApi(deviceId, 'POST', '/api/type', {
+        text: account.username,
+      });
+      await sleep(300);
+
+      // 3. Tap vị trí password
+      await callDeviceApi(deviceId, 'POST', '/api/tap', {
+        x: Number(p.passwordX) || 0.5,
+        y: Number(p.passwordY) || 0.5,
+      });
+      await sleep(500);
+
+      // 4. Gõ password
+      await callDeviceApi(deviceId, 'POST', '/api/type', {
+        text: account.password,
+      });
+
+      break;
+    }
+
     default:
       break;
   }
@@ -494,6 +551,10 @@ function describeStep(step: ScriptStep): string {
     case 'send_file': return label || 'Truyền file video';
     case 'select_video': return label || 'Chọn video';
     case 'clear_photos': return 'Xoá Photos';
+    case 'login_account': {
+      const ids: string[] = Array.isArray(p.accountIds) ? p.accountIds as string[] : [];
+      return `Login tài khoản (${ids.length} TK)`;
+    }
     case 'wait': return `Chờ ${p.seconds} giây`;
     case 'wait_random': return `Chờ ngẫu nhiên ${p.min}-${p.max} giây`;
     case 'repeat': return `Lặp lại ${p.count} lần`;

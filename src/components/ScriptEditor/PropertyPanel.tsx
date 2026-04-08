@@ -3,9 +3,9 @@ import type { Node } from '@xyflow/react';
 import { NODE_DEFS, type NodeDef } from './nodeDefinitions';
 import NodeIcon from './nodeIcons';
 import { Trash2, Crosshair, Clock } from 'lucide-react';
-import { videos as videosApi } from '../../services/api';
+import { videos as videosApi, socialAccounts as socialAccountsApi } from '../../services/api';
 import CustomSelect from '../CustomSelect';
-import type { Video } from '../../types';
+import type { Video, SocialAccount } from '../../types';
 
 interface PropertyPanelProps {
   selectedNode: Node | null;
@@ -50,11 +50,20 @@ function getPickableFields(nodeType: string, extraDefs?: Record<string, NodeDef>
     result.push({ prefix: 'tap', label: 'Chọn vị trí tap' });
   }
 
+  // Login account: usernameX/usernameY + passwordX/passwordY
+  if (keys.includes('usernameX') && keys.includes('usernameY')) {
+    result.push({ prefix: 'username', label: 'Chọn vị trí nhập Tài khoản' });
+  }
+  if (keys.includes('passwordX') && keys.includes('passwordY')) {
+    result.push({ prefix: 'password', label: 'Chọn vị trí nhập Mật khẩu' });
+  }
+
   return result;
 }
 
 export default function PropertyPanel({ selectedNode, onUpdateNode, onDeleteNode, onPickCoordinate, extraDefs }: PropertyPanelProps) {
   const [videoList, setVideoList] = useState<Video[]>([]);
+  const [accountList, setAccountList] = useState<SocialAccount[]>([]);
 
   // Load videos for send_file node
   useEffect(() => {
@@ -62,6 +71,16 @@ export default function PropertyPanel({ selectedNode, onUpdateNode, onDeleteNode
     if (nodeData?.nodeType === 'send_file') {
       videosApi.getAll().then(res => {
         if (res.success && res.data) setVideoList(res.data);
+      });
+    }
+  }, [selectedNode?.id]);
+
+  // Load social accounts for login_account node
+  useEffect(() => {
+    const nodeData = selectedNode?.data as any;
+    if (nodeData?.nodeType === 'login_account') {
+      socialAccountsApi.getAll().then(res => {
+        if (res.success && res.data) setAccountList(res.data);
       });
     }
   }, [selectedNode?.id]);
@@ -138,6 +157,45 @@ export default function PropertyPanel({ selectedNode, onUpdateNode, onDeleteNode
         <div className="pt-2 border-t border-slate-100">
           <p className="text-[10px] text-slate-400">Tap vào video mới nhất trong Photos picker. Đặt node này ngay sau &quot;Truyền File&quot; để chọn đúng video vừa truyền.</p>
           <p className="text-[10px] text-slate-400 mt-1">Tap X/Y là tọa độ thumbnail đầu tiên trong picker (có thể chỉnh nếu cần).</p>
+        </div>
+      )}
+
+      {/* Login account: multi-select accounts */}
+      {nodeData.nodeType === 'login_account' && (
+        <div className="space-y-2">
+          <label className="block text-xs font-medium text-slate-600">
+            Chọn tài khoản ({((nodeData.params?.accountIds as string[]) || []).length} đã chọn)
+          </label>
+          <div className="max-h-40 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100 scrollbar-thin">
+            {accountList.length === 0 ? (
+              <p className="text-xs text-slate-400 p-3 text-center">Chưa có tài khoản. Thêm ở menu Tài khoản.</p>
+            ) : accountList.map(acc => {
+              const isSelected = ((nodeData.params?.accountIds as string[]) || []).includes(acc.id);
+              return (
+                <label key={acc.id} className={`flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-slate-50 text-xs ${isSelected ? 'bg-blue-50' : ''}`}>
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => {
+                      const current: string[] = [...((nodeData.params?.accountIds as string[]) || [])];
+                      const idx = current.indexOf(acc.id);
+                      if (idx >= 0) current.splice(idx, 1);
+                      else current.push(acc.id);
+                      onUpdateNode(selectedNode.id, { ...nodeData.params, accountIds: current });
+                    }}
+                    className="rounded border-slate-300"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <span className="font-medium text-slate-700 truncate block">{acc.username}</span>
+                    <span className="text-slate-400 truncate block">{acc.channel} · {acc.email || 'Không email'}</span>
+                  </div>
+                </label>
+              );
+            })}
+          </div>
+          <p className="text-[10px] text-slate-400">
+            Khi chạy nhiều thiết bị, hệ thống tự phân phối mỗi thiết bị 1 tài khoản (round-robin).
+          </p>
         </div>
       )}
 

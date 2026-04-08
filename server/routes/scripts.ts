@@ -77,7 +77,7 @@ router.post('/:id/run', async (req, res) => {
   }
 
   // Run in background — truyền userId để execution history lưu đúng tenant
-  se.executeScript(req.params.id, deviceId, 'Manual run', undefined, userId).catch(err => {
+  se.executeScript(req.params.id, deviceId, 'Manual run', undefined, userId, 0).catch(err => {
     console.error('Script execution error:', err);
   });
 

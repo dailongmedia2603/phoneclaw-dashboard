@@ -79,7 +79,8 @@ export type ScriptStepType =
   | 'tap' | 'double_tap' | 'tap_image' | 'swipe' | 'type' | 'key' | 'launch' | 'screenshot' | 'clipboard' | 'send_file' | 'select_video' | 'clear_photos'
   | 'wait' | 'wait_random'
   | 'repeat' | 'repeat_forever' | 'if_screen_match' | 'if_elapsed'
-  | 'set' | 'random_text' | 'random_int' | 'counter';
+  | 'set' | 'random_text' | 'random_int' | 'counter'
+  | 'login_account';
 
 export interface ScriptStep {
   id: string;

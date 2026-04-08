@@ -177,6 +177,7 @@ async function checkSchedules() {
       }
 
       const tenantDevices = await readUserCollection<{ id: string; name: string; status: string }>(tenantId, 'devices');
+      let deviceIdx = 0;
       for (const deviceId of deviceIds) {
         const device = tenantDevices.find(d => d.id === deviceId);
         if (!device || device.status === 'offline') continue;
@@ -186,10 +187,12 @@ async function checkSchedules() {
           deviceId,
           schedule.name,
           onExecutionUpdate || undefined,
-          tenantId
+          tenantId,
+          deviceIdx
         ).catch(err => {
           console.error(`Schedule ${schedule.name} failed on ${device.name}:`, err);
         });
+        deviceIdx++;
       }
 
       await updateScheduleForTenant(tenantId, schedule.id, {
