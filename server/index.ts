@@ -30,6 +30,7 @@ import packagesRoutes from './routes/packages';
 import heartbeatRoutes from './routes/heartbeat';
 import apiTokenRoutes from './routes/api-tokens';
 import externalApiRoutes from './routes/external-api';
+import socialAccountsRoutes from './routes/social-accounts';
 import { apiTokenAuthMiddleware } from './middleware/api-token-auth';
 import { ipRateLimiter, userRateLimiter, authFailLimiter } from './middleware/rate-limit';
 import { auditLogMiddleware } from './middleware/audit-log';
@@ -219,6 +220,7 @@ app.use('/api/custom-nodes', customNodesRoutes);
 app.use('/api/shared-scripts', sharedScriptsRoutes);
 app.use('/api/proxy', proxyRoutes);
 app.use('/api/packages', packagesRoutes);
+app.use('/api/social-accounts', socialAccountsRoutes);
 
 // Health check endpoint
 app.get('/api/health', (_req, res) => {

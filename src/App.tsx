@@ -8,6 +8,7 @@ import Logs from './components/Logs';
 import Settings from './components/Settings';
 import VideoLibrary from './components/VideoLibrary';
 import ProxyManager from './components/ProxyManager';
+import SocialAccounts from './components/SocialAccounts';
 import SharedScripts from './components/SharedScripts';
 import UserManagement from './components/UserManagement';
 import Login from './components/Login';
@@ -29,6 +30,7 @@ function Layout() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/thiet-bi" element={<Devices />} />
             <Route path="/proxy" element={<ProxyManager />} />
+            <Route path="/tai-khoan" element={<SocialAccounts />} />
             <Route path="/kich-ban" element={<Scripts />} />
             <Route path="/kho-kich-ban" element={<SharedScripts userRole={user!.role} />} />
             <Route path="/lich-trinh" element={<Schedules />} />

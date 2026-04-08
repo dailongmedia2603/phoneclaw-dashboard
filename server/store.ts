@@ -274,6 +274,7 @@ export {
   rowToScreenshot,
   rowToVideo,
   rowToNotification,
+  rowToSocialAccount,
   rowToUser,
   rowToUserWithPassword,
   // Device-specific

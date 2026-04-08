@@ -97,6 +97,27 @@ export async function initDb(): Promise<void> {
       ALTER TABLE packages ADD COLUMN IF NOT EXISTS max_video_storage_mb INTEGER NOT NULL DEFAULT -1;
     `);
     console.log('[DB] Package limit columns ensured');
+
+    // Auto-migrate: social_accounts table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS social_accounts (
+        id              TEXT PRIMARY KEY,
+        owner_id        TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        username        TEXT NOT NULL,
+        password        TEXT NOT NULL,
+        email           TEXT DEFAULT '',
+        email_password  TEXT DEFAULT '',
+        channel         TEXT NOT NULL DEFAULT 'tiktok_vn',
+        device_id       TEXT REFERENCES devices(id) ON DELETE SET NULL,
+        notes           TEXT DEFAULT '',
+        status          TEXT NOT NULL DEFAULT 'active',
+        created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_social_accounts_owner ON social_accounts(owner_id);
+      CREATE INDEX IF NOT EXISTS idx_social_accounts_channel ON social_accounts(channel);
+    `);
+    console.log('[DB] Social accounts table ensured');
   } finally {
     client.release();
   }
@@ -537,6 +558,23 @@ export function rowToVideo(row: Record<string, unknown>): Video {
     mimeType: (row.mime_type as string) || 'video/mp4',
     uploadedAt: row.uploaded_at instanceof Date ? row.uploaded_at.toISOString() : row.uploaded_at as string,
     ownerId: row.owner_id as string | undefined,
+  };
+}
+
+export function rowToSocialAccount(row: Record<string, unknown>): Record<string, unknown> {
+  return {
+    id: row.id as string,
+    username: row.username as string,
+    password: row.password as string,
+    email: (row.email as string) || '',
+    emailPassword: (row.email_password as string) || '',
+    channel: (row.channel as string) || 'tiktok_vn',
+    deviceId: (row.device_id as string) || undefined,
+    notes: (row.notes as string) || '',
+    status: (row.status as string) || 'active',
+    ownerId: row.owner_id as string,
+    createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at as string,
+    updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : row.updated_at as string,
   };
 }
 

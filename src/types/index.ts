@@ -311,3 +311,22 @@ export interface WsMessage {
   payload: unknown;
   timestamp: string;
 }
+
+// --- Social Account ---
+export type SocialChannel = 'facebook' | 'tiktok_vn' | 'tiktok_us' | 'instagram' | 'youtube' | 'other';
+
+export interface SocialAccount {
+  id: string;
+  username: string;
+  password: string;
+  email: string;
+  emailPassword: string;
+  channel: SocialChannel;
+  deviceId?: string;
+  deviceName?: string;
+  notes?: string;
+  status: 'active' | 'locked' | 'banned';
+  ownerId?: string;
+  createdAt: string;
+  updatedAt: string;
+}

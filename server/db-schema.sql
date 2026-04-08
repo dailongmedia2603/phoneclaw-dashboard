@@ -368,4 +368,29 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_user ON api_audit_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON api_audit_logs(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_token ON api_audit_logs(token_id);
 
+-- ============================================================
+-- 17. SOCIAL ACCOUNTS
+--     Quản lý tài khoản mạng xã hội (TikTok, Facebook, etc.)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS social_accounts (
+    id              TEXT PRIMARY KEY,
+    owner_id        TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    username        TEXT NOT NULL,
+    password        TEXT NOT NULL,
+    email           TEXT DEFAULT '',
+    email_password  TEXT DEFAULT '',
+    channel         TEXT NOT NULL DEFAULT 'tiktok_vn'
+                    CHECK (channel IN ('facebook','tiktok_vn','tiktok_us','instagram','youtube','other')),
+    device_id       TEXT REFERENCES devices(id) ON DELETE SET NULL,
+    notes           TEXT DEFAULT '',
+    status          TEXT NOT NULL DEFAULT 'active'
+                    CHECK (status IN ('active','locked','banned')),
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_social_accounts_owner ON social_accounts(owner_id);
+CREATE INDEX IF NOT EXISTS idx_social_accounts_channel ON social_accounts(channel);
+
 COMMIT;

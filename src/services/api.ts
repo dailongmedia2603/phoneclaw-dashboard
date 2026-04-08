@@ -2,6 +2,7 @@ import type {
   Device, DeviceGroup, Script, Schedule, ScheduleHistory,
   ActivityLog, ScreenshotLog, DashboardStats, Notification,
   AppSettings, VpsStatus, VncProxy, ApiResponse, Video, AppUser, Package,
+  SocialAccount,
 } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -250,4 +251,14 @@ export const customNodes = {
   create: (name: string) => post<{ id: string; name: string }>('/api/custom-nodes', { name }),
   update: (id: string, name: string) => put<{ id: string; name: string }>(`/api/custom-nodes/${id}`, { name }),
   remove: (id: string) => del<void>(`/api/custom-nodes/${id}`),
+};
+
+// ============================================================
+// Social Accounts
+// ============================================================
+export const socialAccounts = {
+  getAll: () => get<SocialAccount[]>('/api/social-accounts'),
+  create: (data: Partial<SocialAccount>) => post<SocialAccount>('/api/social-accounts', data),
+  update: (id: string, data: Partial<SocialAccount>) => put<SocialAccount>(`/api/social-accounts/${id}`, data),
+  remove: (id: string) => del<void>(`/api/social-accounts/${id}`),
 };
