@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Node } from '@xyflow/react';
 import { NODE_DEFS, type NodeDef } from './nodeDefinitions';
 import NodeIcon from './nodeIcons';
-import { Trash2, Crosshair, Clock } from 'lucide-react';
+import { Trash2, Crosshair, Clock, ChevronDown, Check, X } from 'lucide-react';
 import { videos as videosApi, socialAccounts as socialAccountsApi } from '../../services/api';
 import CustomSelect from '../CustomSelect';
 import type { Video, SocialAccount } from '../../types';
@@ -59,6 +59,110 @@ function getPickableFields(nodeType: string, extraDefs?: Record<string, NodeDef>
   }
 
   return result;
+}
+
+/** Dropdown multi-select for social accounts */
+function AccountMultiSelect({ accounts, selectedIds, onChange }: {
+  accounts: SocialAccount[];
+  selectedIds: string[];
+  onChange: (ids: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as globalThis.Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const toggle = (id: string) => {
+    const next = selectedIds.includes(id)
+      ? selectedIds.filter(x => x !== id)
+      : [...selectedIds, id];
+    onChange(next);
+  };
+
+  const removeTag = (id: string) => {
+    onChange(selectedIds.filter(x => x !== id));
+  };
+
+  const selectedAccounts = selectedIds
+    .map(id => accounts.find(a => a.id === id))
+    .filter(Boolean) as SocialAccount[];
+
+  return (
+    <div className="space-y-2">
+      <label className="block text-xs font-medium text-slate-600">
+        Chọn tài khoản ({selectedIds.length} đã chọn)
+      </label>
+
+      <div ref={ref} className="relative">
+        {/* Trigger button */}
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          className="w-full flex items-center justify-between px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+        >
+          <span className={selectedIds.length > 0 ? 'text-slate-900 text-xs' : 'text-slate-400 text-xs'}>
+            {selectedIds.length > 0 ? `${selectedIds.length} tài khoản` : 'Chọn tài khoản...'}
+          </span>
+          <ChevronDown size={14} className={`text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+        </button>
+
+        {/* Dropdown */}
+        {open && (
+          <div className="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg max-h-48 overflow-auto py-1 scrollbar-thin">
+            {accounts.length === 0 ? (
+              <p className="text-xs text-slate-400 p-3 text-center">Chưa có tài khoản. Thêm ở menu Tài khoản.</p>
+            ) : accounts.map(acc => {
+              const checked = selectedIds.includes(acc.id);
+              return (
+                <button
+                  key={acc.id}
+                  type="button"
+                  onClick={() => toggle(acc.id)}
+                  className={`w-full flex items-center gap-2 px-3 py-2 text-left transition-colors ${
+                    checked ? 'bg-blue-50' : 'hover:bg-slate-50'
+                  }`}
+                >
+                  <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                    checked ? 'bg-blue-600 border-blue-600' : 'border-slate-300'
+                  }`}>
+                    {checked && <Check size={10} className="text-white" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs font-medium text-slate-700 truncate block">{acc.username}</span>
+                    <span className="text-[10px] text-slate-400 truncate block">{acc.channel} · {acc.email || 'Không email'}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Selected tags */}
+      {selectedAccounts.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {selectedAccounts.map(acc => (
+            <span key={acc.id} className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-md text-[10px] font-medium">
+              {acc.username}
+              <button onClick={() => removeTag(acc.id)} className="hover:text-blue-900">
+                <X size={10} />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      <p className="text-[10px] text-slate-400">
+        Khi chạy nhiều thiết bị, hệ thống tự phân phối mỗi thiết bị 1 tài khoản (round-robin).
+      </p>
+    </div>
+  );
 }
 
 export default function PropertyPanel({ selectedNode, onUpdateNode, onDeleteNode, onPickCoordinate, extraDefs }: PropertyPanelProps) {
@@ -160,43 +264,13 @@ export default function PropertyPanel({ selectedNode, onUpdateNode, onDeleteNode
         </div>
       )}
 
-      {/* Login account: multi-select accounts */}
+      {/* Login account: dropdown multi-select accounts */}
       {nodeData.nodeType === 'login_account' && (
-        <div className="space-y-2">
-          <label className="block text-xs font-medium text-slate-600">
-            Chọn tài khoản ({((nodeData.params?.accountIds as string[]) || []).length} đã chọn)
-          </label>
-          <div className="max-h-40 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100 scrollbar-thin">
-            {accountList.length === 0 ? (
-              <p className="text-xs text-slate-400 p-3 text-center">Chưa có tài khoản. Thêm ở menu Tài khoản.</p>
-            ) : accountList.map(acc => {
-              const isSelected = ((nodeData.params?.accountIds as string[]) || []).includes(acc.id);
-              return (
-                <label key={acc.id} className={`flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-slate-50 text-xs ${isSelected ? 'bg-blue-50' : ''}`}>
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={() => {
-                      const current: string[] = [...((nodeData.params?.accountIds as string[]) || [])];
-                      const idx = current.indexOf(acc.id);
-                      if (idx >= 0) current.splice(idx, 1);
-                      else current.push(acc.id);
-                      onUpdateNode(selectedNode.id, { ...nodeData.params, accountIds: current });
-                    }}
-                    className="rounded border-slate-300"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <span className="font-medium text-slate-700 truncate block">{acc.username}</span>
-                    <span className="text-slate-400 truncate block">{acc.channel} · {acc.email || 'Không email'}</span>
-                  </div>
-                </label>
-              );
-            })}
-          </div>
-          <p className="text-[10px] text-slate-400">
-            Khi chạy nhiều thiết bị, hệ thống tự phân phối mỗi thiết bị 1 tài khoản (round-robin).
-          </p>
-        </div>
+        <AccountMultiSelect
+          accounts={accountList}
+          selectedIds={(nodeData.params?.accountIds as string[]) || []}
+          onChange={(ids) => onUpdateNode(selectedNode.id, { ...nodeData.params, accountIds: ids })}
+        />
       )}
 
       {/* Coordinate Picker buttons */}
