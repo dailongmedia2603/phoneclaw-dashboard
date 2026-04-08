@@ -192,34 +192,42 @@ const plans = [
   {
     name: 'Starter',
     desc: 'Dùng thử, cảm nhận sức mạnh tự động hoá.',
-    price: '49.000',
+    price: '149.000',
+    perDevice: '~149K/máy',
     period: '/ tháng',
-    features: ['1 thiết bị', '5 kịch bản tuỳ chỉnh', '2 lịch trình tự động', 'Điều khiển từ xa', 'Kho kịch bản mẫu TikTok & Facebook', 'Thông báo Telegram'],
+    devices: 1,
+    features: ['1 thiết bị', 'Full tính năng', 'Kịch bản kéo thả không giới hạn', 'Đặt lịch tự động 24/7', 'Đổi IP + giả lập vị trí', 'Kho kịch bản mẫu TikTok & Facebook', 'Thông báo Telegram'],
     highlight: false,
   },
   {
     name: 'Basic',
     desc: 'Bắt đầu scale, nuôi nick nghiêm túc.',
-    price: '99.000',
+    price: '349.000',
+    perDevice: '~116K/máy',
     period: '/ tháng',
-    features: ['3 thiết bị', '15 kịch bản tuỳ chỉnh', '5 lịch trình tự động', 'Đổi IP cho từng thiết bị', 'Kho kịch bản mẫu TikTok & Facebook', 'Thông báo Telegram'],
+    devices: 3,
+    features: ['3 thiết bị', 'Full tính năng', 'Kịch bản kéo thả không giới hạn', 'Đặt lịch tự động 24/7', 'Đổi IP + giả lập vị trí', 'Kho kịch bản mẫu TikTok & Facebook', 'Thông báo Telegram'],
     highlight: false,
   },
   {
     name: 'Pro',
     badge: 'Phổ biến nhất',
     desc: 'Lựa chọn số 1 của dân affiliate chuyên nghiệp.',
-    price: '249.000',
+    price: '599.000',
+    perDevice: '~60K/máy',
     period: '/ tháng',
-    features: ['10 thiết bị', 'Không giới hạn kịch bản', '20 lịch trình tự động', 'Đổi IP + giả lập vị trí (VN/US)', 'Kịch bản rẽ nhánh nâng cao', 'Hỗ trợ ưu tiên 1-1'],
+    devices: 10,
+    features: ['10 thiết bị', 'Full tính năng', 'Kịch bản kéo thả không giới hạn', 'Đặt lịch tự động 24/7', 'Đổi IP + giả lập vị trí (VN/US)', 'Kho kịch bản mẫu TikTok & Facebook', 'Hỗ trợ ưu tiên 1-1'],
     highlight: true,
   },
   {
     name: 'Business',
     desc: 'Dành cho team và agency muốn kiểm soát toàn bộ.',
-    price: '499.000',
+    price: '999.000',
+    perDevice: '~33K/máy',
     period: '/ tháng',
-    features: ['30 thiết bị', 'Không giới hạn kịch bản & lịch trình', 'Đổi IP + giả lập vị trí (VN/US)', 'API tokens tích hợp hệ thống', 'Hỗ trợ 1-1 + setup ban đầu', 'Tư vấn quy trình cho team'],
+    devices: 30,
+    features: ['30 thiết bị', 'Full tính năng', 'Kịch bản kéo thả không giới hạn', 'Đặt lịch tự động 24/7', 'Đổi IP + giả lập vị trí (VN/US)', 'API tokens tích hợp hệ thống', 'Hỗ trợ 1-1 + setup ban đầu'],
     highlight: false,
   },
 ];
@@ -977,10 +985,10 @@ function SocialProofSection() {
 }
 
 const planOptions = [
-  'Starter — 49.000đ/tháng',
-  'Basic — 99.000đ/tháng',
-  'Pro — 249.000đ/tháng',
-  'Business — 499.000đ/tháng',
+  'Starter — 149.000đ/tháng',
+  'Basic — 349.000đ/tháng',
+  'Pro — 599.000đ/tháng',
+  'Business — 999.000đ/tháng',
 ];
 
 function RegisterModal({ isOpen, onClose, defaultPlan }: { isOpen: boolean; onClose: () => void; defaultPlan: string }) {
@@ -1203,7 +1211,7 @@ function PricingSection() {
             transition={{ delay: 0.1 }}
             className="text-slate-600 max-w-2xl mx-auto" style={{ fontSize: '20px' }}
           >
-            Tính nhanh: 1 nhân sự thao tác tốn ít nhất 7-8 triệu/tháng. Phone Agent quản lý 30 máy chỉ 499K. Bạn tiết kiệm hơn 90%.
+            Tính nhanh: 1 nhân sự thao tác tốn ít nhất 7-8 triệu/tháng. Phone Agent quản lý 30 máy chỉ 999K — chỉ 33K/máy. Full tính năng mọi gói.
           </motion.p>
         </div>
 
@@ -1239,6 +1247,7 @@ function PricingSection() {
                   <span className="text-xl font-bold text-orange-600 underline decoration-2 underline-offset-4">đ</span>
                 </div>
                 <div className="text-sm text-slate-500 font-medium mt-1">{plan.period}</div>
+                <div className="text-xs text-orange-500 font-bold mt-1.5 bg-orange-100/60 inline-block px-2.5 py-0.5 rounded-full">{plan.perDevice}</div>
               </div>
 
               <ul className="space-y-4 mb-8 flex-grow">
