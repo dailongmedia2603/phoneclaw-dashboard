@@ -18,13 +18,13 @@ const ADMIN_TABS = [
   { id: 'vnc', label: 'VNC Mặc định', icon: MonitorPlay },
   { id: 'tailscale', label: 'Tailscale', icon: Network },
   { id: 'packages', label: 'Gói phần mềm', icon: Package },
-  { id: 'account', label: 'Tài khoản', icon: Users },
+  { id: 'account', label: 'Profile', icon: Users },
   { id: 'notifications', label: 'Thông báo', icon: Bell },
   { id: 'r2', label: 'Cloudflare R2', icon: Cloud },
 ];
 
 const USER_TABS = [
-  { id: 'account', label: 'Tài khoản', icon: Users },
+  { id: 'account', label: 'Profile', icon: Users },
   { id: 'notifications', label: 'Thông báo', icon: Bell },
 ];
 
