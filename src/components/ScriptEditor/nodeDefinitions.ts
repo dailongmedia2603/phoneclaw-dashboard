@@ -148,6 +148,11 @@ export const NODE_DEFS: Record<string, NodeDef> = {
     color: '#1877f2', bgColor: '#eff6ff', icon: 'facebook',
     stepType: 'launch', defaultParams: { bundleId: 'com.facebook.Facebook' }, fields: [],
   },
+  mail_open: {
+    nodeType: 'mail_open', label: 'Mở Mail', category: 'apps',
+    color: '#3b82f6', bgColor: '#eff6ff', icon: 'mail',
+    stepType: 'launch', defaultParams: { bundleId: 'com.apple.mobilemail' }, fields: [],
+  },
 };
 
 export const NODE_CATEGORIES = [

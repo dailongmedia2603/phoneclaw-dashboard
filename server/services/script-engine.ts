@@ -459,6 +459,7 @@ const APP_NAMES: Record<string, string> = {
   'com.ss.iphone.ugc.Ame': 'Mở TikTok VN',
   'com.zhiliaoapp.musically': 'Mở TikTok US',
   'com.facebook.Facebook': 'Mở Facebook',
+  'com.apple.mobilemail': 'Mở Mail',
 };
 
 function describeStep(step: ScriptStep): string {
