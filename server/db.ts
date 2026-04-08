@@ -749,6 +749,13 @@ export async function writeCollection<T extends Record<string, unknown>>(
     await client.query(`DELETE FROM ${table}`);
     for (const item of data) {
       const cols = jsToColumns(item);
+      // JSONB fields: stringify objects/arrays for PostgreSQL
+      for (const key of Object.keys(cols)) {
+        const val = cols[key];
+        if (val !== null && typeof val === 'object' && !(val instanceof Date)) {
+          cols[key] = JSON.stringify(val);
+        }
+      }
       const keys = Object.keys(cols);
       const vals = Object.values(cols);
       const placeholders = keys.map((_, i) => `$${i + 1}`);
