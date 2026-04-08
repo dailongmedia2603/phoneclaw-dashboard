@@ -3,6 +3,7 @@ import { UserCircle, Plus, Pencil, Trash2, X, Loader2, Eye, EyeOff, Copy, Search
 import { socialAccounts as socialAccountsApi, devices as devicesApi } from '../services/api';
 import { useApi } from '../hooks/useApi';
 import { showToast } from './Toast';
+import CustomSelect from './CustomSelect';
 import type { SocialAccount, SocialChannel, Device } from '../types';
 
 // ============================================================
@@ -219,26 +220,26 @@ export default function SocialAccounts() {
             className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
-        <select
-          value={filterChannel}
-          onChange={(e) => setFilterChannel(e.target.value)}
-          className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="all">Tất cả kênh</option>
-          {Object.entries(CHANNEL_CONFIG).map(([key, cfg]) => (
-            <option key={key} value={key}>{cfg.label}</option>
-          ))}
-        </select>
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="all">Tất cả trạng thái</option>
-          {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
-            <option key={key} value={key}>{cfg.label}</option>
-          ))}
-        </select>
+        <div className="w-44">
+          <CustomSelect
+            value={filterChannel}
+            onChange={setFilterChannel}
+            options={[
+              { value: 'all', label: 'Tất cả kênh' },
+              ...Object.entries(CHANNEL_CONFIG).map(([key, cfg]) => ({ value: key, label: cfg.label })),
+            ]}
+          />
+        </div>
+        <div className="w-44">
+          <CustomSelect
+            value={filterStatus}
+            onChange={setFilterStatus}
+            options={[
+              { value: 'all', label: 'Tất cả trạng thái' },
+              ...Object.entries(STATUS_CONFIG).map(([key, cfg]) => ({ value: key, label: cfg.label })),
+            ]}
+          />
+        </div>
         <span className="text-sm text-slate-500">{filtered.length} tài khoản</span>
       </div>
 
@@ -357,15 +358,11 @@ export default function SocialAccounts() {
               {/* Channel */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Kênh</label>
-                <select
+                <CustomSelect
                   value={form.channel}
-                  onChange={(e) => setForm({ ...form, channel: e.target.value as SocialChannel })}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {Object.entries(CHANNEL_CONFIG).map(([key, cfg]) => (
-                    <option key={key} value={key}>{cfg.label}</option>
-                  ))}
-                </select>
+                  onChange={(v) => setForm({ ...form, channel: v as SocialChannel })}
+                  options={Object.entries(CHANNEL_CONFIG).map(([key, cfg]) => ({ value: key, label: cfg.label }))}
+                />
               </div>
               {/* Email */}
               <div>
@@ -392,29 +389,24 @@ export default function SocialAccounts() {
               {/* Device */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Thiết bị</label>
-                <select
+                <CustomSelect
                   value={form.deviceId}
-                  onChange={(e) => setForm({ ...form, deviceId: e.target.value })}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">— Không chọn —</option>
-                  {deviceOptions.map((d) => (
-                    <option key={d.id} value={d.id}>{d.name} ({d.tailscaleIp})</option>
-                  ))}
-                </select>
+                  onChange={(v) => setForm({ ...form, deviceId: v })}
+                  placeholder="— Không chọn —"
+                  options={[
+                    { value: '', label: '— Không chọn —' },
+                    ...deviceOptions.map((d) => ({ value: d.id, label: `${d.name} (${d.tailscaleIp})` })),
+                  ]}
+                />
               </div>
               {/* Status */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Trạng thái</label>
-                <select
+                <CustomSelect
                   value={form.status}
-                  onChange={(e) => setForm({ ...form, status: e.target.value })}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
-                    <option key={key} value={key}>{cfg.label}</option>
-                  ))}
-                </select>
+                  onChange={(v) => setForm({ ...form, status: v })}
+                  options={Object.entries(STATUS_CONFIG).map(([key, cfg]) => ({ value: key, label: cfg.label }))}
+                />
               </div>
               {/* Notes */}
               <div>
