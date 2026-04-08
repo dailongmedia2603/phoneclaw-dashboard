@@ -1,0 +1,58 @@
+[
+  {
+    "id": "tok_mnj821a4vy83xn",
+    "userId": "mng2wccn33laxq",
+    "name": "Test Integration",
+    "tokenHash": "99f8771524c875d8942063feb15b0cc89da9ba7736b7345063b4163de90421b2",
+    "tokenPrefix": "pa_live_3ddddcfabf0c",
+    "lastUsedAt": "2026-04-03T18:13:13.751Z",
+    "lastUsedIp": "127.0.0.1",
+    "createdAt": "2026-04-03T18:13:13.084Z",
+    "revokedAt": "2026-04-04T03:29:32.728Z"
+  },
+  {
+    "id": "tok_mnj82cvelwks5d",
+    "userId": "mng2wccn33laxq",
+    "name": "To Revoke",
+    "tokenHash": "591264ce8f585bf6820419d02c81c3f3df888949346b49a161741248df856d15",
+    "tokenPrefix": "pa_live_aff8069a14c9",
+    "lastUsedAt": "2026-04-03T18:13:28.194Z",
+    "lastUsedIp": "127.0.0.1",
+    "createdAt": "2026-04-03T18:13:28.106Z",
+    "revokedAt": "2026-04-03T18:13:28.227Z"
+  },
+  {
+    "id": "tok_mnj85g05q09vkt",
+    "userId": "mng2wccn33laxq",
+    "name": "Final Test Token",
+    "tokenHash": "bd096361368ffafabfef7822d7882f683868a5f104854d121b744511db95fd6d",
+    "tokenPrefix": "pa_live_80d3adca6a75",
+    "lastUsedAt": "2026-04-03T18:15:52.452Z",
+    "lastUsedIp": "127.0.0.1",
+    "createdAt": "2026-04-03T18:15:52.133Z",
+    "revokedAt": "2026-04-03T18:15:52.484Z"
+  },
+  {
+    "id": "tok_mnj85g9xfa84iw",
+    "userId": "mng2wccn33laxq",
+    "name": "Final Test Token",
+    "tokenHash": "526734429cb729fab5a65688feb788bf430357a35ff274053ada170eeec37bd6",
+    "tokenPrefix": "pa_live_533b5a2e05f7",
+    "lastUsedAt": "2026-04-03T18:15:52.572Z",
+    "lastUsedIp": "127.0.0.1",
+    "createdAt": "2026-04-03T18:15:52.485Z",
+    "revokedAt": null
+  },
+  {
+    "id": "tok_mnjrxh6iq4fz6p",
+    "userId": "mng2wccn33laxq",
+    "name": "Test Integration",
+    "tokenHash": "988d1a2f012b04ff08efefb8184b9ccc396af1eceab4231e3c80642062bbde8e",
+    "tokenPrefix": "pa_live_de9c84cfa9aa",
+    "tokenEncrypted": "a93a4589897febc4ce623ccb:4dc5abed0e4b511b71585e53d50f1546:3deeb7122da122591299124609fc8198da53a74b5e5f53b6eac3cc177325883933347bb672b84d16203b45a485420926e039b6a7037e126c823c868d3ec2b8be5bbc85a5fe163c47",
+    "lastUsedAt": "2026-04-04T03:30:09.133Z",
+    "lastUsedIp": "127.0.0.1",
+    "createdAt": "2026-04-04T03:29:32.730Z",
+    "revokedAt": null
+  }
+]

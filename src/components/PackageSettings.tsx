@@ -15,7 +15,7 @@ const EMPTY_FORM = {
   proxyEnabled: true,
   gpsSpoofEnabled: true,
   apiTokensEnabled: true,
-  maxVideoStorageMB: '',
+  maxVideoStorageMb: '',
   maxVideoUnlimited: false,
 };
 
@@ -32,8 +32,8 @@ function pkgToForm(pkg: Package): FormState {
     proxyEnabled: pkg.proxyEnabled,
     gpsSpoofEnabled: pkg.gpsSpoofEnabled,
     apiTokensEnabled: pkg.apiTokensEnabled,
-    maxVideoStorageMB: pkg.maxVideoStorageMB === -1 ? '' : String(pkg.maxVideoStorageMB),
-    maxVideoUnlimited: pkg.maxVideoStorageMB === -1,
+    maxVideoStorageMb: pkg.maxVideoStorageMb === -1 ? '' : String(pkg.maxVideoStorageMb),
+    maxVideoUnlimited: pkg.maxVideoStorageMb === -1,
   };
 }
 
@@ -46,7 +46,7 @@ function formToPayload(form: FormState) {
     proxyEnabled: form.proxyEnabled,
     gpsSpoofEnabled: form.gpsSpoofEnabled,
     apiTokensEnabled: form.apiTokensEnabled,
-    maxVideoStorageMB: form.maxVideoUnlimited ? -1 : (parseInt(form.maxVideoStorageMB) || 500),
+    maxVideoStorageMb: form.maxVideoUnlimited ? -1 : (parseInt(form.maxVideoStorageMb) || 500),
   };
 }
 
@@ -155,7 +155,7 @@ export default function PackageSettings() {
                   <td className="py-3 px-3 text-center"><ToggleBadge enabled={pkg.proxyEnabled ?? true} /></td>
                   <td className="py-3 px-3 text-center"><ToggleBadge enabled={pkg.gpsSpoofEnabled ?? true} /></td>
                   <td className="py-3 px-3 text-center"><ToggleBadge enabled={pkg.apiTokensEnabled ?? true} /></td>
-                  <td className="py-3 px-3 text-center"><LimitBadge value={pkg.maxVideoStorageMB ?? -1} unit="MB" /></td>
+                  <td className="py-3 px-3 text-center"><LimitBadge value={pkg.maxVideoStorageMb ?? -1} unit="MB" /></td>
                   <td className="py-3 px-3 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <button onClick={() => openEdit(pkg)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Sửa"><Edit size={15} /></button>
@@ -221,7 +221,7 @@ export default function PackageSettings() {
                   <div className="flex items-center gap-3">
                     <div className="flex-1">
                       <label className="block text-xs font-medium text-slate-600 mb-1">Dung lượng video (MB)</label>
-                      <input type="number" min="1" value={form.maxVideoStorageMB} onChange={e => set('maxVideoStorageMB', e.target.value)} placeholder="VD: 500" className={`${inputCls} ${form.maxVideoUnlimited ? 'opacity-40' : ''}`} disabled={form.maxVideoUnlimited} />
+                      <input type="number" min="1" value={form.maxVideoStorageMb} onChange={e => set('maxVideoStorageMb', e.target.value)} placeholder="VD: 500" className={`${inputCls} ${form.maxVideoUnlimited ? 'opacity-40' : ''}`} disabled={form.maxVideoUnlimited} />
                     </div>
                     <label className="flex items-center gap-1.5 mt-5 cursor-pointer shrink-0">
                       <input type="checkbox" checked={form.maxVideoUnlimited} onChange={e => set('maxVideoUnlimited', e.target.checked)} className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />

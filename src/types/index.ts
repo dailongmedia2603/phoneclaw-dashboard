@@ -28,7 +28,7 @@ export interface Package {
   proxyEnabled: boolean;
   gpsSpoofEnabled: boolean;
   apiTokensEnabled: boolean;
-  maxVideoStorageMB: number;  // -1 = không giới hạn
+  maxVideoStorageMb: number;  // -1 = không giới hạn
   createdAt: string;
 }
 

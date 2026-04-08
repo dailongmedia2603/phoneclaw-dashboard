@@ -32,7 +32,7 @@ interface PackageFull {
   proxyEnabled?: boolean;
   gpsSpoofEnabled?: boolean;
   apiTokensEnabled?: boolean;
-  maxVideoStorageMB?: number;
+  maxVideoStorageMb?: number;
 }
 
 interface UserWithPkg {
@@ -150,7 +150,7 @@ export async function checkVideoStorage(
   if (!userId) return { allowed: false, error: 'Unauthorized' };
   if (!pkg) return { allowed: true };
 
-  const maxMB = pkg.maxVideoStorageMB ?? -1;
+  const maxMB = pkg.maxVideoStorageMb ?? -1;
   if (maxMB === -1) return { allowed: true };
 
   interface VideoItem { size: number }

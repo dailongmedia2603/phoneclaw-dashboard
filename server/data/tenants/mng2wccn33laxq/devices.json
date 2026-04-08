@@ -1,0 +1,19 @@
+[
+  {
+    "name": "TestPhone-Updated",
+    "tailscaleIp": "100.64.0.99",
+    "vncPort": 5901,
+    "httpPort": 8080,
+    "iosVersion": "Unknown",
+    "model": "iPhone",
+    "group": "",
+    "battery": 85,
+    "vncPassword": "",
+    "id": "mng4a2cn3lzh3g",
+    "ownerId": "mng2wccn33laxq",
+    "status": "offline",
+    "uptime": 0,
+    "lastSeen": "2026-04-01T14:04:47.219Z",
+    "createdAt": "2026-04-01T14:04:10.727Z"
+  }
+]

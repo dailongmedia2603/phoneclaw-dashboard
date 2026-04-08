@@ -18,7 +18,7 @@ interface Package {
   proxyEnabled: boolean;
   gpsSpoofEnabled: boolean;
   apiTokensEnabled: boolean;
-  maxVideoStorageMB: number;
+  maxVideoStorageMb: number;
   createdAt: string;
 }
 
@@ -33,7 +33,7 @@ function migratePackage(pkg: any): Package {
     proxyEnabled: pkg.proxyEnabled ?? true,
     gpsSpoofEnabled: pkg.gpsSpoofEnabled ?? true,
     apiTokensEnabled: pkg.apiTokensEnabled ?? true,
-    maxVideoStorageMB: pkg.maxVideoStorageMB ?? -1,
+    maxVideoStorageMb: pkg.maxVideoStorageMb ?? -1,
     createdAt: pkg.createdAt ?? new Date().toISOString(),
   };
 }
@@ -92,7 +92,7 @@ router.get('/my-limits', async (req: Request, res: Response) => {
 
 // POST /api/packages — create package
 router.post('/', adminOnly, async (req: Request, res: Response) => {
-  const { name, maxDevices, maxScripts, maxSchedules, proxyEnabled, gpsSpoofEnabled, apiTokensEnabled, maxVideoStorageMB } = req.body;
+  const { name, maxDevices, maxScripts, maxSchedules, proxyEnabled, gpsSpoofEnabled, apiTokensEnabled, maxVideoStorageMb } = req.body;
   if (!name?.trim() || !maxDevices || maxDevices < 1) {
     return res.status(400).json({ success: false, error: 'Tên gói và số lượng thiết bị tối đa là bắt buộc' });
   }
@@ -107,7 +107,7 @@ router.post('/', adminOnly, async (req: Request, res: Response) => {
     proxyEnabled: proxyEnabled !== undefined ? Boolean(proxyEnabled) : true,
     gpsSpoofEnabled: gpsSpoofEnabled !== undefined ? Boolean(gpsSpoofEnabled) : true,
     apiTokensEnabled: apiTokensEnabled !== undefined ? Boolean(apiTokensEnabled) : true,
-    maxVideoStorageMB: maxVideoStorageMB !== undefined ? Number(maxVideoStorageMB) : -1,
+    maxVideoStorageMb: maxVideoStorageMb !== undefined ? Number(maxVideoStorageMb) : -1,
     createdAt: new Date().toISOString(),
   };
 
@@ -122,7 +122,7 @@ router.put('/:id', adminOnly, async (req: Request, res: Response) => {
   const idx = packages.findIndex(p => p.id === req.params.id);
   if (idx === -1) return res.status(404).json({ success: false, error: 'Gói không tồn tại' });
 
-  const { name, maxDevices, maxScripts, maxSchedules, proxyEnabled, gpsSpoofEnabled, apiTokensEnabled, maxVideoStorageMB } = req.body;
+  const { name, maxDevices, maxScripts, maxSchedules, proxyEnabled, gpsSpoofEnabled, apiTokensEnabled, maxVideoStorageMb } = req.body;
 
   if (name) packages[idx].name = name.trim();
   if (maxDevices !== undefined && maxDevices >= 1) packages[idx].maxDevices = Number(maxDevices);
@@ -131,7 +131,7 @@ router.put('/:id', adminOnly, async (req: Request, res: Response) => {
   if (proxyEnabled !== undefined) packages[idx].proxyEnabled = Boolean(proxyEnabled);
   if (gpsSpoofEnabled !== undefined) packages[idx].gpsSpoofEnabled = Boolean(gpsSpoofEnabled);
   if (apiTokensEnabled !== undefined) packages[idx].apiTokensEnabled = Boolean(apiTokensEnabled);
-  if (maxVideoStorageMB !== undefined) packages[idx].maxVideoStorageMB = Number(maxVideoStorageMB);
+  if (maxVideoStorageMb !== undefined) packages[idx].maxVideoStorageMb = Number(maxVideoStorageMb);
 
   await savePackages(packages);
   res.json({ success: true, data: packages[idx] });
