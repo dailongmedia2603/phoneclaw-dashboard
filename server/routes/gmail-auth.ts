@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 import { readSingleton, isPostgresMode } from '../store';
 import * as store from '../store';
 import { getAuthUserId } from '../helpers/get-user';
@@ -7,6 +8,19 @@ import { getAuthUserId } from '../helpers/get-user';
 const router = Router();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'phoneagent-secret-key';
+
+/** Verify JWT token manually for generate-link (this route is before authMiddleware) */
+function verifyAuthToken(req: any): string | null {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  if (!token) return null;
+  try {
+    const payload = jwt.verify(token, JWT_SECRET) as any;
+    return payload.id || null;
+  } catch {
+    return null;
+  }
+}
 
 function createHmacToken(accountId: string): string {
   return crypto.createHmac('sha256', JWT_SECRET).update(accountId).digest('hex');
@@ -35,7 +49,8 @@ function getRedirectUri(): string {
 // ============================================================
 router.get('/generate-link', async (req, res) => {
   try {
-    const userId = getAuthUserId(req);
+    // Auth manually (this route is mounted before authMiddleware)
+    const userId = verifyAuthToken(req);
     if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
     const { accountId } = req.query;
