@@ -165,19 +165,6 @@ export const NODE_DEFS: Record<string, NodeDef> = {
       { key: 'passwordY', label: 'Password Y', type: 'number' },
     ],
   },
-  login_mail: {
-    nodeType: 'login_mail', label: 'Login Mail', category: 'apps',
-    color: '#2563eb', bgColor: '#eff6ff', icon: 'log_in',
-    stepType: 'login_mail',
-    defaultParams: { emailX: 0.5, emailY: 0.35, emailPassX: 0.5, emailPassY: 0.45, accountIds: [] },
-    fields: [
-      { key: 'emailX', label: 'Email X', type: 'number' },
-      { key: 'emailY', label: 'Email Y', type: 'number' },
-      { key: 'emailPassX', label: 'Pass Mail X', type: 'number' },
-      { key: 'emailPassY', label: 'Pass Mail Y', type: 'number' },
-    ],
-  },
-
   // --- Nodes đơn trường (single-field login) ---
   input_username: {
     nodeType: 'input_username', label: 'Nhập tài khoản', category: 'apps',
