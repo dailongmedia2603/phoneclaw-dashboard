@@ -503,6 +503,55 @@ async function executeStep(
       break;
     }
 
+    case 'login_mail': {
+      const accountIds: string[] = Array.isArray(p.accountIds) ? p.accountIds as string[] : [];
+      if (accountIds.length === 0) {
+        throw new Error('Login mail: không có tài khoản nào được chọn');
+      }
+
+      const allAccounts = tenantId
+        ? await readUserCollection<any>(tenantId, 'social-accounts')
+        : [];
+
+      const selectedAccounts = accountIds
+        .map(id => allAccounts.find((a: any) => a.id === id))
+        .filter(Boolean);
+
+      if (selectedAccounts.length === 0) {
+        throw new Error('Login mail: không tìm thấy tài khoản đã chọn');
+      }
+
+      const accIdx = (deviceIndex ?? 0) % selectedAccounts.length;
+      const account = selectedAccounts[accIdx];
+
+      // 1. Tap vị trí email
+      await callDeviceApi(deviceId, 'POST', '/api/tap', {
+        x: Number(p.emailX) || 0.5,
+        y: Number(p.emailY) || 0.3,
+      });
+      await sleep(500);
+
+      // 2. Gõ email
+      await callDeviceApi(deviceId, 'POST', '/api/type', {
+        text: account.email,
+      });
+      await sleep(300);
+
+      // 3. Tap vị trí email password
+      await callDeviceApi(deviceId, 'POST', '/api/tap', {
+        x: Number(p.emailPassX) || 0.5,
+        y: Number(p.emailPassY) || 0.5,
+      });
+      await sleep(500);
+
+      // 4. Gõ email password
+      await callDeviceApi(deviceId, 'POST', '/api/type', {
+        text: account.emailPassword,
+      });
+
+      break;
+    }
+
     default:
       break;
   }
@@ -554,6 +603,10 @@ function describeStep(step: ScriptStep): string {
     case 'login_account': {
       const ids: string[] = Array.isArray(p.accountIds) ? p.accountIds as string[] : [];
       return `Login tài khoản (${ids.length} TK)`;
+    }
+    case 'login_mail': {
+      const ids2: string[] = Array.isArray(p.accountIds) ? p.accountIds as string[] : [];
+      return `Login Mail (${ids2.length} TK)`;
     }
     case 'wait': return `Chờ ${p.seconds} giây`;
     case 'wait_random': return `Chờ ngẫu nhiên ${p.min}-${p.max} giây`;

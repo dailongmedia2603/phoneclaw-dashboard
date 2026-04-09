@@ -58,6 +58,14 @@ function getPickableFields(nodeType: string, extraDefs?: Record<string, NodeDef>
     result.push({ prefix: 'password', label: 'Chọn vị trí nhập Mật khẩu' });
   }
 
+  // Login mail: emailX/emailY + emailPassX/emailPassY
+  if (keys.includes('emailX') && keys.includes('emailY')) {
+    result.push({ prefix: 'email', label: 'Chọn vị trí nhập Email' });
+  }
+  if (keys.includes('emailPassX') && keys.includes('emailPassY')) {
+    result.push({ prefix: 'emailPass', label: 'Chọn vị trí nhập Pass Mail' });
+  }
+
   return result;
 }
 
@@ -179,10 +187,10 @@ export default function PropertyPanel({ selectedNode, onUpdateNode, onDeleteNode
     }
   }, [selectedNode?.id]);
 
-  // Load social accounts for login_account node
+  // Load social accounts for login_account / login_mail nodes
   useEffect(() => {
     const nodeData = selectedNode?.data as any;
-    if (nodeData?.nodeType === 'login_account') {
+    if (nodeData?.nodeType === 'login_account' || nodeData?.nodeType === 'login_mail') {
       socialAccountsApi.getAll().then(res => {
         if (res.success && res.data) setAccountList(res.data);
       });
@@ -264,8 +272,8 @@ export default function PropertyPanel({ selectedNode, onUpdateNode, onDeleteNode
         </div>
       )}
 
-      {/* Login account: dropdown multi-select accounts */}
-      {nodeData.nodeType === 'login_account' && (
+      {/* Login account / Login mail: dropdown multi-select accounts */}
+      {(nodeData.nodeType === 'login_account' || nodeData.nodeType === 'login_mail') && (
         <AccountMultiSelect
           accounts={accountList}
           selectedIds={(nodeData.params?.accountIds as string[]) || []}

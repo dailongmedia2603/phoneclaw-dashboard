@@ -80,7 +80,8 @@ export type ScriptStepType =
   | 'wait' | 'wait_random'
   | 'repeat' | 'repeat_forever' | 'if_screen_match' | 'if_elapsed'
   | 'set' | 'random_text' | 'random_int' | 'counter'
-  | 'login_account';
+  | 'login_account'
+  | 'login_mail';
 
 export interface ScriptStep {
   id: string;
