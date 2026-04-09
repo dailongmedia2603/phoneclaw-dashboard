@@ -118,6 +118,13 @@ export async function initDb(): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_social_accounts_channel ON social_accounts(channel);
     `);
     console.log('[DB] Social accounts table ensured');
+
+    // Gmail OAuth columns for social_accounts
+    await client.query(`
+      ALTER TABLE social_accounts ADD COLUMN IF NOT EXISTS gmail_refresh_token TEXT;
+      ALTER TABLE social_accounts ADD COLUMN IF NOT EXISTS gmail_authorized BOOLEAN DEFAULT false;
+    `);
+    console.log('[DB] Social accounts Gmail columns ensured');
   } finally {
     client.release();
   }
@@ -573,6 +580,8 @@ export function rowToSocialAccount(row: Record<string, unknown>): Record<string,
     notes: (row.notes as string) || '',
     status: (row.status as string) || 'active',
     ownerId: row.owner_id as string,
+    gmailRefreshToken: (row.gmail_refresh_token as string) || undefined,
+    gmailAuthorized: row.gmail_authorized === true,
     createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at as string,
     updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : row.updated_at as string,
   };

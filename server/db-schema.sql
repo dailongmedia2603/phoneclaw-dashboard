@@ -393,4 +393,8 @@ CREATE TABLE IF NOT EXISTS social_accounts (
 CREATE INDEX IF NOT EXISTS idx_social_accounts_owner ON social_accounts(owner_id);
 CREATE INDEX IF NOT EXISTS idx_social_accounts_channel ON social_accounts(channel);
 
+-- Gmail OAuth columns
+ALTER TABLE social_accounts ADD COLUMN IF NOT EXISTS gmail_refresh_token TEXT;
+ALTER TABLE social_accounts ADD COLUMN IF NOT EXISTS gmail_authorized BOOLEAN DEFAULT false;
+
 COMMIT;

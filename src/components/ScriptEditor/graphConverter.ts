@@ -167,6 +167,7 @@ function findNodeType(step: ScriptStep): string {
   if (step.type === 'input_password') return 'input_password';
   if (step.type === 'input_email') return 'input_email';
   if (step.type === 'input_email_pass') return 'input_email_pass';
+  if (step.type === 'get_otp_mail') return 'get_otp_mail';
   // Legacy: tap_image steps from old scripts → map to tap_custom
   if (step.type === 'tap_image') return 'tap_custom';
   // Fallback to generic type

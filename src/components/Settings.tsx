@@ -3,7 +3,7 @@ import {
   Server, MonitorPlay, Network, Users, Bell, Cloud,
   Cpu, HardDrive, Activity, CheckCircle2, AlertCircle, Shield, Key,
   Save, Smartphone, Loader2, Package, Eye, EyeOff,
-  RefreshCw, Copy, CheckCircle
+  RefreshCw, Copy, CheckCircle, Mail
 } from 'lucide-react';
 import { settings as settingsApi, devices as devicesApi } from '../services/api';
 import { useApi } from '../hooks/useApi';
@@ -21,6 +21,7 @@ const ADMIN_TABS = [
   { id: 'account', label: 'Profile', icon: Users },
   { id: 'notifications', label: 'Thông báo', icon: Bell },
   { id: 'r2', label: 'Cloudflare R2', icon: Cloud },
+  { id: 'gmail', label: 'Gmail OAuth', icon: Mail },
 ];
 
 const USER_TABS = [
@@ -709,6 +710,15 @@ export default function Settings() {
             }} saving={saving} />
           )}
 
+          {activeTab === 'gmail' && (
+            <GmailOAuthSettings settings={appSettings} onSave={async (gmailOAuth) => {
+              setSaving(true);
+              await settingsApi.update({ gmailOAuth } as any);
+              refreshSettings();
+              setSaving(false);
+              showToast('success', 'Đã lưu cấu hình Gmail OAuth');
+            }} saving={saving} />
+          )}
 
         </div>
       </div>
@@ -818,6 +828,79 @@ function R2Settings({ settings, onSave, saving }: { settings?: AppSettings | nul
           Lưu cấu hình
         </button>
       </div>
+    </div>
+  );
+}
+
+/** Gmail OAuth Settings sub-component */
+function GmailOAuthSettings({ settings, onSave, saving }: { settings?: AppSettings | null; onSave: (gmailOAuth: { clientId: string; clientSecret: string }) => void; saving: boolean }) {
+  const gmailOAuth = (settings as any)?.gmailOAuth;
+  const [clientId, setClientId] = useState(gmailOAuth?.clientId || '');
+  const [clientSecret, setClientSecret] = useState(gmailOAuth?.clientSecret || '');
+  const redirectUri = `${window.location.origin}/api/gmail-auth/callback`;
+
+  useEffect(() => {
+    const cfg = (settings as any)?.gmailOAuth;
+    if (cfg) {
+      setClientId(cfg.clientId || '');
+      setClientSecret(cfg.clientSecret || '');
+    }
+  }, [settings]);
+
+  const inputCls = 'w-full px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm';
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-bold text-slate-900 mb-1">Gmail OAuth</h2>
+        <p className="text-sm text-slate-500">Cấu hình Google OAuth2 để đọc email và lấy OTP tự động.</p>
+      </div>
+
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
+        <p className="font-medium mb-1">Hướng dẫn setup:</p>
+        <ol className="list-decimal list-inside space-y-1 text-blue-700">
+          <li>Vào Google Cloud Console → tạo project mới</li>
+          <li>Bật Gmail API trong APIs & Services</li>
+          <li>Tạo OAuth 2.0 Client ID (Web application)</li>
+          <li>Thêm Redirect URI bên dưới vào Authorized redirect URIs</li>
+          <li>Copy Client ID và Client Secret vào đây</li>
+        </ol>
+      </div>
+
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1.5">Client ID <span className="text-red-500">*</span></label>
+          <input type="text" value={clientId} onChange={e => setClientId(e.target.value)} placeholder="xxx.apps.googleusercontent.com" className={inputCls} />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1.5">Client Secret <span className="text-red-500">*</span></label>
+          <input type="password" value={clientSecret} onChange={e => setClientSecret(e.target.value)} placeholder="GOCSPX-xxx" className={inputCls} />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1.5">Redirect URI <span className="text-slate-400">(tự động)</span></label>
+          <div className="flex items-center gap-2">
+            <input type="text" value={redirectUri} readOnly className={`${inputCls} bg-slate-50 text-slate-500`} />
+            <button
+              onClick={() => { navigator.clipboard.writeText(redirectUri); showToast('success', 'Đã copy Redirect URI'); }}
+              className="px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-600 hover:bg-slate-50 shrink-0"
+            >
+              <Copy size={16} />
+            </button>
+          </div>
+          <p className="text-xs text-slate-400 mt-1">Thêm URL này vào Google Cloud Console → OAuth Client → Authorized redirect URIs</p>
+        </div>
+      </div>
+
+      <button
+        onClick={() => onSave({ clientId, clientSecret })}
+        disabled={saving || !clientId || !clientSecret}
+        className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-medium transition-colors shadow-sm shadow-blue-200 disabled:opacity-50"
+      >
+        {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+        Lưu cấu hình
+      </button>
     </div>
   );
 }

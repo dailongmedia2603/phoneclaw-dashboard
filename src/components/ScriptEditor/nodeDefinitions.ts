@@ -206,6 +206,17 @@ export const NODE_DEFS: Record<string, NodeDef> = {
       { key: 'tapY', label: 'Tap Y', type: 'number' },
     ],
   },
+  get_otp_mail: {
+    nodeType: 'get_otp_mail', label: 'Lấy OTP Mail', category: 'apps',
+    color: '#dc2626', bgColor: '#fef2f2', icon: 'mail',
+    stepType: 'get_otp_mail',
+    defaultParams: { tapX: 0.5, tapY: 0.5, accountIds: [], waitTimeout: 60 },
+    fields: [
+      { key: 'tapX', label: 'OTP Tap X', type: 'number' },
+      { key: 'tapY', label: 'OTP Tap Y', type: 'number' },
+      { key: 'waitTimeout', label: 'Timeout (giây)', type: 'number' },
+    ],
+  },
 };
 
 export const NODE_CATEGORIES = [

@@ -1,4 +1,4 @@
-import { readCollection, writeCollection, generateId, readUserCollection, writeUserCollection, readAllTenantsCollection } from '../store';
+import { readCollection, writeCollection, generateId, readUserCollection, writeUserCollection, readAllTenantsCollection, readSingleton } from '../store';
 import { callDeviceApi, updateDevice, getDevice, updateDeviceForTenant, findDeviceGlobal } from './device-manager';
 import type { Script, ScriptStep, ScheduleHistory, ExecutionStep } from '../../src/types';
 
@@ -598,9 +598,121 @@ async function executeStep(
       break;
     }
 
+    case 'get_otp_mail': {
+      const accountIds: string[] = Array.isArray(p.accountIds) ? p.accountIds as string[] : [];
+      if (accountIds.length === 0) throw new Error('Lấy OTP: không có tài khoản nào');
+
+      const allAccounts = tenantId
+        ? await readUserCollection<any>(tenantId, 'social-accounts')
+        : [];
+      const selectedAccounts = accountIds
+        .map(id => allAccounts.find((a: any) => a.id === id))
+        .filter(Boolean);
+      if (selectedAccounts.length === 0) throw new Error('Lấy OTP: không tìm thấy tài khoản');
+
+      const accIdx = (deviceIndex ?? 0) % selectedAccounts.length;
+      const account = selectedAccounts[accIdx];
+
+      if (!account.gmailRefreshToken) {
+        throw new Error(`Lấy OTP: tài khoản "${account.email}" chưa authorize Gmail`);
+      }
+
+      // Load Gmail OAuth config
+      const appSettings = await readSingleton<any>('settings', {});
+      const gmailConfig = appSettings.gmailOAuth;
+      if (!gmailConfig?.clientId || !gmailConfig?.clientSecret) {
+        throw new Error('Lấy OTP: chưa cấu hình Gmail OAuth trong Settings');
+      }
+
+      // Create Gmail client
+      const { google } = await import('googleapis');
+      const oauth2Client = new google.auth.OAuth2(gmailConfig.clientId, gmailConfig.clientSecret);
+      oauth2Client.setCredentials({ refresh_token: account.gmailRefreshToken });
+      const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+
+      // Poll for OTP email
+      const timeout = (Number(p.waitTimeout) || 60) * 1000;
+      const startTime = Date.now();
+      const pollInterval = 5000;
+      let otpCode: string | null = null;
+
+      while (Date.now() - startTime < timeout) {
+        if (ctrl.abort) throw new Error('Execution aborted');
+
+        try {
+          const listRes = await gmail.users.messages.list({
+            userId: 'me',
+            q: 'is:unread newer_than:2m',
+            maxResults: 3,
+          });
+
+          const messages = listRes.data.messages || [];
+          for (const msg of messages) {
+            const detail = await gmail.users.messages.get({
+              userId: 'me',
+              id: msg.id,
+              format: 'full',
+            });
+            const body = extractGmailBody(detail.data);
+            otpCode = parseOtpCode(body);
+            if (otpCode) break;
+          }
+        } catch (gmailErr: any) {
+          console.error('[OTP] Gmail API error:', gmailErr.message);
+        }
+
+        if (otpCode) break;
+        await sleep(pollInterval);
+      }
+
+      if (!otpCode) {
+        throw new Error(`Lấy OTP: không tìm thấy OTP trong ${p.waitTimeout}s`);
+      }
+
+      // Tap vị trí OTP + gõ code
+      await callDeviceApi(deviceId, 'POST', '/api/tap', {
+        x: Number(p.tapX) || 0.5,
+        y: Number(p.tapY) || 0.5,
+      });
+      await sleep(3000);
+
+      await callDeviceApi(deviceId, 'POST', '/api/type', { text: otpCode });
+
+      break;
+    }
+
     default:
       break;
   }
+}
+
+// --- Gmail OTP helpers ---
+
+function extractGmailBody(message: any): string {
+  const parts = message.payload?.parts || [];
+  for (const part of parts) {
+    if (part.mimeType === 'text/plain' && part.body?.data) {
+      return Buffer.from(part.body.data, 'base64url').toString('utf-8');
+    }
+  }
+  if (message.payload?.body?.data) {
+    return Buffer.from(message.payload.body.data, 'base64url').toString('utf-8');
+  }
+  return message.snippet || '';
+}
+
+const OTP_PATTERNS = [
+  /(?:code|mã|verification|xác minh|xác nhận|confirm|verify)[:\s]+(\d{4,8})/i,
+  /(\d{4,8})\s*(?:is your|là mã|là code)/i,
+  /\b(\d{4,8})\b/,
+];
+
+function parseOtpCode(text: string): string | null {
+  for (const pattern of OTP_PATTERNS) {
+    const match = text.match(pattern);
+    if (match?.[1]) return match[1];
+  }
+  return null;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -658,6 +770,7 @@ function describeStep(step: ScriptStep): string {
     case 'input_password': return `Nhập mật khẩu (${(Array.isArray(p.accountIds) ? p.accountIds.length : 0)} TK)`;
     case 'input_email': return `Nhập email (${(Array.isArray(p.accountIds) ? p.accountIds.length : 0)} TK)`;
     case 'input_email_pass': return `Nhập pass mail (${(Array.isArray(p.accountIds) ? p.accountIds.length : 0)} TK)`;
+    case 'get_otp_mail': return `Lấy OTP Mail (timeout ${p.waitTimeout}s)`;
     case 'wait': return `Chờ ${p.seconds} giây`;
     case 'wait_random': return `Chờ ngẫu nhiên ${p.min}-${p.max} giây`;
     case 'repeat': return `Lặp lại ${p.count} lần`;

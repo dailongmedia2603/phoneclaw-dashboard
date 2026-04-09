@@ -19,6 +19,7 @@ router.get('/', async (req, res) => {
       const data = rows.map((row: any) => {
         const account = store.rowToSocialAccount(row);
         (account as any).deviceName = row.device_name || '';
+        delete (account as any).gmailRefreshToken; // Don't expose token to frontend
         return account;
       });
       return res.json({ success: true, data });

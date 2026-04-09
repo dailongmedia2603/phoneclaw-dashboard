@@ -194,6 +194,23 @@ export default function SocialAccounts() {
     setDeleting(false);
   };
 
+  const handleAuthorizeGmail = async (accountId: string) => {
+    try {
+      const res = await fetch(`/api/gmail-auth/generate-link?accountId=${accountId}`, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await res.json();
+      if (data.success && data.data?.url) {
+        window.open(data.data.url, '_blank');
+        showToast('success', 'Link authorize đã mở. Đăng nhập Google và cho phép.');
+      } else {
+        showToast('error', data.error || 'Không tạo được link authorize');
+      }
+    } catch {
+      showToast('error', 'Lỗi kết nối server');
+    }
+  };
+
   // --------------------------------------------------------
   // Render
   // --------------------------------------------------------
@@ -271,20 +288,21 @@ export default function SocialAccounts() {
               <th className="py-3 px-4">Pass mail</th>
               <th className="py-3 px-4">Thiết bị</th>
               <th className="py-3 px-4">Trạng thái</th>
+              <th className="py-3 px-4">Gmail</th>
               <th className="py-3 px-4 text-right pr-6">Thao tác</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {loading ? (
               <tr>
-                <td colSpan={8} className="text-center py-12 text-slate-400">
+                <td colSpan={9} className="text-center py-12 text-slate-400">
                   <Loader2 size={24} className="mx-auto mb-2 animate-spin" />
                   <p className="text-sm">Đang tải...</p>
                 </td>
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={8} className="text-center py-12 text-slate-400">
+                <td colSpan={9} className="text-center py-12 text-slate-400">
                   <UserCircle size={32} className="mx-auto mb-2" strokeWidth={1.5} />
                   <p className="text-sm">
                     {allAccounts.length > 0 ? 'Không tìm thấy kết quả phù hợp' : 'Chưa có tài khoản nào'}
@@ -331,6 +349,20 @@ export default function SocialAccounts() {
                     <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium border ${statusCfg.color} ${statusCfg.border}`}>
                       {statusCfg.label}
                     </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    {account.gmailAuthorized ? (
+                      <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
+                        ✓ Đã kết nối
+                      </div>
+                    ) : (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleAuthorizeGmail(account.id); }}
+                        className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100 transition-colors"
+                      >
+                        Kết nối
+                      </button>
+                    )}
                   </td>
                   <td className="py-3 px-4 text-right pr-6">
                     <div className="flex items-center justify-end gap-1">

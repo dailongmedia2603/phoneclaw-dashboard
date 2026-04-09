@@ -188,7 +188,7 @@ export default function PropertyPanel({ selectedNode, onUpdateNode, onDeleteNode
   }, [selectedNode?.id]);
 
   // Load social accounts for login / input nodes
-  const ACCOUNT_NODE_TYPES = ['login_account', 'login_mail', 'input_username', 'input_password', 'input_email', 'input_email_pass'];
+  const ACCOUNT_NODE_TYPES = ['login_account', 'login_mail', 'input_username', 'input_password', 'input_email', 'input_email_pass', 'get_otp_mail'];
   useEffect(() => {
     const nodeData = selectedNode?.data as any;
     if (nodeData?.nodeType && ACCOUNT_NODE_TYPES.includes(nodeData.nodeType)) {

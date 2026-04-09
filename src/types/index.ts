@@ -83,7 +83,8 @@ export type ScriptStepType =
   | 'login_account'
   | 'login_mail'
   | 'input_username' | 'input_password'
-  | 'input_email' | 'input_email_pass';
+  | 'input_email' | 'input_email_pass'
+  | 'get_otp_mail';
 
 export interface ScriptStep {
   id: string;
@@ -331,6 +332,8 @@ export interface SocialAccount {
   notes?: string;
   status: 'active' | 'locked' | 'banned';
   ownerId?: string;
+  gmailRefreshToken?: string;
+  gmailAuthorized?: boolean;
   createdAt: string;
   updatedAt: string;
 }

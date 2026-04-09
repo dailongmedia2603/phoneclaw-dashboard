@@ -31,6 +31,7 @@ import heartbeatRoutes from './routes/heartbeat';
 import apiTokenRoutes from './routes/api-tokens';
 import externalApiRoutes from './routes/external-api';
 import socialAccountsRoutes from './routes/social-accounts';
+import gmailAuthRoutes from './routes/gmail-auth';
 import { apiTokenAuthMiddleware } from './middleware/api-token-auth';
 import { ipRateLimiter, userRateLimiter, authFailLimiter } from './middleware/rate-limit';
 import { auditLogMiddleware } from './middleware/audit-log';
@@ -189,6 +190,14 @@ app.use((_req, res, next) => {
 // --- Auth ---
 app.use('/api/auth', authRoutes);
 app.use('/api/heartbeat', heartbeatRoutes); // Before auth — phones use Tailscale network auth
+// Gmail OAuth — start/callback don't need login (public pages)
+// generate-link needs auth — handled via separate mount after authMiddleware
+app.use('/api/gmail-auth', (req, _res, next) => {
+  // Only allow start + callback without auth
+  if (req.path === '/start' || req.path === '/callback') return next();
+  // For other paths (generate-link), skip to authMiddleware
+  return next('route');
+}, gmailAuthRoutes);
 
 // --- External API v1 (mount BEFORE authMiddleware — uses own API Token auth) ---
 app.use('/api/v1/external',
@@ -221,6 +230,7 @@ app.use('/api/shared-scripts', sharedScriptsRoutes);
 app.use('/api/proxy', proxyRoutes);
 app.use('/api/packages', packagesRoutes);
 app.use('/api/social-accounts', socialAccountsRoutes);
+app.use('/api/gmail-auth', gmailAuthRoutes); // generate-link (needs auth from above)
 
 // Health check endpoint
 app.get('/api/health', (_req, res) => {
