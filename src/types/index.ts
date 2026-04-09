@@ -81,7 +81,9 @@ export type ScriptStepType =
   | 'repeat' | 'repeat_forever' | 'if_screen_match' | 'if_elapsed'
   | 'set' | 'random_text' | 'random_int' | 'counter'
   | 'login_account'
-  | 'login_mail';
+  | 'login_mail'
+  | 'input_username' | 'input_password'
+  | 'input_email' | 'input_email_pass';
 
 export interface ScriptStep {
   id: string;

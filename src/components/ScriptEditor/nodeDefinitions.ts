@@ -154,7 +154,7 @@ export const NODE_DEFS: Record<string, NodeDef> = {
     stepType: 'launch', defaultParams: { bundleId: 'com.apple.mobilemail' }, fields: [],
   },
   login_account: {
-    nodeType: 'login_account', label: 'Login tài khoản', category: 'apps',
+    nodeType: 'login_account', label: 'Login Facebook', category: 'apps',
     color: '#059669', bgColor: '#ecfdf5', icon: 'log_in',
     stepType: 'login_account',
     defaultParams: { usernameX: 0.5, usernameY: 0.35, passwordX: 0.5, passwordY: 0.45, accountIds: [] },
@@ -175,6 +175,48 @@ export const NODE_DEFS: Record<string, NodeDef> = {
       { key: 'emailY', label: 'Email Y', type: 'number' },
       { key: 'emailPassX', label: 'Pass Mail X', type: 'number' },
       { key: 'emailPassY', label: 'Pass Mail Y', type: 'number' },
+    ],
+  },
+
+  // --- Nodes đơn trường (single-field login) ---
+  input_username: {
+    nodeType: 'input_username', label: 'Nhập tài khoản', category: 'apps',
+    color: '#059669', bgColor: '#ecfdf5', icon: 'log_in',
+    stepType: 'input_username',
+    defaultParams: { tapX: 0.5, tapY: 0.35, accountIds: [] },
+    fields: [
+      { key: 'tapX', label: 'Tap X', type: 'number' },
+      { key: 'tapY', label: 'Tap Y', type: 'number' },
+    ],
+  },
+  input_password: {
+    nodeType: 'input_password', label: 'Nhập mật khẩu', category: 'apps',
+    color: '#059669', bgColor: '#ecfdf5', icon: 'log_in',
+    stepType: 'input_password',
+    defaultParams: { tapX: 0.5, tapY: 0.45, accountIds: [] },
+    fields: [
+      { key: 'tapX', label: 'Tap X', type: 'number' },
+      { key: 'tapY', label: 'Tap Y', type: 'number' },
+    ],
+  },
+  input_email: {
+    nodeType: 'input_email', label: 'Nhập email', category: 'apps',
+    color: '#2563eb', bgColor: '#eff6ff', icon: 'log_in',
+    stepType: 'input_email',
+    defaultParams: { tapX: 0.5, tapY: 0.35, accountIds: [] },
+    fields: [
+      { key: 'tapX', label: 'Tap X', type: 'number' },
+      { key: 'tapY', label: 'Tap Y', type: 'number' },
+    ],
+  },
+  input_email_pass: {
+    nodeType: 'input_email_pass', label: 'Nhập pass mail', category: 'apps',
+    color: '#2563eb', bgColor: '#eff6ff', icon: 'log_in',
+    stepType: 'input_email_pass',
+    defaultParams: { tapX: 0.5, tapY: 0.45, accountIds: [] },
+    fields: [
+      { key: 'tapX', label: 'Tap X', type: 'number' },
+      { key: 'tapY', label: 'Tap Y', type: 'number' },
     ],
   },
 };

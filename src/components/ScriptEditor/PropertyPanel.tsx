@@ -187,10 +187,11 @@ export default function PropertyPanel({ selectedNode, onUpdateNode, onDeleteNode
     }
   }, [selectedNode?.id]);
 
-  // Load social accounts for login_account / login_mail nodes
+  // Load social accounts for login / input nodes
+  const ACCOUNT_NODE_TYPES = ['login_account', 'login_mail', 'input_username', 'input_password', 'input_email', 'input_email_pass'];
   useEffect(() => {
     const nodeData = selectedNode?.data as any;
-    if (nodeData?.nodeType === 'login_account' || nodeData?.nodeType === 'login_mail') {
+    if (nodeData?.nodeType && ACCOUNT_NODE_TYPES.includes(nodeData.nodeType)) {
       socialAccountsApi.getAll().then(res => {
         if (res.success && res.data) setAccountList(res.data);
       });
@@ -272,8 +273,8 @@ export default function PropertyPanel({ selectedNode, onUpdateNode, onDeleteNode
         </div>
       )}
 
-      {/* Login account / Login mail: dropdown multi-select accounts */}
-      {(nodeData.nodeType === 'login_account' || nodeData.nodeType === 'login_mail') && (
+      {/* Account multi-select for all login/input nodes */}
+      {ACCOUNT_NODE_TYPES.includes(nodeData.nodeType) && (
         <AccountMultiSelect
           accounts={accountList}
           selectedIds={(nodeData.params?.accountIds as string[]) || []}

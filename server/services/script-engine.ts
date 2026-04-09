@@ -552,6 +552,52 @@ async function executeStep(
       break;
     }
 
+    case 'input_username':
+    case 'input_password':
+    case 'input_email':
+    case 'input_email_pass': {
+      const accountIds: string[] = Array.isArray(p.accountIds) ? p.accountIds as string[] : [];
+      if (accountIds.length === 0) {
+        throw new Error(`${step.type}: không có tài khoản nào được chọn`);
+      }
+
+      const allAccounts = tenantId
+        ? await readUserCollection<any>(tenantId, 'social-accounts')
+        : [];
+
+      const selectedAccounts = accountIds
+        .map(id => allAccounts.find((a: any) => a.id === id))
+        .filter(Boolean);
+
+      if (selectedAccounts.length === 0) {
+        throw new Error(`${step.type}: không tìm thấy tài khoản đã chọn`);
+      }
+
+      const accIdx = (deviceIndex ?? 0) % selectedAccounts.length;
+      const account = selectedAccounts[accIdx];
+
+      // Xác định trường cần gõ
+      const fieldMap: Record<string, string> = {
+        input_username: 'username',
+        input_password: 'password',
+        input_email: 'email',
+        input_email_pass: 'emailPassword',
+      };
+      const textToType = account[fieldMap[step.type]] || '';
+
+      // Tap vị trí
+      await callDeviceApi(deviceId, 'POST', '/api/tap', {
+        x: Number(p.tapX) || 0.5,
+        y: Number(p.tapY) || 0.5,
+      });
+      await sleep(500);
+
+      // Gõ text
+      await callDeviceApi(deviceId, 'POST', '/api/type', { text: textToType });
+
+      break;
+    }
+
     default:
       break;
   }
@@ -608,6 +654,10 @@ function describeStep(step: ScriptStep): string {
       const ids2: string[] = Array.isArray(p.accountIds) ? p.accountIds as string[] : [];
       return `Login Mail (${ids2.length} TK)`;
     }
+    case 'input_username': return `Nhập tài khoản (${(Array.isArray(p.accountIds) ? p.accountIds.length : 0)} TK)`;
+    case 'input_password': return `Nhập mật khẩu (${(Array.isArray(p.accountIds) ? p.accountIds.length : 0)} TK)`;
+    case 'input_email': return `Nhập email (${(Array.isArray(p.accountIds) ? p.accountIds.length : 0)} TK)`;
+    case 'input_email_pass': return `Nhập pass mail (${(Array.isArray(p.accountIds) ? p.accountIds.length : 0)} TK)`;
     case 'wait': return `Chờ ${p.seconds} giây`;
     case 'wait_random': return `Chờ ngẫu nhiên ${p.min}-${p.max} giây`;
     case 'repeat': return `Lặp lại ${p.count} lần`;
