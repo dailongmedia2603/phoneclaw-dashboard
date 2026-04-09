@@ -167,7 +167,7 @@ export const NODE_DEFS: Record<string, NodeDef> = {
   },
   login_mail: {
     nodeType: 'login_mail', label: 'Login Mail', category: 'apps',
-    color: '#2563eb', bgColor: '#eff6ff', icon: 'mail',
+    color: '#2563eb', bgColor: '#eff6ff', icon: 'log_in',
     stepType: 'login_mail',
     defaultParams: { emailX: 0.5, emailY: 0.35, emailPassX: 0.5, emailPassY: 0.45, accountIds: [] },
     fields: [
