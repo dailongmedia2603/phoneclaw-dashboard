@@ -730,6 +730,7 @@ const TABLE_MAP: Record<string, string> = {
   'screenshots': 'screenshots',
   'videos': 'videos',
   'custom-nodes': 'custom_nodes',
+  'social-accounts': 'social_accounts',
 };
 
 /**
@@ -749,6 +750,7 @@ function mapRow(table: string, row: Record<string, unknown>): unknown {
     case 'videos': return rowToVideo(row);
     case 'notifications': return rowToNotification(row);
     case 'custom_nodes': return rowToJs(row);
+    case 'social_accounts': return rowToSocialAccount(row);
     default: return rowToJs(row);
   }
 }
@@ -1022,7 +1024,7 @@ const VALID_TABLES = new Set([
   'users', 'packages', 'devices', 'device_groups', 'device_group_members',
   'scripts', 'shared_scripts', 'schedules', 'execution_history',
   'activity_logs', 'screenshots', 'videos', 'custom_nodes',
-  'notifications', 'app_settings',
+  'notifications', 'app_settings', 'social_accounts',
 ]);
 
 function assertValidTable(table: string): void {

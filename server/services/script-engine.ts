@@ -480,20 +480,20 @@ async function executeStep(
         x: Number(p.usernameX) || 0.5,
         y: Number(p.usernameY) || 0.3,
       });
-      await sleep(500);
+      await sleep(3000);
 
       // 2. Gõ username
       await callDeviceApi(deviceId, 'POST', '/api/type', {
         text: account.username,
       });
-      await sleep(300);
+      await sleep(3000);
 
       // 3. Tap vị trí password
       await callDeviceApi(deviceId, 'POST', '/api/tap', {
         x: Number(p.passwordX) || 0.5,
         y: Number(p.passwordY) || 0.5,
       });
-      await sleep(500);
+      await sleep(3000);
 
       // 4. Gõ password
       await callDeviceApi(deviceId, 'POST', '/api/type', {
@@ -529,20 +529,20 @@ async function executeStep(
         x: Number(p.emailX) || 0.5,
         y: Number(p.emailY) || 0.3,
       });
-      await sleep(500);
+      await sleep(3000);
 
       // 2. Gõ email
       await callDeviceApi(deviceId, 'POST', '/api/type', {
         text: account.email,
       });
-      await sleep(300);
+      await sleep(3000);
 
       // 3. Tap vị trí email password
       await callDeviceApi(deviceId, 'POST', '/api/tap', {
         x: Number(p.emailPassX) || 0.5,
         y: Number(p.emailPassY) || 0.5,
       });
-      await sleep(500);
+      await sleep(3000);
 
       // 4. Gõ email password
       await callDeviceApi(deviceId, 'POST', '/api/type', {
@@ -590,7 +590,7 @@ async function executeStep(
         x: Number(p.tapX) || 0.5,
         y: Number(p.tapY) || 0.5,
       });
-      await sleep(500);
+      await sleep(3000);
 
       // Gõ text
       await callDeviceApi(deviceId, 'POST', '/api/type', { text: textToType });
