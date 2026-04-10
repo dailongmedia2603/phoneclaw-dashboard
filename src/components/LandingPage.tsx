@@ -191,43 +191,47 @@ const testimonials = [
 const plans = [
   {
     name: 'Starter',
-    desc: 'Dùng thử, cảm nhận sức mạnh tự động hoá.',
-    price: '149.000',
-    perDevice: '~149K/máy',
+    desc: 'Dùng thử full tính năng — rẻ hơn Laixi 350K mà mạnh hơn.',
+    price: '49.000',
+    oldPrice: '149.000',
+    perDevice: '~49K/máy',
     period: '/ tháng',
     devices: 1,
-    features: ['1 thiết bị', 'Full tính năng', 'Kịch bản kéo thả không giới hạn', 'Đặt lịch tự động 24/7', 'Đổi IP + giả lập vị trí', 'Kho kịch bản mẫu TikTok & Facebook', 'Thông báo Telegram'],
+    features: ['1 thiết bị', 'Full tính năng (không giới hạn)', 'Script editor kéo thả', 'Dashboard quản lý realtime', 'Đặt lịch tự động 24/7', 'Đổi IP + giả lập vị trí', 'Kho kịch bản mẫu TikTok & Facebook', 'Thông báo Telegram'],
     highlight: false,
   },
   {
     name: 'Basic',
-    desc: 'Bắt đầu scale, nuôi nick nghiêm túc.',
-    price: '349.000',
-    perDevice: '~116K/máy',
+    desc: 'Scale 3 máy, cạnh tranh trực tiếp với Laixi nhưng có proxy + cron.',
+    price: '99.000',
+    oldPrice: '349.000',
+    perDevice: '~33K/máy',
     period: '/ tháng',
     devices: 3,
-    features: ['3 thiết bị', 'Full tính năng', 'Kịch bản kéo thả không giới hạn', 'Đặt lịch tự động 24/7', 'Đổi IP + giả lập vị trí', 'Kho kịch bản mẫu TikTok & Facebook', 'Thông báo Telegram'],
+    features: ['3 thiết bị', 'Full tính năng (không giới hạn)', 'Script editor kéo thả', 'Proxy riêng từng máy', 'Cron đặt lịch 24/7', 'Đổi IP + giả lập vị trí', 'Kho kịch bản mẫu TikTok & Facebook', 'Thông báo Telegram'],
     highlight: false,
   },
   {
     name: 'Pro',
     badge: 'Phổ biến nhất',
-    desc: 'Lựa chọn số 1 của dân affiliate chuyên nghiệp.',
-    price: '599.000',
-    perDevice: '~60K/máy',
+    desc: 'Sweet spot cho dân affiliate chuyên nghiệp — rẻ hơn cả thuê cloud phone.',
+    price: '249.000',
+    oldPrice: '899.000',
+    perDevice: '~25K/máy',
     period: '/ tháng',
     devices: 10,
-    features: ['10 thiết bị', 'Full tính năng', 'Kịch bản kéo thả không giới hạn', 'Đặt lịch tự động 24/7', 'Đổi IP + giả lập vị trí (VN/US)', 'Kho kịch bản mẫu TikTok & Facebook', 'Hỗ trợ ưu tiên 1-1'],
+    features: ['10 thiết bị', 'Full tính năng (không giới hạn)', 'Script editor kéo thả', 'Proxy riêng từng máy', 'Cron đặt lịch 24/7', 'Đổi IP + giả lập vị trí (VN/US)', 'Kho kịch bản mẫu TikTok & Facebook', 'Hỗ trợ ưu tiên 1-1'],
     highlight: true,
   },
   {
     name: 'Business',
-    desc: 'Dành cho team và agency muốn kiểm soát toàn bộ.',
-    price: '999.000',
-    perDevice: '~33K/máy',
+    desc: 'Cho agency & team — vẫn rẻ hơn 1 nhân viên part-time.',
+    price: '499.000',
+    oldPrice: '999.000',
+    perDevice: '~17K/máy',
     period: '/ tháng',
     devices: 30,
-    features: ['30 thiết bị', 'Full tính năng', 'Kịch bản kéo thả không giới hạn', 'Đặt lịch tự động 24/7', 'Đổi IP + giả lập vị trí (VN/US)', 'API tokens tích hợp hệ thống', 'Hỗ trợ 1-1 + setup ban đầu'],
+    features: ['30 thiết bị', 'Full tính năng (không giới hạn)', 'Script editor kéo thả', 'Proxy riêng từng máy', 'Cron đặt lịch 24/7', 'Đổi IP + giả lập vị trí (VN/US)', 'API tokens tích hợp hệ thống', 'Hỗ trợ 1-1 + setup ban đầu'],
     highlight: false,
   },
 ];
@@ -239,6 +243,7 @@ const faqs = [
   { q: 'Tôi muốn làm thị trường US, có hỗ trợ IP và vị trí Mỹ không?', a: 'Có. Từ gói Pro trở lên, bạn có thể đổi IP sang US và giả lập vị trí GPS ở bất kỳ tiểu bang nào của Mỹ cho từng thiết bị riêng biệt. Nick TikTok US, Facebook US nuôi trên Phone Agent sẽ có vị trí và IP hoàn toàn giống người dùng tại Mỹ.' },
   { q: 'Nếu dàn máy nhiều hơn 30 thiết bị thì sao?', a: 'Gói Business hỗ trợ 30 thiết bị. Nếu cần nhiều hơn, liên hệ đội ngũ để nhận báo giá Enterprise tuỳ chỉnh — hỗ trợ lên đến hàng trăm thiết bị với giá ưu đãi theo số lượng và setup chuyên biệt cho team.' },
   { q: 'Tôi có thể huỷ bất cứ lúc nào không?', a: 'Có, huỷ bất cứ lúc nào không cần lý do. Kịch bản và dữ liệu vẫn được lưu 30 ngày sau khi huỷ để bạn có thể quay lại. Không khoá dữ liệu, không phí huỷ, không cam kết dài hạn.' },
+  { q: 'Tại sao giá lại rẻ như vậy? Có phải bản thử nghiệm không?', a: 'Phone Agent đang trong giai đoạn BETA — sản phẩm đã chạy ổn định production với đầy đủ tính năng, nhưng mình muốn anh em dùng sớm để nhận feedback và hoàn thiện thêm. Đổi lại, mình lock giá BETA rẻ hơn 3-4 lần so với giá niêm yết chính thức (149K / 349K / 899K / 999K) trong suốt thời gian anh em còn duy trì gói. Khi kết thúc BETA và lên giá chính thức, anh em dùng sớm vẫn giữ nguyên giá ưu đãi này — coi như phần thưởng cho người tin tưởng sớm. Full tính năng, không cắt giảm bất kỳ chức năng nào.' },
 ];
 
 /* ═══════════════════════════════════════
@@ -985,10 +990,10 @@ function SocialProofSection() {
 }
 
 const planOptions = [
-  'Starter — 149.000đ/tháng',
-  'Basic — 349.000đ/tháng',
-  'Pro — 599.000đ/tháng',
-  'Business — 999.000đ/tháng',
+  'Starter — 49.000đ/tháng (BETA)',
+  'Basic — 99.000đ/tháng (BETA)',
+  'Pro — 249.000đ/tháng (BETA)',
+  'Business — 499.000đ/tháng (BETA)',
 ];
 
 function RegisterModal({ isOpen, onClose, defaultPlan }: { isOpen: boolean; onClose: () => void; defaultPlan: string }) {
@@ -1196,22 +1201,31 @@ function PricingSection() {
 
       <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 relative z-10">
         <div className="text-center mb-16">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-rose-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg shadow-orange-500/30 mb-6"
+          >
+            <Star className="w-4 h-4 fill-white" />
+            ƯU ĐÃI RA MẮT BETA · GIẢM ĐẾN 70%
+          </motion.div>
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             className="font-black text-slate-900 leading-tight mb-6" style={{ fontSize: '45px' }}
           >
-            Đầu tư ít hơn <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-rose-500">một bữa cà phê mỗi ngày</span>
+            Đầu tư ít hơn <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-rose-500">một ly cà phê mỗi ngày</span>
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="text-slate-600 max-w-2xl mx-auto" style={{ fontSize: '20px' }}
+            className="text-slate-600 max-w-3xl mx-auto" style={{ fontSize: '20px' }}
           >
-            Tính nhanh: 1 nhân sự thao tác tốn ít nhất 7-8 triệu/tháng. Phone Agent quản lý 30 máy chỉ 999K — chỉ 33K/máy. Full tính năng mọi gói.
+            Phone Agent đang trong giai đoạn <span className="font-bold text-orange-600">BETA</span> — anh em dùng sớm sẽ được lock giá ưu đãi <span className="font-bold text-orange-600">rẻ hơn 3-4 lần</span> so với giá niêm yết. Đầy đủ tính năng, không cắt giảm bất kỳ chức năng nào. 1 nhân sự thao tác tay tốn 7-8 triệu/tháng — Phone Agent quản lý 30 máy chỉ <span className="font-bold text-orange-600">499K</span> (chỉ ~17K/máy).
           </motion.p>
         </div>
 
@@ -1242,7 +1256,11 @@ function PricingSection() {
               </div>
 
               <div className="bg-orange-50 rounded-2xl p-4 text-center mb-8 border border-orange-100/50">
-                <div className="flex items-center justify-center gap-1">
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-base text-slate-400 line-through decoration-2 decoration-rose-400/70 font-semibold">{plan.oldPrice}đ</span>
+                  <span className="text-[10px] font-black text-white bg-gradient-to-r from-orange-500 to-rose-500 px-1.5 py-0.5 rounded-md tracking-wide">BETA</span>
+                </div>
+                <div className="flex items-center justify-center gap-1 mt-0.5">
                   <span className="text-3xl lg:text-4xl font-black text-orange-600">{plan.price}</span>
                   <span className="text-xl font-bold text-orange-600 underline decoration-2 underline-offset-4">đ</span>
                 </div>
