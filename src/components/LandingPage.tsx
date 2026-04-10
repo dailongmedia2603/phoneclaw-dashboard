@@ -371,8 +371,8 @@ function HeroSection() {
             onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
             className="w-full sm:w-auto bg-yellow-400 text-orange-900 hover:bg-yellow-300 px-8 py-4 rounded-full text-lg font-bold transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 flex items-center justify-center gap-2"
           >
-            <Bot className="w-6 h-6" />
-            Dùng thử miễn phí ngay
+            <Zap className="w-6 h-6 fill-orange-900" />
+            Đăng ký luôn khỏi tìm hiểu
           </button>
           <button
             onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}
