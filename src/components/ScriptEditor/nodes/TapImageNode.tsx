@@ -1,7 +1,7 @@
 import { Handle, Position, useReactFlow } from '@xyflow/react';
 import { NODE_DEFS } from '../nodeDefinitions';
 import NodeIcon from '../nodeIcons';
-import { X } from 'lucide-react';
+import { X, Clock } from 'lucide-react';
 
 interface TapImageNodeProps {
   id: string;
@@ -33,6 +33,10 @@ export default function TapImageNode({ id, data, selected }: TapImageNodeProps) 
       <div className="px-3 py-2 flex items-center gap-2">
         <NodeIcon name={def.icon} size={18} />
         <span className="text-sm font-semibold" style={{ color: def.color }}>{def.label}</span>
+      </div>
+      <div className="px-3 pb-1 flex items-center gap-1 text-[10px] text-slate-400/80">
+        <Clock size={10} />
+        <span>Chờ 5s trước</span>
       </div>
       <div className="px-3 pb-2 flex items-center gap-2">
         <div className="w-5 h-5 bg-slate-200 rounded border border-slate-300 flex items-center justify-center">

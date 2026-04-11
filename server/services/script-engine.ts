@@ -141,6 +141,23 @@ export function stopExecution(executionId: string) {
 
 type ProgressCallback = (execution: ScheduleHistory) => void;
 
+/** Auto pre-delay trước mỗi node để iPhone UI có thời gian load. */
+const AUTO_PREDELAY_MS = 5000;
+
+/** Step types KHÔNG nhận auto pre-delay (bản thân là wait / control flow / variable op). */
+const NO_PREDELAY_STEP_TYPES = new Set<string>([
+  'wait',
+  'wait_random',
+  'repeat',
+  'repeat_forever',
+  'if_screen_match',
+  'if_elapsed',
+  'set',
+  'random_text',
+  'random_int',
+  'counter',
+]);
+
 /** Execute a script object directly (for shared scripts) */
 export async function executeScriptDirect(
   script: Script,
@@ -279,6 +296,13 @@ async function executeSteps(
     onProgress?.(execution);
 
     try {
+      // Auto pre-delay để iPhone kịp load UI giữa các node.
+      // Children của repeat cũng sẽ nhận delay này qua đệ quy executeSteps.
+      if (!NO_PREDELAY_STEP_TYPES.has(step.type)) {
+        await sleep(AUTO_PREDELAY_MS);
+        if (ctrl.abort) throw new Error('Execution aborted');
+      }
+
       await executeStep(step, deviceId, execution, ctrl, onProgress, tenantId, deviceIndex);
       execStep.status = 'success';
       execStep.finishedAt = new Date().toISOString();

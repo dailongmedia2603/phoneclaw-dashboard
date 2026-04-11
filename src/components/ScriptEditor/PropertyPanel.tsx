@@ -15,6 +15,11 @@ interface PropertyPanelProps {
   extraDefs?: Record<string, NodeDef>;
 }
 
+/** Node types KHÔNG có auto pre-delay 5s (bản thân là chờ / control flow / start). */
+const NO_PREDELAY_INFO_TYPES = new Set<string>([
+  'start', 'wait', 'wait_random', 'repeat',
+]);
+
 /** Check if the node has pickable coordinate fields */
 function getPickableFields(nodeType: string, extraDefs?: Record<string, NodeDef>): { prefix: string; label: string }[] {
   const allDefs = extraDefs ? { ...NODE_DEFS, ...extraDefs } : NODE_DEFS;
@@ -224,6 +229,18 @@ export default function PropertyPanel({ selectedNode, onUpdateNode, onDeleteNode
         <NodeIcon name={def?.icon || 'play'} size={18} />
         <span className="font-semibold text-sm text-slate-800">{def?.label || 'Node'}</span>
       </div>
+
+      {!NO_PREDELAY_INFO_TYPES.has(nodeData?.nodeType) && (
+        <div className="flex items-start gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg opacity-70">
+          <Clock size={14} className="text-slate-400 mt-0.5 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="text-xs font-medium text-slate-500">Chờ tự động: 5 giây</div>
+            <div className="text-[10px] text-slate-400 leading-snug">
+              Hệ thống chờ 5 giây trước khi thực thi node này để iPhone kịp load giao diện.
+            </div>
+          </div>
+        </div>
+      )}
 
       {def && def.fields.length > 0 && def.fields.map(field => (
         <div key={field.key}>

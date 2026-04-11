@@ -1,7 +1,7 @@
 import { Handle, Position, useReactFlow } from '@xyflow/react';
 import { NODE_DEFS } from '../nodeDefinitions';
 import NodeIcon from '../nodeIcons';
-import { X } from 'lucide-react';
+import { X, Clock } from 'lucide-react';
 
 /** Fallback def for custom nodes not in static NODE_DEFS */
 const CUSTOM_NODE_FALLBACK = {
@@ -10,6 +10,9 @@ const CUSTOM_NODE_FALLBACK = {
   icon: 'target',
   label: 'Custom',
 };
+
+/** Node types bản thân là chờ → không có auto pre-delay. */
+const NO_PREDELAY_NODE_TYPES = new Set<string>(['wait', 'wait_random']);
 
 interface ActionNodeProps {
   id: string;
@@ -48,6 +51,12 @@ export default function ActionNode({ id, data, selected }: ActionNodeProps) {
         <NodeIcon name={def.icon} size={18} />
         <span className="text-sm font-semibold" style={{ color: def.color }}>{def.label}</span>
       </div>
+      {!NO_PREDELAY_NODE_TYPES.has(data.nodeType) && (
+        <div className="px-3 pb-1 flex items-center gap-1 text-[10px] text-slate-400/80">
+          <Clock size={10} />
+          <span>Chờ 5s trước</span>
+        </div>
+      )}
       {summary && (
         <div className="px-3 pb-2 text-xs text-slate-500 truncate">{summary}</div>
       )}
