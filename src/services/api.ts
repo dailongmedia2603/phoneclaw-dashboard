@@ -202,6 +202,19 @@ export const proxy = {
 };
 
 // ============================================================
+// Exit Node (VPS sing-box zero-leak routing)
+// ============================================================
+export const exitNode = {
+  getStatus: () => get<{ devices: { tailscaleIp: string; mode: string }[]; count: number }>('/api/exit-node/status'),
+  setConfig: (data: { deviceId: string; mode: string; proxyIp?: string; proxyPort?: number; proxyUser?: string; proxyPass?: string }) =>
+    post('/api/exit-node/config', data),
+  batchConfig: (data: { deviceIds: string[]; mode: string; proxyIp?: string; proxyPort?: number; proxyUser?: string; proxyPass?: string }) =>
+    post('/api/exit-node/batch/config', data),
+  removeConfig: (deviceId: string) =>
+    del(`/api/exit-node/config/${deviceId}`),
+};
+
+// ============================================================
 // Packages
 // ============================================================
 export const packages = {

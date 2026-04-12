@@ -58,6 +58,22 @@ services:
       - internal
 
   # ============================================================
+  # sing-box Proxy Router (Tailscale Exit Node traffic)
+  # Routes exit node traffic per device Tailscale IP to US/VN proxy
+  # ============================================================
+  singbox:
+    build: ./singbox
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - ./singbox/config.json:/etc/sing-box/config.json
+    sysctls:
+      - net.ipv4.ip_forward=1
+      - net.ipv6.conf.all.forwarding=0
+    network_mode: host
+
+  # ============================================================
   # Certbot (SSL Certificate Auto-Renewal)
   # ============================================================
   certbot:

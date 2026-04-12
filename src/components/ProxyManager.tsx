@@ -585,8 +585,15 @@ export default function ProxyManager() {
                 </td>
                 <td className="py-3 px-4">
                   {device.proxyStatus === 'running' ? (
-                    <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
-                      <ShieldCheck size={14} /> Running
+                    <div className="flex flex-col gap-1">
+                      <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
+                        <ShieldCheck size={14} /> Running
+                      </div>
+                      {device.tailscaleIp && (
+                        <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-blue-50 text-blue-600 border border-blue-100">
+                          <Globe size={10} /> Exit Node
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium bg-slate-50 text-slate-600 border border-slate-200">

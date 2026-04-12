@@ -253,6 +253,19 @@ export interface DashboardStats {
   scriptRunHistory: { date: string; count: number }[];
 }
 
+// --- Exit Node ---
+export interface ExitNodeDevice {
+  tailscaleIp: string;
+  mode: ProxyMode;
+  proxyIp?: string;
+  proxyPort?: number;
+}
+
+export interface ExitNodeStatus {
+  devices: ExitNodeDevice[];
+  count: number;
+}
+
 // --- API Response ---
 export interface ApiResponse<T = unknown> {
   success: boolean;

@@ -33,6 +33,7 @@ import externalApiRoutes from './routes/external-api';
 import socialAccountsRoutes from './routes/social-accounts';
 import gmailAuthRoutes from './routes/gmail-auth';
 import pixelCheckerRoutes from './routes/pixel-checker';
+import exitNodeRoutes from './routes/exit-node';
 import { apiTokenAuthMiddleware } from './middleware/api-token-auth';
 import { ipRateLimiter, userRateLimiter, authFailLimiter } from './middleware/rate-limit';
 import { auditLogMiddleware } from './middleware/audit-log';
@@ -226,6 +227,7 @@ app.use('/api/proxy', proxyRoutes);
 app.use('/api/packages', packagesRoutes);
 app.use('/api/social-accounts', socialAccountsRoutes);
 app.use('/api/pixel-checker', pixelCheckerRoutes);
+app.use('/api/exit-node', exitNodeRoutes);
 
 // Health check endpoint
 app.get('/api/health', (_req, res) => {
@@ -254,6 +256,10 @@ async function main() {
 
   // 3. Migrate data cũ sang tenant structure (chạy 1 lần, skip khi PG mode)
   await migrateToTenantStructure();
+
+  // 3a. Load sing-box exit node state
+  const { loadPersistedState } = await import('./services/singbox-manager');
+  loadPersistedState();
 
   // 3. Start Services
   await startDeviceMonitor((device) => {
