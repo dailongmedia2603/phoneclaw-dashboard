@@ -262,3 +262,14 @@ export const socialAccounts = {
   update: (id: string, data: Partial<SocialAccount>) => put<SocialAccount>(`/api/social-accounts/${id}`, data),
   remove: (id: string) => del<void>(`/api/social-accounts/${id}`),
 };
+
+// ============================================================
+// Pixel Checker
+// ============================================================
+export const pixelChecker = {
+  sampleColor: (deviceId: string, x: number, y: number) =>
+    post<{ color: string; rgb: { r: number; g: number; b: number }; pixelX: number; pixelY: number }>(
+      '/api/pixel-checker/sample-color',
+      { deviceId, x, y }
+    ),
+};

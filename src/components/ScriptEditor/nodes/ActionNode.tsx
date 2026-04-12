@@ -12,7 +12,7 @@ const CUSTOM_NODE_FALLBACK = {
 };
 
 /** Node types bản thân là chờ → không có auto pre-delay. */
-const NO_PREDELAY_NODE_TYPES = new Set<string>(['wait', 'wait_random']);
+const NO_PREDELAY_NODE_TYPES = new Set<string>(['wait', 'wait_random', 'wait_for_pixel']);
 
 interface ActionNodeProps {
   id: string;
@@ -70,6 +70,7 @@ function getSummary(nodeType: string, params: Record<string, unknown>): string {
   switch (nodeType) {
     case 'wait': return `${params.seconds}s`;
     case 'wait_random': return `${params.min}-${params.max}s`;
+    case 'wait_for_pixel': return `${String(params.expectedColor || '')} ≤${params.maxWait}s`;
     case 'repeat': return `${params.count} lần`;
     case 'type_text': return String(params.text || '').slice(0, 20);
     case 'send_file':

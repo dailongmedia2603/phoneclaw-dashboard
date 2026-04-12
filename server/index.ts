@@ -32,6 +32,7 @@ import apiTokenRoutes from './routes/api-tokens';
 import externalApiRoutes from './routes/external-api';
 import socialAccountsRoutes from './routes/social-accounts';
 import gmailAuthRoutes from './routes/gmail-auth';
+import pixelCheckerRoutes from './routes/pixel-checker';
 import { apiTokenAuthMiddleware } from './middleware/api-token-auth';
 import { ipRateLimiter, userRateLimiter, authFailLimiter } from './middleware/rate-limit';
 import { auditLogMiddleware } from './middleware/audit-log';
@@ -224,6 +225,7 @@ app.use('/api/shared-scripts', sharedScriptsRoutes);
 app.use('/api/proxy', proxyRoutes);
 app.use('/api/packages', packagesRoutes);
 app.use('/api/social-accounts', socialAccountsRoutes);
+app.use('/api/pixel-checker', pixelCheckerRoutes);
 
 // Health check endpoint
 app.get('/api/health', (_req, res) => {

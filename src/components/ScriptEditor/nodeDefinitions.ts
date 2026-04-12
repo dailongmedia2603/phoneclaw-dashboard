@@ -34,6 +34,24 @@ export const NODE_DEFS: Record<string, NodeDef> = {
       { key: 'max', label: 'Max (s)', type: 'number' },
     ],
   },
+  wait_for_pixel: {
+    nodeType: 'wait_for_pixel', label: 'Chờ pixel', category: 'common',
+    color: '#f59e0b', bgColor: '#fffbeb', icon: 'target',
+    stepType: 'wait_for_pixel',
+    defaultParams: {
+      pixelX: 0.5, pixelY: 0.5,
+      expectedColor: '#000000', tolerance: 15,
+      interval: 500, maxWait: 30,
+    },
+    fields: [
+      { key: 'pixelX', label: 'Pixel X (0-1)', type: 'number' },
+      { key: 'pixelY', label: 'Pixel Y (0-1)', type: 'number' },
+      { key: 'expectedColor', label: 'Màu kỳ vọng (hex)', type: 'text' },
+      { key: 'tolerance', label: 'Tolerance (±0-255)', type: 'number' },
+      { key: 'interval', label: 'Poll mỗi (ms)', type: 'number' },
+      { key: 'maxWait', label: 'Max chờ (giây)', type: 'number' },
+    ],
+  },
   repeat: {
     nodeType: 'repeat', label: 'Lặp lại', category: 'common',
     color: '#8b5cf6', bgColor: '#f5f3ff', icon: 'repeat',

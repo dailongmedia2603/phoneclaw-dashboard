@@ -274,6 +274,9 @@ export default function ScriptEditorPage({ appTab, apiType = 'scripts' }: Script
       } else if (fieldPrefix === 'tap') {
         updatedParams.tapX = x;
         updatedParams.tapY = y;
+      } else if (fieldPrefix === 'pixel') {
+        updatedParams.pixelX = x;
+        updatedParams.pixelY = y;
       }
 
       return { ...n, data: { ...data, params: updatedParams } };
@@ -291,6 +294,7 @@ export default function ScriptEditorPage({ appTab, apiType = 'scripts' }: Script
       else if (fieldPrefix === 'delete') { updatedParams.deleteX = x; updatedParams.deleteY = y; }
       else if (fieldPrefix === 'trashDelete') { updatedParams.trashDeleteX = x; updatedParams.trashDeleteY = y; }
       else if (fieldPrefix === 'tap') { updatedParams.tapX = x; updatedParams.tapY = y; }
+      else if (fieldPrefix === 'pixel') { updatedParams.pixelX = x; updatedParams.pixelY = y; }
       return { ...prev, data: { ...data, params: updatedParams } };
     });
 
@@ -454,6 +458,7 @@ export default function ScriptEditorPage({ appTab, apiType = 'scripts' }: Script
           }}
           onPickCoordinate={handlePickCoordinate}
           extraDefs={customNodeDefs}
+          pickerDeviceId={pickerDeviceId}
         />
       </div>
 

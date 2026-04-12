@@ -1,5 +1,6 @@
 import { readCollection, writeCollection, generateId, readUserCollection, writeUserCollection, readAllTenantsCollection, readSingleton } from '../store';
 import { callDeviceApi, updateDevice, getDevice, updateDeviceForTenant, findDeviceGlobal } from './device-manager';
+import { decodeJpegBase64, getPixelAt, parseHexColor, compareColor } from './pixel-checker';
 import type { Script, ScriptStep, ScheduleHistory, ExecutionStep } from '../../src/types';
 
 // --- Script CRUD ---
@@ -148,6 +149,7 @@ const AUTO_PREDELAY_MS = 5000;
 const NO_PREDELAY_STEP_TYPES = new Set<string>([
   'wait',
   'wait_random',
+  'wait_for_pixel',
   'repeat',
   'repeat_forever',
   'if_screen_match',
@@ -455,6 +457,63 @@ async function executeStep(
       const max = Number(p.max) || 3;
       const delay = min + Math.random() * (max - min);
       await sleep(delay * 1000);
+      break;
+    }
+    case 'wait_for_pixel': {
+      const pixelX = Number(p.pixelX);
+      const pixelY = Number(p.pixelY);
+      const expectedHex = String(p.expectedColor || '#000000');
+      const tolerance = Number(p.tolerance ?? 15);
+      const interval = Math.max(100, Number(p.interval ?? 500));
+      const maxWaitSec = Number(p.maxWait ?? 30);
+
+      if (isNaN(pixelX) || pixelX < 0 || pixelX > 1) {
+        throw new Error(`wait_for_pixel: pixelX phải 0-1, nhận: ${p.pixelX}`);
+      }
+      if (isNaN(pixelY) || pixelY < 0 || pixelY > 1) {
+        throw new Error(`wait_for_pixel: pixelY phải 0-1, nhận: ${p.pixelY}`);
+      }
+      const expected = parseHexColor(expectedHex);
+      if (!expected) {
+        throw new Error(`wait_for_pixel: màu hex không hợp lệ: ${expectedHex}`);
+      }
+      if (maxWaitSec <= 0 || maxWaitSec > 600) {
+        throw new Error(`wait_for_pixel: maxWait phải 1-600 giây, nhận: ${p.maxWait}`);
+      }
+
+      const deadline = Date.now() + maxWaitSec * 1000;
+      let lastError: string | null = null;
+      let pollCount = 0;
+
+      while (Date.now() < deadline) {
+        if (ctrl.abort) throw new Error('Execution aborted');
+        pollCount++;
+
+        try {
+          const shotRes = await callDeviceApi(deviceId, 'GET', '/api/screenshot');
+          if (shotRes.ok && typeof shotRes.data === 'string') {
+            const img = await decodeJpegBase64(shotRes.data);
+            const actual = getPixelAt(img, pixelX, pixelY);
+            if (compareColor(actual, expected, tolerance)) {
+              break;
+            }
+            lastError = `RGB (${actual.r},${actual.g},${actual.b}) !== expected (${expected.r},${expected.g},${expected.b}) ±${tolerance}`;
+          } else {
+            lastError = `Screenshot failed: ${shotRes.error || 'unknown'}`;
+          }
+        } catch (err) {
+          lastError = err instanceof Error ? err.message : 'Decode failed';
+        }
+
+        if (ctrl.abort) throw new Error('Execution aborted');
+        await sleep(interval);
+      }
+
+      if (Date.now() >= deadline) {
+        throw new Error(
+          `wait_for_pixel timeout sau ${maxWaitSec}s (${pollCount} polls). ${lastError || ''}`
+        );
+      }
       break;
     }
     case 'repeat': {

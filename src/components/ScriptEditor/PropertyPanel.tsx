@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import type { Node } from '@xyflow/react';
 import { NODE_DEFS, type NodeDef } from './nodeDefinitions';
 import NodeIcon from './nodeIcons';
-import { Trash2, Crosshair, Clock, ChevronDown, Check, X } from 'lucide-react';
-import { videos as videosApi, socialAccounts as socialAccountsApi } from '../../services/api';
+import { Trash2, Crosshair, Clock, ChevronDown, Check, X, Eye, Loader2 } from 'lucide-react';
+import { videos as videosApi, socialAccounts as socialAccountsApi, pixelChecker as pixelCheckerApi } from '../../services/api';
 import CustomSelect from '../CustomSelect';
 import type { Video, SocialAccount } from '../../types';
 
@@ -13,11 +13,12 @@ interface PropertyPanelProps {
   onDeleteNode?: (nodeId: string) => void;
   onPickCoordinate?: (fieldPrefix: string) => void;
   extraDefs?: Record<string, NodeDef>;
+  pickerDeviceId?: string;
 }
 
 /** Node types KHÔNG có auto pre-delay 5s (bản thân là chờ / control flow / start). */
 const NO_PREDELAY_INFO_TYPES = new Set<string>([
-  'start', 'wait', 'wait_random', 'repeat',
+  'start', 'wait', 'wait_random', 'wait_for_pixel', 'repeat',
 ]);
 
 /** Check if the node has pickable coordinate fields */
@@ -69,6 +70,11 @@ function getPickableFields(nodeType: string, extraDefs?: Record<string, NodeDef>
   }
   if (keys.includes('emailPassX') && keys.includes('emailPassY')) {
     result.push({ prefix: 'emailPass', label: 'Chọn vị trí nhập Pass Mail' });
+  }
+
+  // Wait for pixel: pixelX/pixelY
+  if (keys.includes('pixelX') && keys.includes('pixelY')) {
+    result.push({ prefix: 'pixel', label: 'Chọn pixel cần chờ' });
   }
 
   return result;
@@ -178,7 +184,7 @@ function AccountMultiSelect({ accounts, selectedIds, onChange }: {
   );
 }
 
-export default function PropertyPanel({ selectedNode, onUpdateNode, onDeleteNode, onPickCoordinate, extraDefs }: PropertyPanelProps) {
+export default function PropertyPanel({ selectedNode, onUpdateNode, onDeleteNode, onPickCoordinate, extraDefs, pickerDeviceId }: PropertyPanelProps) {
   const [videoList, setVideoList] = useState<Video[]>([]);
   const [accountList, setAccountList] = useState<SocialAccount[]>([]);
 
@@ -203,6 +209,10 @@ export default function PropertyPanel({ selectedNode, onUpdateNode, onDeleteNode
     }
   }, [selectedNode?.id]);
 
+  // Pixel color measurement state (for wait_for_pixel node)
+  const [measuring, setMeasuring] = useState(false);
+  const [measureError, setMeasureError] = useState<string | null>(null);
+
   if (!selectedNode) {
     return (
       <div className="w-64 bg-white border-l border-slate-200 flex items-center justify-center p-4">
@@ -216,6 +226,32 @@ export default function PropertyPanel({ selectedNode, onUpdateNode, onDeleteNode
   const def = allDefs[nodeData?.nodeType];
   const isStart = selectedNode.type === 'start';
   const pickableFields = nodeData?.nodeType ? getPickableFields(nodeData.nodeType, extraDefs) : [];
+
+  const handleMeasureColor = async () => {
+    if (!selectedNode || !pickerDeviceId) {
+      setMeasureError('Chưa chọn thiết bị ở header');
+      return;
+    }
+    const px = Number(nodeData.params?.pixelX);
+    const py = Number(nodeData.params?.pixelY);
+    if (isNaN(px) || isNaN(py) || px < 0 || px > 1 || py < 0 || py > 1) {
+      setMeasureError('pixelX/pixelY chưa hợp lệ (0-1). Hãy chọn toạ độ trước.');
+      return;
+    }
+    setMeasuring(true);
+    setMeasureError(null);
+    try {
+      const res = await pixelCheckerApi.sampleColor(pickerDeviceId, px, py);
+      if (res.success && res.data?.color) {
+        onUpdateNode(selectedNode.id, { ...nodeData.params, expectedColor: res.data.color });
+      } else {
+        setMeasureError((res as any).error || 'Không đo được màu');
+      }
+    } catch {
+      setMeasureError('Lỗi kết nối khi đo màu');
+    }
+    setMeasuring(false);
+  };
 
   const handleChange = (key: string, value: string) => {
     const field = def?.fields.find(f => f.key === key);
@@ -287,6 +323,41 @@ export default function PropertyPanel({ selectedNode, onUpdateNode, onDeleteNode
         <div className="pt-2 border-t border-slate-100">
           <p className="text-[10px] text-slate-400">Tap vào video mới nhất trong Photos picker. Đặt node này ngay sau &quot;Truyền File&quot; để chọn đúng video vừa truyền.</p>
           <p className="text-[10px] text-slate-400 mt-1">Tap X/Y là tọa độ thumbnail đầu tiên trong picker (có thể chỉnh nếu cần).</p>
+        </div>
+      )}
+
+      {/* wait_for_pixel: color measurement tool */}
+      {nodeData.nodeType === 'wait_for_pixel' && (
+        <div className="pt-2 border-t border-slate-100 space-y-2">
+          <p className="text-xs font-medium text-slate-500">Công cụ đo màu</p>
+          <div className="flex items-center gap-2">
+            <div
+              className="w-10 h-10 rounded-lg border-2 border-slate-300 shrink-0"
+              style={{ backgroundColor: String(nodeData.params?.expectedColor || '#000000') }}
+              title={String(nodeData.params?.expectedColor || '')}
+            />
+            <div className="flex-1 min-w-0">
+              <div className="text-[10px] text-slate-400">Preview</div>
+              <div className="text-xs font-mono text-slate-700 truncate">
+                {String(nodeData.params?.expectedColor || '#000000')}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={handleMeasureColor}
+            disabled={measuring || !pickerDeviceId}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 disabled:bg-slate-100 disabled:text-slate-400 rounded-lg transition-colors"
+            title={!pickerDeviceId ? 'Chưa chọn thiết bị ở header' : 'Chụp screenshot và đo màu tại pixelX/pixelY'}
+          >
+            {measuring ? <Loader2 size={12} className="animate-spin" /> : <Eye size={12} />}
+            {measuring ? 'Đang đo...' : 'Đo màu tại pixelX/pixelY'}
+          </button>
+          {measureError && (
+            <p className="text-[10px] text-red-500">{measureError}</p>
+          )}
+          <p className="text-[10px] text-slate-400 leading-snug">
+            Chụp màn hình iPhone và tự động điền màu tại toạ độ pixelX, pixelY vào trường Màu kỳ vọng.
+          </p>
         </div>
       )}
 
