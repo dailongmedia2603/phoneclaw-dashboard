@@ -9,17 +9,16 @@
  */
 
 import { writeFileSync, readFileSync, existsSync } from 'fs';
-import { execSync } from 'child_process';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const SINGBOX_CONFIG_PATH = process.env.SINGBOX_CONFIG_PATH
   || path.resolve(__dirname, '../../singbox/config.json');
 
 const SINGBOX_STATE_PATH = SINGBOX_CONFIG_PATH.replace('.json', '-state.json');
-
-// Docker compose file path on VPS
-const DOCKER_COMPOSE_PATH = process.env.DOCKER_COMPOSE_PATH
-  || path.resolve(__dirname, '../../docker-compose.yml');
 
 export interface DeviceProxy {
   tailscaleIp: string;
@@ -59,8 +58,9 @@ function generateConfig(): Record<string, unknown> {
   for (const [, device] of deviceProxies) {
     const sanitizedIp = device.tailscaleIp.replace(/\./g, '-');
 
-    if (device.mode === 'us' && device.proxyIp && device.proxyPort) {
-      const outboundTag = `us-proxy-${sanitizedIp}`;
+    // Both US and VN modes use HTTP proxy if proxyIp is provided
+    if ((device.mode === 'us' || device.mode === 'vn') && device.proxyIp && device.proxyPort) {
+      const outboundTag = `${device.mode}-proxy-${sanitizedIp}`;
 
       // HTTP proxy outbound for this device
       const outbound: Record<string, unknown> = {
@@ -87,7 +87,7 @@ function generateConfig(): Record<string, unknown> {
         outbound: outboundTag,
       });
     } else if (device.mode === 'vn') {
-      // VN mode: direct exit via VPS IP
+      // VN mode without proxy: direct exit via VPS IP (VN)
       routeRules.push({
         source_ip_cidr: [`${device.tailscaleIp}/32`],
         outbound: 'direct',
@@ -121,40 +121,59 @@ function generateConfig(): Record<string, unknown> {
 }
 
 /**
+ * Restart sing-box container via Docker socket API.
+ * Uses /var/run/docker.sock mounted into app container.
+ */
+async function restartSingboxContainer(): Promise<{ ok: boolean; error?: string }> {
+  const http = await import('http');
+  const containerName = process.env.SINGBOX_CONTAINER_NAME || 'phoneclaw-dashboard-singbox-1';
+
+  return new Promise((resolve) => {
+    const req = http.request({
+      socketPath: '/var/run/docker.sock',
+      path: `/containers/${containerName}/restart?t=3`,
+      method: 'POST',
+      timeout: 15000,
+    }, (res) => {
+      let body = '';
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => {
+        if (res.statusCode === 204) {
+          console.log('[SingboxManager] sing-box container restarted via docker.sock');
+          resolve({ ok: true });
+        } else {
+          resolve({ ok: false, error: `Docker API ${res.statusCode}: ${body}` });
+        }
+      });
+    });
+
+    req.on('error', (err) => {
+      resolve({ ok: false, error: `Docker socket error: ${err.message}` });
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      resolve({ ok: false, error: 'Docker restart timeout' });
+    });
+
+    req.end();
+  });
+}
+
+/**
  * Write config to disk and restart sing-box container.
  */
-export function updateAndReload(): { ok: boolean; error?: string } {
+export async function updateAndReload(): Promise<{ ok: boolean; error?: string }> {
   try {
     const config = generateConfig();
     writeFileSync(SINGBOX_CONFIG_PATH, JSON.stringify(config, null, 2));
     console.log(`[SingboxManager] Config written to ${SINGBOX_CONFIG_PATH}`);
 
-    // Restart sing-box container to pick up new config
-    const composeDir = path.dirname(DOCKER_COMPOSE_PATH);
-    try {
-      execSync(`docker compose -f "${DOCKER_COMPOSE_PATH}" restart singbox`, {
-        timeout: 20000,
-        stdio: 'pipe',
-        cwd: composeDir,
-      });
-      console.log('[SingboxManager] sing-box restarted');
-    } catch (restartErr) {
-      // Fallback: try sending HUP signal
-      try {
-        execSync(`docker compose -f "${DOCKER_COMPOSE_PATH}" exec -T singbox kill -HUP 1`, {
-          timeout: 5000,
-          stdio: 'pipe',
-          cwd: composeDir,
-        });
-        console.log('[SingboxManager] sing-box HUP sent');
-      } catch {
-        const msg = restartErr instanceof Error ? restartErr.message : String(restartErr);
-        console.error('[SingboxManager] Failed to reload sing-box:', msg);
-        return { ok: false, error: 'Failed to reload sing-box: ' + msg };
-      }
+    const result = await restartSingboxContainer();
+    if (!result.ok) {
+      console.error('[SingboxManager] Restart failed:', result.error);
     }
-
-    return { ok: true };
+    return result;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[SingboxManager] updateAndReload error:', msg);

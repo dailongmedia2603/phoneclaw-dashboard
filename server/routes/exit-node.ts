@@ -54,7 +54,7 @@ router.post('/config', async (req: Request, res: Response) => {
   });
 
   persistState();
-  const reloadResult = updateAndReload();
+  const reloadResult = await updateAndReload();
 
   res.json({
     success: reloadResult.ok,
@@ -103,7 +103,7 @@ router.post('/batch/config', async (req: Request, res: Response) => {
 
   // Persist + reload once for all devices
   persistState();
-  const reloadResult = updateAndReload();
+  const reloadResult = await updateAndReload();
 
   const allOk = Object.values(results).every(r => r.ok) && reloadResult.ok;
   res.json({ success: allOk, data: results, error: reloadResult.error });
@@ -133,7 +133,7 @@ router.delete('/config/:deviceId', async (req: Request, res: Response) => {
   if (found.device.tailscaleIp) {
     removeDeviceProxy(found.device.tailscaleIp);
     persistState();
-    updateAndReload();
+    await updateAndReload();
   }
 
   res.json({ success: true });

@@ -182,7 +182,7 @@ router.post('/batch/start', async (req, res) => {
   // Reload sing-box on VPS once for all devices
   if (exitNodeChanged) {
     persistState();
-    const reloadResult = updateAndReload();
+    const reloadResult = await updateAndReload();
     if (!reloadResult.ok) {
       console.error('[Proxy] Exit node reload failed:', reloadResult.error);
     }
@@ -231,7 +231,7 @@ router.post('/batch/stop', async (req, res) => {
   // Reload sing-box on VPS
   if (exitNodeChanged) {
     persistState();
-    updateAndReload();
+    await updateAndReload();
   }
 
   const allOk = Object.values(results).every(r => r.ok);
@@ -326,7 +326,7 @@ router.post('/:deviceId/start', verifyDeviceAccess, async (req, res) => {
       proxyPass: proxyConfig.password,
     });
     persistState();
-    const reloadResult = updateAndReload();
+    const reloadResult = await updateAndReload();
     exitNodeOk = reloadResult.ok;
   }
 
@@ -382,7 +382,7 @@ router.post('/:deviceId/stop', verifyDeviceAccess, async (req, res) => {
   if (found?.device.tailscaleIp) {
     removeDeviceProxy(found.device.tailscaleIp);
     persistState();
-    updateAndReload();
+    await updateAndReload();
   }
 
   // Step 2: Stop local proxy + DeviceSpoofer on iPhone
