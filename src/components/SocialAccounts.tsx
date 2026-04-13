@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { UserCircle, Plus, Pencil, Trash2, X, Loader2, Eye, EyeOff, Copy, Search, Edit } from 'lucide-react';
+import { UserCircle, Plus, Pencil, Trash2, X, Loader2, Eye, EyeOff, Copy, Search, Edit, Zap, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { socialAccounts as socialAccountsApi, devices as devicesApi } from '../services/api';
 import { useApi } from '../hooks/useApi';
 import { showToast } from './Toast';
@@ -98,6 +98,24 @@ export default function SocialAccounts() {
   const [deleteConfirm, setDeleteConfirm] = useState<SocialAccount | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Test OTP
+  const [otpTestAccount, setOtpTestAccount] = useState<SocialAccount | null>(null);
+  const [otpTesting, setOtpTesting] = useState(false);
+  const [otpTestResult, setOtpTestResult] = useState<{
+    success: boolean;
+    otpCode?: string;
+    elapsedSeconds?: number;
+    email?: { from: string; subject: string; internalDate: string; snippet: string };
+    attempts?: Array<{
+      pollIdx: number;
+      candidates: number;
+      checked: Array<{ id: string; from: string; subject: string; internalDate: string; tooOld: boolean; matched: string | null }>;
+      error?: string;
+    }>;
+    error?: string;
+    gmailError?: string;
+  } | null>(null);
+
   // --------------------------------------------------------
   // Filtering
   // --------------------------------------------------------
@@ -192,6 +210,36 @@ export default function SocialAccounts() {
       showToast('error', 'Lỗi không xác định');
     }
     setDeleting(false);
+  };
+
+  const handleTestOtp = async (account: SocialAccount) => {
+    if (!account.gmailAuthorized) {
+      showToast('error', 'Tài khoản chưa authorize Gmail');
+      return;
+    }
+    setOtpTestAccount(account);
+    setOtpTestResult(null);
+    setOtpTesting(true);
+    try {
+      const res = await socialAccountsApi.testOtp(account.id, 60);
+      const raw = res as any;
+      if (res.success && res.data) {
+        setOtpTestResult({ success: true, ...res.data });
+        showToast('success', `Đã lấy OTP: ${res.data.otpCode}`);
+      } else {
+        setOtpTestResult({
+          success: false,
+          error: res.error,
+          attempts: raw.attempts,
+          gmailError: raw.gmailError,
+        });
+        showToast('error', res.error || 'Không lấy được OTP');
+      }
+    } catch (err: any) {
+      setOtpTestResult({ success: false, error: err?.message || 'Lỗi không xác định' });
+      showToast('error', 'Lỗi kết nối server');
+    }
+    setOtpTesting(false);
   };
 
   const handleAuthorizeGmail = async (accountId: string) => {
@@ -366,6 +414,15 @@ export default function SocialAccounts() {
                   </td>
                   <td className="py-3 px-4 text-right pr-6">
                     <div className="flex items-center justify-end gap-1">
+                      {account.gmailAuthorized && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleTestOtp(account); }}
+                          className="p-1.5 rounded-lg text-slate-400 hover:bg-amber-50 hover:text-amber-600 transition-colors opacity-0 group-hover:opacity-100"
+                          title="Test lấy OTP từ Gmail"
+                        >
+                          <Zap size={16} />
+                        </button>
+                      )}
                       <button
                         onClick={() => openEdit(account)}
                         className="p-1.5 rounded-lg text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition-colors opacity-0 group-hover:opacity-100"
@@ -527,6 +584,171 @@ export default function SocialAccounts() {
               <button onClick={handleDelete} disabled={deleting} className="flex-1 flex items-center justify-center gap-2 bg-red-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50">
                 {deleting && <Loader2 className="animate-spin" size={16} />}
                 Xoá
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* Test OTP Modal */}
+      {/* ============================================================ */}
+      {otpTestAccount && (
+        <div
+          className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+          onClick={() => { if (!otpTesting) { setOtpTestAccount(null); setOtpTestResult(null); } }}
+        >
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+                  <Zap className="text-amber-600" size={20} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">Test lấy OTP từ Gmail</h2>
+                  <p className="text-xs text-slate-500">{otpTestAccount.email || otpTestAccount.username}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => { if (!otpTesting) { setOtpTestAccount(null); setOtpTestResult(null); } }}
+                disabled={otpTesting}
+                className="p-2 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors disabled:opacity-50"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-auto px-6 py-5 space-y-4">
+              {otpTesting && !otpTestResult && (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Loader2 className="animate-spin text-amber-500 mb-4" size={40} />
+                  <p className="text-sm font-medium text-slate-700">Đang poll Gmail (tối đa 60s)…</p>
+                  <p className="text-xs text-slate-500 mt-1">Tìm email có OTP từ TikTok/verification</p>
+                </div>
+              )}
+
+              {otpTestResult?.success && (
+                <>
+                  <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-200">
+                    <CheckCircle2 className="text-emerald-600 shrink-0" size={24} />
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-emerald-900">Lấy OTP thành công!</p>
+                      <p className="text-xs text-emerald-700 mt-0.5">
+                        Mất {otpTestResult.elapsedSeconds}s
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                    <p className="text-xs font-medium text-slate-500 mb-1">MÃ OTP</p>
+                    <div className="flex items-center gap-3">
+                      <div className="text-3xl font-mono font-bold tracking-widest text-slate-900">
+                        {otpTestResult.otpCode}
+                      </div>
+                      <button
+                        onClick={() => copyToClipboard(otpTestResult.otpCode || '')}
+                        className="p-2 rounded-lg text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition-colors"
+                        title="Sao chép"
+                      >
+                        <Copy size={16} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {otpTestResult.email && (
+                    <div className="p-4 rounded-xl bg-white border border-slate-200 space-y-2">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Email nguồn</p>
+                      <div className="text-sm">
+                        <div className="text-slate-500">From:</div>
+                        <div className="text-slate-900 font-medium break-all">{otpTestResult.email.from}</div>
+                      </div>
+                      <div className="text-sm">
+                        <div className="text-slate-500">Subject:</div>
+                        <div className="text-slate-900 font-medium">{otpTestResult.email.subject}</div>
+                      </div>
+                      <div className="text-sm">
+                        <div className="text-slate-500">Thời gian nhận:</div>
+                        <div className="text-slate-900 font-medium">{new Date(otpTestResult.email.internalDate).toLocaleString('vi-VN')}</div>
+                      </div>
+                      <div className="text-sm">
+                        <div className="text-slate-500">Snippet:</div>
+                        <div className="text-slate-700 italic">{otpTestResult.email.snippet}</div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {otpTestResult && !otpTestResult.success && (
+                <>
+                  <div className="flex items-start gap-3 p-4 rounded-xl bg-red-50 border border-red-200">
+                    <XCircle className="text-red-600 shrink-0 mt-0.5" size={24} />
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-red-900">Không lấy được OTP</p>
+                      <p className="text-xs text-red-700 mt-1 break-words">{otpTestResult.error}</p>
+                      {otpTestResult.gmailError && (
+                        <p className="text-xs text-red-600 mt-2 font-mono break-words">
+                          Gmail error: {otpTestResult.gmailError}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {otpTestResult?.attempts && otpTestResult.attempts.length > 0 && (
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                    <Clock size={14} />
+                    Chi tiết {otpTestResult.attempts.length} lần poll
+                  </p>
+                  <div className="space-y-3">
+                    {otpTestResult.attempts.map((a, i) => (
+                      <div key={i} className="text-xs border-l-2 border-slate-300 pl-3">
+                        <div className="font-medium text-slate-700">
+                          Poll #{a.pollIdx} — Gmail trả {a.candidates} email
+                          {a.error && <span className="text-red-600 ml-2">LỖI: {a.error}</span>}
+                        </div>
+                        {a.checked.length > 0 && (
+                          <ul className="mt-1 space-y-1 text-slate-600">
+                            {a.checked.map((c, j) => (
+                              <li key={j} className="flex items-start gap-2">
+                                <span className={c.matched ? 'text-emerald-600' : c.tooOld ? 'text-slate-400' : 'text-slate-500'}>
+                                  {c.matched ? '✓' : c.tooOld ? '⊘' : '✗'}
+                                </span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="truncate"><span className="text-slate-500">from:</span> {c.from}</div>
+                                  <div className="truncate"><span className="text-slate-500">subject:</span> {c.subject}</div>
+                                  {c.matched && <div className="text-emerald-700 font-mono">→ Matched: {c.matched}</div>}
+                                  {c.tooOld && <div className="text-slate-400">→ Quá cũ (bỏ qua)</div>}
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3 p-4 border-t border-slate-100 shrink-0">
+              <button
+                onClick={() => { setOtpTestResult(null); handleTestOtp(otpTestAccount); }}
+                disabled={otpTesting}
+                className="flex-1 flex items-center justify-center gap-2 bg-amber-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-amber-600 transition-colors disabled:opacity-50"
+              >
+                {otpTesting && <Loader2 className="animate-spin" size={16} />}
+                <Zap size={16} />
+                Thử lại
+              </button>
+              <button
+                onClick={() => { if (!otpTesting) { setOtpTestAccount(null); setOtpTestResult(null); } }}
+                disabled={otpTesting}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-colors disabled:opacity-50"
+              >
+                Đóng
               </button>
             </div>
           </div>

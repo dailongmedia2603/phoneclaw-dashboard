@@ -274,6 +274,19 @@ export const socialAccounts = {
   create: (data: Partial<SocialAccount>) => post<SocialAccount>('/api/social-accounts', data),
   update: (id: string, data: Partial<SocialAccount>) => put<SocialAccount>(`/api/social-accounts/${id}`, data),
   remove: (id: string) => del<void>(`/api/social-accounts/${id}`),
+  testOtp: (accountId: string, waitTimeout = 60) =>
+    post<{
+      otpCode?: string;
+      elapsedSeconds?: number;
+      email?: { from: string; subject: string; internalDate: string; snippet: string };
+      attempts?: Array<{
+        pollIdx: number;
+        candidates: number;
+        checked: Array<{ id: string; from: string; subject: string; internalDate: string; tooOld: boolean; matched: string | null }>;
+        error?: string;
+      }>;
+      gmailError?: string;
+    }>('/api/test/otp-fetch', { accountId, waitTimeout }),
 };
 
 // ============================================================
