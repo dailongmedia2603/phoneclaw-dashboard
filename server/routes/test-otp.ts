@@ -11,8 +11,18 @@ router.post('/otp-fetch', async (req, res) => {
   const userId = getAuthUserId(req);
   if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
-  const { accountId, waitTimeout } = req.body || {};
+  const { accountId, waitTimeout, maxAgeMinutes, gmailQuery } = req.body || {};
   if (!accountId) return res.status(400).json({ success: false, error: 'accountId is required' });
+
+  // Test mode defaults: permissive để bạn thử với email bất kỳ trong inbox.
+  // maxAgeMinutes: chỉ nhận email nhận trong X phút gần nhất (default 60 = 1 giờ).
+  // Dùng -1 hoặc 0 để không giới hạn thời gian (tìm trong toàn bộ inbox khả dụng).
+  const ageMinutes = maxAgeMinutes === undefined ? 60 : Number(maxAgeMinutes);
+  const effectiveQuery = (typeof gmailQuery === 'string' && gmailQuery.trim())
+    ? gmailQuery.trim()
+    : (ageMinutes > 0
+        ? `newer_than:${Math.max(1, Math.ceil(ageMinutes / 60))}h (from:tiktok OR from:accounts OR subject:verification OR subject:verify OR subject:code OR subject:xác OR subject:OTP)`
+        : '(from:tiktok OR from:accounts OR subject:verification OR subject:verify OR subject:code OR subject:xác OR subject:OTP)');
 
   try {
     const accounts = await readUserCollection<any>(userId, 'social-accounts');
@@ -42,7 +52,8 @@ router.post('/otp-fetch', async (req, res) => {
     const timeout = (Number(waitTimeout) || 60) * 1000;
     const startTime = Date.now();
     const pollInterval = 5000;
-    const minInternalDate = startTime - 5 * 60 * 1000;
+    // minInternalDate: chỉ áp dụng khi ageMinutes > 0. Nếu <=0 thì không giới hạn thời gian.
+    const minInternalDate = ageMinutes > 0 ? startTime - ageMinutes * 60 * 1000 : 0;
     const seenMessageIds = new Set<string>();
     const attempts: Array<{
       pollIdx: number;
@@ -57,7 +68,7 @@ router.post('/otp-fetch', async (req, res) => {
     let lastGmailError: string | null = null;
     let pollIdx = 0;
 
-    console.log(`[TEST-OTP] Poll cho ${account.email} (timeout ${timeout / 1000}s)`);
+    console.log(`[TEST-OTP] Poll cho ${account.email} (timeout ${timeout / 1000}s, ageMinutes=${ageMinutes}, q="${effectiveQuery}")`);
 
     while (Date.now() - startTime < timeout) {
       pollIdx++;
@@ -66,8 +77,8 @@ router.post('/otp-fetch', async (req, res) => {
       try {
         const listRes = await gmail.users.messages.list({
           userId: 'me',
-          q: 'newer_than:10m (from:tiktok OR from:accounts OR subject:verification OR subject:verify OR subject:code OR subject:xác OR subject:OTP)',
-          maxResults: 10,
+          q: effectiveQuery,
+          maxResults: 15,
         });
 
         const messages = listRes.data.messages || [];
@@ -84,7 +95,7 @@ router.post('/otp-fetch', async (req, res) => {
           });
 
           const internalDate = Number(detail.data.internalDate || 0);
-          const tooOld = internalDate > 0 && internalDate < minInternalDate;
+          const tooOld = minInternalDate > 0 && internalDate > 0 && internalDate < minInternalDate;
           const subject = getGmailHeader(detail.data, 'Subject');
           const from = getGmailHeader(detail.data, 'From');
           const body = extractGmailBody(detail.data);

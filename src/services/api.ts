@@ -274,7 +274,7 @@ export const socialAccounts = {
   create: (data: Partial<SocialAccount>) => post<SocialAccount>('/api/social-accounts', data),
   update: (id: string, data: Partial<SocialAccount>) => put<SocialAccount>(`/api/social-accounts/${id}`, data),
   remove: (id: string) => del<void>(`/api/social-accounts/${id}`),
-  testOtp: (accountId: string, waitTimeout = 60) =>
+  testOtp: (accountId: string, opts?: { waitTimeout?: number; maxAgeMinutes?: number }) =>
     post<{
       otpCode?: string;
       elapsedSeconds?: number;
@@ -286,7 +286,11 @@ export const socialAccounts = {
         error?: string;
       }>;
       gmailError?: string;
-    }>('/api/test/otp-fetch', { accountId, waitTimeout }),
+    }>('/api/test/otp-fetch', {
+      accountId,
+      waitTimeout: opts?.waitTimeout ?? 60,
+      maxAgeMinutes: opts?.maxAgeMinutes ?? 1440, // default 24h cho test mode
+    }),
 };
 
 // ============================================================

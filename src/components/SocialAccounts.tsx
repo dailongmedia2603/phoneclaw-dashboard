@@ -115,6 +115,7 @@ export default function SocialAccounts() {
     error?: string;
     gmailError?: string;
   } | null>(null);
+  const [otpMaxAgeMinutes, setOtpMaxAgeMinutes] = useState<number>(1440); // 24h default
 
   // --------------------------------------------------------
   // Filtering
@@ -212,7 +213,7 @@ export default function SocialAccounts() {
     setDeleting(false);
   };
 
-  const handleTestOtp = async (account: SocialAccount) => {
+  const handleTestOtp = async (account: SocialAccount, ageMinutes?: number) => {
     if (!account.gmailAuthorized) {
       showToast('error', 'Tài khoản chưa authorize Gmail');
       return;
@@ -221,7 +222,10 @@ export default function SocialAccounts() {
     setOtpTestResult(null);
     setOtpTesting(true);
     try {
-      const res = await socialAccountsApi.testOtp(account.id, 60);
+      const res = await socialAccountsApi.testOtp(account.id, {
+        waitTimeout: 60,
+        maxAgeMinutes: ageMinutes ?? otpMaxAgeMinutes,
+      });
       const raw = res as any;
       if (res.success && res.data) {
         setOtpTestResult({ success: true, ...res.data });
@@ -619,6 +623,24 @@ export default function SocialAccounts() {
             </div>
 
             <div className="flex-1 overflow-auto px-6 py-5 space-y-4">
+              {/* Window picker */}
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <Clock size={16} className="text-slate-500 shrink-0" />
+                <span className="text-xs font-medium text-slate-600 shrink-0">Tìm email trong:</span>
+                <select
+                  value={otpMaxAgeMinutes}
+                  onChange={(e) => setOtpMaxAgeMinutes(Number(e.target.value))}
+                  disabled={otpTesting}
+                  className="flex-1 text-sm bg-white border border-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 disabled:opacity-50"
+                >
+                  <option value={10}>10 phút gần nhất (flow kịch bản thật)</option>
+                  <option value={60}>1 giờ gần nhất</option>
+                  <option value={360}>6 giờ gần nhất</option>
+                  <option value={1440}>24 giờ gần nhất (mặc định test)</option>
+                  <option value={-1}>Không giới hạn — toàn bộ inbox</option>
+                </select>
+              </div>
+
               {otpTesting && !otpTestResult && (
                 <div className="flex flex-col items-center justify-center py-12">
                   <Loader2 className="animate-spin text-amber-500 mb-4" size={40} />
@@ -720,7 +742,8 @@ export default function SocialAccounts() {
                                   <div className="truncate"><span className="text-slate-500">from:</span> {c.from}</div>
                                   <div className="truncate"><span className="text-slate-500">subject:</span> {c.subject}</div>
                                   {c.matched && <div className="text-emerald-700 font-mono">→ Matched: {c.matched}</div>}
-                                  {c.tooOld && <div className="text-slate-400">→ Quá cũ (bỏ qua)</div>}
+                                  {c.tooOld && <div className="text-slate-400">→ Ngoài cửa sổ thời gian (thử mở rộng ở trên)</div>}
+                                  {!c.matched && !c.tooOld && <div className="text-slate-500">→ Không parse được OTP từ subject/body</div>}
                                 </div>
                               </li>
                             ))}
