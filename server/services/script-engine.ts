@@ -717,7 +717,15 @@ async function executeStep(
       const timeout = (Number(p.waitTimeout) || 60) * 1000;
       const startTime = Date.now();
       const pollInterval = 5000;
+      // Only consider emails received from (startTime - 5 minutes) onwards.
+      // TikTok thường gửi OTP trước khi node chạy vài chục giây đến vài phút.
+      const minInternalDate = startTime - 5 * 60 * 1000;
       let otpCode: string | null = null;
+      let otpMessageId: string | null = null;
+      let lastGmailError: string | null = null;
+      const seenMessageIds = new Set<string>();
+
+      console.log(`[OTP] Bắt đầu poll Gmail cho ${account.email} (timeout ${timeout / 1000}s)`);
 
       while (Date.now() - startTime < timeout) {
         if (ctrl.abort) throw new Error('Execution aborted');
@@ -725,23 +733,51 @@ async function executeStep(
         try {
           const listRes = await gmail.users.messages.list({
             userId: 'me',
-            q: 'is:unread newer_than:2m',
-            maxResults: 3,
+            // Không dùng is:unread (email có thể đã bị preview/mark read trên mobile).
+            // newer_than:10m để bắt được cả email đã gửi trước node OTP.
+            q: 'newer_than:10m (from:tiktok OR from:accounts OR subject:verification OR subject:verify OR subject:code OR subject:xác OR subject:OTP)',
+            maxResults: 10,
           });
 
           const messages = listRes.data.messages || [];
+          console.log(`[OTP] Gmail trả về ${messages.length} email ứng viên`);
+
           for (const msg of messages) {
+            if (!msg.id || seenMessageIds.has(msg.id)) continue;
+            seenMessageIds.add(msg.id);
+
             const detail = await gmail.users.messages.get({
               userId: 'me',
               id: msg.id,
               format: 'full',
             });
+
+            const internalDate = Number(detail.data.internalDate || 0);
+            if (internalDate > 0 && internalDate < minInternalDate) {
+              console.log(`[OTP] Bỏ qua email cũ (internalDate=${new Date(internalDate).toISOString()})`);
+              continue;
+            }
+
+            const subject = getGmailHeader(detail.data, 'Subject');
+            const from = getGmailHeader(detail.data, 'From');
             const body = extractGmailBody(detail.data);
-            otpCode = parseOtpCode(body);
-            if (otpCode) break;
+            console.log(`[OTP] Kiểm tra email from="${from}" subject="${subject}"`);
+
+            const code = parseOtpCode(subject + '\n' + body);
+            if (code) {
+              otpCode = code;
+              otpMessageId = msg.id;
+              console.log(`[OTP] ✓ Tìm thấy code "${code}" trong email từ ${from}`);
+              break;
+            }
           }
         } catch (gmailErr: any) {
-          console.error('[OTP] Gmail API error:', gmailErr.message);
+          lastGmailError = gmailErr?.message || String(gmailErr);
+          console.error('[OTP] Gmail API error:', lastGmailError);
+          // Nếu refresh token bị revoke/invalid thì ném luôn, không cần poll tiếp
+          if (/invalid_grant|unauthorized|401|403/i.test(lastGmailError)) {
+            throw new Error(`Lấy OTP: Gmail auth lỗi - cần authorize lại tài khoản "${account.email}". Chi tiết: ${lastGmailError}`);
+          }
         }
 
         if (otpCode) break;
@@ -749,7 +785,21 @@ async function executeStep(
       }
 
       if (!otpCode) {
-        throw new Error(`Lấy OTP: không tìm thấy OTP trong ${p.waitTimeout}s`);
+        const hint = lastGmailError ? ` (lỗi Gmail cuối: ${lastGmailError})` : '';
+        throw new Error(`Lấy OTP: không tìm thấy OTP trong ${p.waitTimeout}s${hint}`);
+      }
+
+      // Mark email read để lần chạy sau không lấy nhầm OTP cũ
+      if (otpMessageId) {
+        try {
+          await gmail.users.messages.modify({
+            userId: 'me',
+            id: otpMessageId,
+            requestBody: { removeLabelIds: ['UNREAD'] },
+          });
+        } catch (markErr: any) {
+          console.warn('[OTP] Không mark read được:', markErr?.message);
+        }
       }
 
       // Tap vị trí OTP + gõ code
@@ -757,7 +807,7 @@ async function executeStep(
         x: Number(p.tapX) || 0.5,
         y: Number(p.tapY) || 0.5,
       });
-      await sleep(3000);
+      await sleep(1500);
 
       await callDeviceApi(deviceId, 'POST', '/api/type', { text: otpCode });
 
@@ -771,26 +821,57 @@ async function executeStep(
 
 // --- Gmail OTP helpers ---
 
-function extractGmailBody(message: any): string {
-  const parts = message.payload?.parts || [];
-  for (const part of parts) {
+export function extractGmailBody(message: any): string {
+  // Recursive walk để xử lý multipart/alternative và multipart/related
+  function walk(part: any): string {
+    if (!part) return '';
     if (part.mimeType === 'text/plain' && part.body?.data) {
       return Buffer.from(part.body.data, 'base64url').toString('utf-8');
     }
+    if (Array.isArray(part.parts)) {
+      for (const sub of part.parts) {
+        const found = walk(sub);
+        if (found) return found;
+      }
+    }
+    if (part.mimeType === 'text/html' && part.body?.data) {
+      const html = Buffer.from(part.body.data, 'base64url').toString('utf-8');
+      return html.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ');
+    }
+    return '';
   }
+
+  const fromParts = walk(message.payload);
+  if (fromParts) return fromParts;
   if (message.payload?.body?.data) {
     return Buffer.from(message.payload.body.data, 'base64url').toString('utf-8');
   }
   return message.snippet || '';
 }
 
+export function getGmailHeader(message: any, name: string): string {
+  const headers = message?.payload?.headers || [];
+  const lower = name.toLowerCase();
+  for (const h of headers) {
+    if ((h.name || '').toLowerCase() === lower) return h.value || '';
+  }
+  return '';
+}
+
 const OTP_PATTERNS = [
-  /(?:code|mã|verification|xác minh|xác nhận|confirm|verify)[:\s]+(\d{4,8})/i,
-  /(\d{4,8})\s*(?:is your|là mã|là code)/i,
+  // "123456 is your verification code", "123456 là mã xác minh"
+  /\b(\d{4,8})\s*(?:is your|là mã|là code|is the code)/i,
+  // "code/mã/verification: 123456"
+  /(?:code|mã|verification|xác minh|xác nhận|confirm|verify|OTP)[\s:]+(\d{4,8})/i,
+  // "Your code is 123456"
+  /(?:your|the)\s+(?:code|verification|otp)[^\d]{0,20}(\d{4,8})/i,
+  // Fallback: 6 chữ số đứng riêng (TikTok dùng 6 digits)
+  /\b(\d{6})\b/,
+  // Fallback cuối: 4-8 chữ số
   /\b(\d{4,8})\b/,
 ];
 
-function parseOtpCode(text: string): string | null {
+export function parseOtpCode(text: string): string | null {
   for (const pattern of OTP_PATTERNS) {
     const match = text.match(pattern);
     if (match?.[1]) return match[1];
