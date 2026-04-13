@@ -115,7 +115,7 @@ export default function SocialAccounts() {
     error?: string;
     gmailError?: string;
   } | null>(null);
-  const [otpMaxAgeMinutes, setOtpMaxAgeMinutes] = useState<number>(1440); // 24h default
+  const [otpMaxAgeMinutes, setOtpMaxAgeMinutes] = useState<number>(10); // 10 phút — match flow kịch bản thật
 
   // --------------------------------------------------------
   // Filtering
@@ -633,10 +633,10 @@ export default function SocialAccounts() {
                   disabled={otpTesting}
                   className="flex-1 text-sm bg-white border border-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 disabled:opacity-50"
                 >
-                  <option value={10}>10 phút gần nhất (flow kịch bản thật)</option>
+                  <option value={10}>10 phút gần nhất (mặc định — match flow kịch bản)</option>
                   <option value={60}>1 giờ gần nhất</option>
                   <option value={360}>6 giờ gần nhất</option>
-                  <option value={1440}>24 giờ gần nhất (mặc định test)</option>
+                  <option value={1440}>24 giờ gần nhất</option>
                   <option value={-1}>Không giới hạn — toàn bộ inbox</option>
                 </select>
               </div>

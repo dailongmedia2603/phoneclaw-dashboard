@@ -289,7 +289,7 @@ export const socialAccounts = {
     }>('/api/test/otp-fetch', {
       accountId,
       waitTimeout: opts?.waitTimeout ?? 60,
-      maxAgeMinutes: opts?.maxAgeMinutes ?? 1440, // default 24h cho test mode
+      maxAgeMinutes: opts?.maxAgeMinutes ?? 10, // default 10 phút — chỉ nhận OTP mới vừa request
     }),
 };
 

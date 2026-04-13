@@ -717,9 +717,9 @@ async function executeStep(
       const timeout = (Number(p.waitTimeout) || 60) * 1000;
       const startTime = Date.now();
       const pollInterval = 5000;
-      // Only consider emails received from (startTime - 5 minutes) onwards.
+      // Chỉ nhận email trong 10 phút gần nhất — đồng bộ với Gmail query newer_than:10m.
       // TikTok thường gửi OTP trước khi node chạy vài chục giây đến vài phút.
-      const minInternalDate = startTime - 5 * 60 * 1000;
+      const minInternalDate = startTime - 10 * 60 * 1000;
       let otpCode: string | null = null;
       let otpMessageId: string | null = null;
       let lastGmailError: string | null = null;
