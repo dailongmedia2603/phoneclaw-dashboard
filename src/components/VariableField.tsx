@@ -33,11 +33,11 @@ export default function VariableField({ spec, value, onChange, error }: Props) {
         {labelRow}
         <textarea
           value={text}
-          rows={4}
-          placeholder={spec.placeholder}
+          rows={8}
+          placeholder={spec.placeholder ?? 'Mỗi dòng một nội dung — script sẽ dùng toàn bộ chuỗi (kể cả xuống dòng).'}
           maxLength={spec.maxLength}
           onChange={(e) => onChange(e.target.value)}
-          className={baseInputClass}
+          className={`${baseInputClass} font-mono resize-y min-h-[140px]`}
         />
         {spec.maxLength !== undefined && (
           <p className="text-xs text-slate-400 text-right">
@@ -50,12 +50,37 @@ export default function VariableField({ spec, value, onChange, error }: Props) {
     );
   }
 
-  if (spec.type === 'string' || spec.type === 'url') {
+  if (spec.type === 'string') {
+    // Multi-line textarea so user can paste many items (1 per line) or long single-line.
+    const text = value !== undefined && value !== null ? String(value) : String(spec.default ?? '');
+    return (
+      <div>
+        {labelRow}
+        <textarea
+          value={text}
+          rows={4}
+          placeholder={spec.placeholder ?? 'Nội dung — có thể nhiều dòng'}
+          maxLength={spec.maxLength}
+          onChange={(e) => onChange(e.target.value)}
+          className={`${baseInputClass} resize-y min-h-[80px]`}
+        />
+        {spec.maxLength !== undefined && (
+          <p className="text-xs text-slate-400 text-right">
+            {text.length}/{spec.maxLength}
+          </p>
+        )}
+        {hint}
+        {errView}
+      </div>
+    );
+  }
+
+  if (spec.type === 'url') {
     return (
       <div>
         {labelRow}
         <input
-          type={spec.type === 'url' ? 'url' : 'text'}
+          type="url"
           value={value !== undefined && value !== null ? String(value) : String(spec.default ?? '')}
           placeholder={spec.placeholder}
           maxLength={spec.maxLength}
