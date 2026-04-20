@@ -491,7 +491,9 @@ export async function callDeviceApi(
   deviceId: string,
   method: 'GET' | 'POST',
   endpoint: string,
-  body?: Record<string, unknown>
+  body?: Record<string, unknown>,
+  /** Per-call timeout override (ms). Defaults to config.deviceApiTimeout. */
+  timeoutMs?: number
 ): Promise<{ ok: boolean; data?: unknown; error?: string }> {
   // Tìm device từ tenant storage trước, fallback sang legacy storage
   const found = await findDeviceGlobal(deviceId);
@@ -500,7 +502,7 @@ export async function callDeviceApi(
 
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), config.deviceApiTimeout);
+    const timeout = setTimeout(() => controller.abort(), timeoutMs ?? config.deviceApiTimeout);
     const apiPort = device.httpPort + 1;
     const url = `http://${device.tailscaleIp}:${apiPort}${endpoint}`;
 

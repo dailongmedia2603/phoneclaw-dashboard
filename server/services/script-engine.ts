@@ -38,6 +38,19 @@ async function prepareTypeText(rawText: unknown): Promise<string> {
   return text;
 }
 
+/**
+ * Compute the HTTP timeout for an /api/type call given the prepared text length.
+ * iOS-side handleType waits for typing to finish (semaphore), so for long Telex
+ * captions the call can take many seconds.
+ *
+ * Formula: text.length × 400ms (max char delay) + 10s buffer, capped at 120s.
+ * Min 15s for short text (covers paste delays + clipboard restore).
+ */
+function typeTimeoutMs(text: string): number {
+  const dynamicMs = text.length * 400 + 10_000;
+  return Math.max(15_000, Math.min(120_000, dynamicMs));
+}
+
 /** Invalidate settings cache (called from settings PUT handler). */
 export function invalidateSettingsCache(): void {
   _settingsCache = null;
@@ -458,7 +471,7 @@ async function executeStep(
     }
     case 'type': {
       const text = await prepareTypeText(p.text);
-      const res = await callDeviceApi(deviceId, 'POST', '/api/type', { text });
+      const res = await callDeviceApi(deviceId, 'POST', '/api/type', { text }, typeTimeoutMs(text));
       if (!res.ok) throw new Error(`Type failed: ${res.error}`);
       break;
     }
@@ -608,9 +621,10 @@ async function executeStep(
       await sleep(3000);
 
       // 2. Gõ username
-      await callDeviceApi(deviceId, 'POST', '/api/type', {
-        text: await prepareTypeText(account.username),
-      });
+      {
+        const t = await prepareTypeText(account.username);
+        await callDeviceApi(deviceId, 'POST', '/api/type', { text: t }, typeTimeoutMs(t));
+      }
       await sleep(3000);
 
       // 3. Tap vị trí password
@@ -621,9 +635,10 @@ async function executeStep(
       await sleep(3000);
 
       // 4. Gõ password
-      await callDeviceApi(deviceId, 'POST', '/api/type', {
-        text: await prepareTypeText(account.password),
-      });
+      {
+        const t = await prepareTypeText(account.password);
+        await callDeviceApi(deviceId, 'POST', '/api/type', { text: t }, typeTimeoutMs(t));
+      }
 
       break;
     }
@@ -657,9 +672,10 @@ async function executeStep(
       await sleep(3000);
 
       // 2. Gõ email
-      await callDeviceApi(deviceId, 'POST', '/api/type', {
-        text: await prepareTypeText(account.email),
-      });
+      {
+        const t = await prepareTypeText(account.email);
+        await callDeviceApi(deviceId, 'POST', '/api/type', { text: t }, typeTimeoutMs(t));
+      }
       await sleep(3000);
 
       // 3. Tap vị trí email password
@@ -670,9 +686,10 @@ async function executeStep(
       await sleep(3000);
 
       // 4. Gõ email password
-      await callDeviceApi(deviceId, 'POST', '/api/type', {
-        text: await prepareTypeText(account.emailPassword),
-      });
+      {
+        const t = await prepareTypeText(account.emailPassword);
+        await callDeviceApi(deviceId, 'POST', '/api/type', { text: t }, typeTimeoutMs(t));
+      }
 
       break;
     }
@@ -718,7 +735,10 @@ async function executeStep(
       await sleep(3000);
 
       // Gõ text
-      await callDeviceApi(deviceId, 'POST', '/api/type', { text: await prepareTypeText(textToType) });
+      {
+        const t = await prepareTypeText(textToType);
+        await callDeviceApi(deviceId, 'POST', '/api/type', { text: t }, typeTimeoutMs(t));
+      }
 
       break;
     }
@@ -852,7 +872,10 @@ async function executeStep(
       await sleep(1500);
 
       // OTP codes are numeric (ASCII) so prepareTypeText fast-paths through
-      await callDeviceApi(deviceId, 'POST', '/api/type', { text: await prepareTypeText(otpCode) });
+      {
+        const t = await prepareTypeText(otpCode);
+        await callDeviceApi(deviceId, 'POST', '/api/type', { text: t }, typeTimeoutMs(t));
+      }
 
       break;
     }
