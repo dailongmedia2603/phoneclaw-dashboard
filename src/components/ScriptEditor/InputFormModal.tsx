@@ -77,12 +77,19 @@ export default function InputFormModal({ initial, existingNames, onSave, onCance
               value={form.name ?? ''}
               disabled={isEditing}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="VD: caption, video_id"
+              placeholder="VD: caption, video_id, post_url"
               className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm disabled:bg-slate-100"
             />
-            <p className="text-xs text-slate-500 mt-1">
-              Sẽ dùng trong node: <code className="bg-slate-100 px-1 rounded">{`{{${form.name || 'name'}}}`}</code>
-            </p>
+            <div className="text-xs text-slate-500 mt-1 space-y-0.5">
+              <p>
+                ID kỹ thuật của biến — dùng trong node:{' '}
+                <code className="bg-slate-100 px-1 rounded">{`{{${form.name || 'name'}}}`}</code>
+              </p>
+              <p className="text-slate-400">
+                Quy tắc: chữ thường, số, dấu <code>_</code>; không dấu/khoảng trắng. Đặt sẵn khi tạo,
+                <strong> không sửa được sau này</strong>.
+              </p>
+            </div>
           </div>
 
           <div>
@@ -94,6 +101,9 @@ export default function InputFormModal({ initial, existingNames, onSave, onCance
               placeholder="VD: Nội dung caption"
               className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
             />
+            <p className="text-xs text-slate-500 mt-1">
+              Tên hiển thị cho người chạy script. Có thể dùng dấu/hoa thường/khoảng trắng.
+            </p>
           </div>
 
           <div>
@@ -109,17 +119,24 @@ export default function InputFormModal({ initial, existingNames, onSave, onCance
                 </option>
               ))}
             </select>
-            {typeHint && <p className="text-xs text-slate-500 mt-1">{typeHint}</p>}
+            <p className="text-xs text-slate-500 mt-1">
+              Kiểu dữ liệu — quyết định ô nhập + cách kiểm tra.{typeHint && ` ${typeHint}.`}
+            </p>
           </div>
 
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={!!form.required}
-              onChange={(e) => setForm({ ...form, required: e.target.checked })}
-            />
-            Bắt buộc nhập khi chạy
-          </label>
+          <div>
+            <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+              <input
+                type="checkbox"
+                checked={!!form.required}
+                onChange={(e) => setForm({ ...form, required: e.target.checked })}
+              />
+              Bắt buộc nhập khi chạy
+            </label>
+            <p className="text-xs text-slate-500 mt-1 ml-6">
+              Tick: thiếu giá trị → script không chạy. Bỏ tick: có thể bỏ trống (sẽ dùng giá trị mặc định nếu có).
+            </p>
+          </div>
 
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Mô tả (tooltip)</label>
@@ -127,9 +144,12 @@ export default function InputFormModal({ initial, existingNames, onSave, onCance
               type="text"
               value={form.description ?? ''}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              placeholder="Giải thích cho người chạy script"
+              placeholder="VD: Tối đa 2200 ký tự cho TikTok"
               className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
             />
+            <p className="text-xs text-slate-500 mt-1">
+              Hướng dẫn ngắn — hiển thị dưới ô nhập khi người dùng/bot chạy script.
+            </p>
           </div>
 
           <div>
@@ -140,49 +160,72 @@ export default function InputFormModal({ initial, existingNames, onSave, onCance
               onChange={(e) =>
                 setForm({ ...form, default: e.target.value === '' ? undefined : e.target.value })
               }
-              placeholder="Để trống nếu không có"
+              placeholder={
+                form.type === 'boolean'
+                  ? 'true / false'
+                  : form.type === 'number'
+                  ? 'VD: 5'
+                  : 'VD: #fyp #viral'
+              }
               className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
             />
+            <p className="text-xs text-slate-500 mt-1">
+              Tự động dùng khi người chạy bỏ trống ô này. Để trống nếu không cần default.
+            </p>
           </div>
 
           {(form.type === 'string' || form.type === 'text') && (
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Max length</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Max length (số ký tự tối đa)
+              </label>
               <input
                 type="number"
                 value={form.maxLength ?? ''}
                 onChange={(e) =>
                   setForm({ ...form, maxLength: e.target.value ? Number(e.target.value) : undefined })
                 }
+                placeholder="VD: 2200 (TikTok caption)"
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
               />
+              <p className="text-xs text-slate-500 mt-1">
+                Vượt quá → báo đỏ, không gửi được. Để trống nếu không giới hạn.
+              </p>
             </div>
           )}
 
           {form.type === 'number' && (
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Min</label>
-                <input
-                  type="number"
-                  value={form.min ?? ''}
-                  onChange={(e) =>
-                    setForm({ ...form, min: e.target.value ? Number(e.target.value) : undefined })
-                  }
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-                />
+            <div>
+              <p className="text-sm font-medium text-slate-700 mb-1">Khoảng giá trị cho phép</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs text-slate-600 mb-1">Min (nhỏ nhất)</label>
+                  <input
+                    type="number"
+                    value={form.min ?? ''}
+                    onChange={(e) =>
+                      setForm({ ...form, min: e.target.value ? Number(e.target.value) : undefined })
+                    }
+                    placeholder="VD: 1"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-600 mb-1">Max (lớn nhất)</label>
+                  <input
+                    type="number"
+                    value={form.max ?? ''}
+                    onChange={(e) =>
+                      setForm({ ...form, max: e.target.value ? Number(e.target.value) : undefined })
+                    }
+                    placeholder="VD: 50"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Max</label>
-                <input
-                  type="number"
-                  value={form.max ?? ''}
-                  onChange={(e) =>
-                    setForm({ ...form, max: e.target.value ? Number(e.target.value) : undefined })
-                  }
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-                />
-              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                Để trống cả 2 nếu không giới hạn. Nhập sai khoảng → báo đỏ.
+              </p>
             </div>
           )}
 
@@ -197,9 +240,12 @@ export default function InputFormModal({ initial, existingNames, onSave, onCance
                 onChange={(e) =>
                   setForm({ ...form, options: e.target.value.split('\n').map((s) => s.trim()).filter(Boolean) })
                 }
-                placeholder="option1&#10;option2&#10;option3"
+                placeholder="vn&#10;us&#10;eu"
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono"
               />
+              <p className="text-xs text-slate-500 mt-1">
+                Người chạy chỉ chọn được 1 trong các giá trị này. Nhập khác → báo lỗi.
+              </p>
             </div>
           )}
 
