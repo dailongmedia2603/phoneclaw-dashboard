@@ -125,6 +125,17 @@ export async function initDb(): Promise<void> {
       ALTER TABLE social_accounts ADD COLUMN IF NOT EXISTS gmail_authorized BOOLEAN DEFAULT false;
     `);
     console.log('[DB] Social accounts Gmail columns ensured');
+
+    // Script Parameterization (added in script-parameterization feature)
+    // - scripts.inputs: ScriptInput[] declaring variable schema
+    // - shared_scripts.inputs: same for shared scripts
+    // - schedules.variables: stored variable values for scheduled runs
+    await client.query(`
+      ALTER TABLE scripts ADD COLUMN IF NOT EXISTS inputs JSONB;
+      ALTER TABLE shared_scripts ADD COLUMN IF NOT EXISTS inputs JSONB;
+      ALTER TABLE schedules ADD COLUMN IF NOT EXISTS variables JSONB;
+    `);
+    console.log('[DB] Script parameterization columns ensured');
   } finally {
     client.release();
   }
@@ -472,7 +483,7 @@ export function rowToNotification(row: Record<string, unknown>): Notification {
 
 /** Map a script DB row → Script interface */
 export function rowToScript(row: Record<string, unknown>): Script {
-  return {
+  const script: Script = {
     id: row.id as string,
     name: row.name as string,
     description: (row.description as string) || '',
@@ -486,11 +497,16 @@ export function rowToScript(row: Record<string, unknown>): Script {
     updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : row.updated_at as string,
     ownerId: row.owner_id as string | undefined,
   };
+  // Only include `inputs` if present and non-null (preserves omit-when-empty contract)
+  if (row.inputs !== null && row.inputs !== undefined) {
+    script.inputs = row.inputs as Script['inputs'];
+  }
+  return script;
 }
 
 /** Map a schedule DB row → Schedule interface */
 export function rowToSchedule(row: Record<string, unknown>): Schedule {
-  return {
+  const schedule: Schedule = {
     id: row.id as string,
     name: row.name as string,
     scriptId: row.script_id as string,
@@ -505,6 +521,10 @@ export function rowToSchedule(row: Record<string, unknown>): Schedule {
     createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at as string,
     ownerId: row.owner_id as string | undefined,
   };
+  if (row.variables !== null && row.variables !== undefined) {
+    schedule.variables = row.variables as Schedule['variables'];
+  }
+  return schedule;
 }
 
 /** Map an execution history DB row → ScheduleHistory interface */

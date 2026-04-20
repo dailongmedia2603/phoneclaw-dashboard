@@ -117,6 +117,7 @@ CREATE TABLE IF NOT EXISTS scripts (
     channel     TEXT,                       -- 'tiktok_vn' | 'tiktok_us' | 'facebook'
     graph_data  JSONB,                      -- { nodes: [], edges: [] } for visual editor
     steps       JSONB NOT NULL DEFAULT '[]'::jsonb,  -- ScriptStep[] tree with nested children
+    inputs      JSONB,                      -- ScriptInput[] schema for variable parameterization (optional)
     status      TEXT NOT NULL DEFAULT 'draft'
                   CHECK (status IN ('active', 'idle', 'draft')),
     last_run    TIMESTAMPTZ,
@@ -138,6 +139,7 @@ CREATE TABLE IF NOT EXISTS shared_scripts (
     channel     TEXT,
     graph_data  JSONB,
     steps       JSONB NOT NULL DEFAULT '[]'::jsonb,
+    inputs      JSONB,                      -- ScriptInput[] schema for parameterization (optional)
     status      TEXT NOT NULL DEFAULT 'active'
                   CHECK (status IN ('active', 'idle', 'draft')),
     last_run    TIMESTAMPTZ,
@@ -164,6 +166,7 @@ CREATE TABLE IF NOT EXISTS schedules (
     enabled     BOOLEAN DEFAULT TRUE,
     next_run    TIMESTAMPTZ,
     last_run    TIMESTAMPTZ,
+    variables   JSONB,                      -- Variable values to inject when schedule fires (optional)
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
