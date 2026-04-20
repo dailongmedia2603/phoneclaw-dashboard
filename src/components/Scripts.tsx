@@ -11,6 +11,7 @@ import { scripts as scriptsApi, devices as devicesApi } from '../services/api';
 import { useApi } from '../hooks/useApi';
 import type { Script, Device } from '../types';
 import { showToast } from './Toast';
+import RunScriptModal from './RunScriptModal';
 
 const COMMAND_CATEGORIES = [
   {
@@ -86,6 +87,7 @@ export default function Scripts() {
   const [showEditor, setShowEditor] = useState(false);
   const [editingScript, setEditingScript] = useState<Script | null>(null);
   const [showRunModal, setShowRunModal] = useState<string | null>(null);
+  const [showParamRunModal, setShowParamRunModal] = useState<Script | null>(null);
   const [editorMode, setEditorMode] = useState<'visual' | 'code'>('visual');
   const [editorName, setEditorName] = useState('');
   const [editorDescription, setEditorDescription] = useState('');
@@ -191,9 +193,32 @@ export default function Scripts() {
   };
 
   const handleOpenRunModal = (scriptId: string) => {
+    const script = scriptsData.find(s => s.id === scriptId);
+    if (script?.inputs && script.inputs.length > 0) {
+      // Parameterized: open RunScriptModal
+      setShowParamRunModal(script);
+      return;
+    }
+    // Legacy flow
     setSelectedDeviceIds([]);
     setDeviceDropdownOpen(false);
     setShowRunModal(scriptId);
+  };
+
+  const handleParamRun = async (
+    scriptId: string,
+    deviceIds: string[],
+    variables: Record<string, unknown>,
+  ) => {
+    for (const deviceId of deviceIds) {
+      const res = await scriptsApi.run(scriptId, deviceId, variables);
+      if (!res.success) {
+        const err: any = new Error(res.error || 'Run failed');
+        err.field = (res as any).field;
+        throw err;
+      }
+    }
+    showToast('success', `Đã chạy trên ${deviceIds.length} thiết bị`);
   };
 
   const toggleDeviceSelection = (deviceId: string) => {
@@ -776,6 +801,19 @@ screenshot()`}
             </div>
           </div>
         </div>
+      )}
+
+      {/* Parameterized Run Modal (for scripts with inputs) */}
+      {showParamRunModal && (
+        <RunScriptModal
+          script={showParamRunModal}
+          devices={devicesData}
+          onClose={() => setShowParamRunModal(null)}
+          onRun={async (deviceIds, variables) => {
+            await handleParamRun(showParamRunModal.id, deviceIds, variables);
+            setShowParamRunModal(null);
+          }}
+        />
       )}
 
       {/* Run Script Modal */}

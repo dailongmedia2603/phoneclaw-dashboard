@@ -8,7 +8,8 @@ import {
 } from 'lucide-react';
 import { schedules as schedulesApi, scripts as scriptsApi, devices as devicesApi, logs as logsApi } from '../services/api';
 import { useApi } from '../hooks/useApi';
-import type { Schedule, Script, Device, ScheduleHistory } from '../types';
+import type { Schedule, Script, Device, ScheduleHistory, ScriptInput } from '../types';
+import VariableField from './VariableField';
 
 function formatDate(iso?: string): string {
   if (!iso) return '—';
@@ -93,9 +94,17 @@ export default function Schedules() {
   const [formTime, setFormTime] = useState('08:00');
   const [formCron, setFormCron] = useState('0 8 * * *');
   const [formCustomDate, setFormCustomDate] = useState('');
+  const [formVariables, setFormVariables] = useState<Record<string, unknown>>({});
+  const [formVarErrors, setFormVarErrors] = useState<Record<string, string>>({});
   const [editingScheduleId, setEditingScheduleId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Inputs of the currently selected script (for variable form)
+  const selectedScriptInputs: ScriptInput[] = useMemo(() => {
+    const sc = scriptsList?.find(s => s.id === formScriptId);
+    return sc?.inputs ?? [];
+  }, [formScriptId, scriptsList]);
 
   // Calendar state
   const [calendarDate, setCalendarDate] = useState(new Date());
@@ -144,6 +153,9 @@ export default function Schedules() {
     setFormTime('08:00');
     setFormCron('0 8 * * *');
     setFormCustomDate('');
+    setFormVariables({});
+    setFormVarErrors({});
+    setEditingScheduleId(null);
     setShowCreateModal(true);
   };
 
@@ -194,6 +206,8 @@ export default function Schedules() {
     setFormScriptId(schedule.scriptId);
     setFormDeviceId(schedule.targetId);
     setFormCron(schedule.cron);
+    setFormVariables(schedule.variables ?? {});
+    setFormVarErrors({});
     // Parse cron to detect frequency
     const parts = schedule.cron.split(' ');
     if (parts.length === 5) {
@@ -216,25 +230,68 @@ export default function Schedules() {
 
   const handleSaveSchedule = async () => {
     if (!formName || !formScriptId || !formDeviceId) return;
+
+    // Client-side validate variables against selectedScriptInputs
+    const errs: Record<string, string> = {};
+    for (const spec of selectedScriptInputs) {
+      const v = formVariables[spec.name] ?? spec.default;
+      if (spec.required && (v === undefined || v === null || v === '')) {
+        errs[spec.name] = 'Bắt buộc';
+        continue;
+      }
+      if (v === undefined || v === null || v === '') continue;
+      if (spec.type === 'number') {
+        const n = Number(v);
+        if (Number.isNaN(n)) errs[spec.name] = 'Không phải số';
+        else if (spec.min !== undefined && n < spec.min) errs[spec.name] = `< ${spec.min}`;
+        else if (spec.max !== undefined && n > spec.max) errs[spec.name] = `> ${spec.max}`;
+      } else if (spec.type === 'url') {
+        try {
+          const u = new URL(String(v));
+          if (!/^https?:$/.test(u.protocol)) errs[spec.name] = 'Chỉ cho phép http/https';
+        } catch {
+          errs[spec.name] = 'URL không hợp lệ';
+        }
+      } else if ((spec.type === 'string' || spec.type === 'text') && spec.maxLength !== undefined) {
+        if (String(v).length > spec.maxLength) errs[spec.name] = `Vượt ${spec.maxLength} ký tự`;
+      } else if (spec.type === 'enum' && !spec.options?.includes(String(v))) {
+        errs[spec.name] = 'Giá trị không hợp lệ';
+      }
+    }
+    if (Object.keys(errs).length > 0) {
+      setFormVarErrors(errs);
+      return;
+    }
+    setFormVarErrors({});
+
     setSaving(true);
     const selectedScript = scriptsList?.find(s => s.id === formScriptId);
     const selectedDevice = devicesList?.find(d => d.id === formDeviceId);
-    const data = {
+    const data: Record<string, unknown> = {
       name: formName,
       scriptId: formScriptId,
       scriptName: selectedScript?.name ?? '',
-      targetType: 'device' as const,
+      targetType: 'device',
       targetId: formDeviceId,
       targetName: selectedDevice?.name ?? '',
       cron: formCron,
       enabled: true,
     };
-
-    if (editingScheduleId) {
-      await schedulesApi.update(editingScheduleId, data);
-    } else {
-      await schedulesApi.create(data);
+    if (selectedScriptInputs.length > 0) {
+      data.variables = formVariables;
     }
+
+    const res = editingScheduleId
+      ? await schedulesApi.update(editingScheduleId, data as any)
+      : await schedulesApi.create(data as any);
+
+    if (res && (res as any).success === false) {
+      const err: any = res;
+      if (err.field) setFormVarErrors({ [err.field]: err.error });
+      setSaving(false);
+      return;
+    }
+
     setSaving(false);
     setShowCreateModal(false);
     setEditingScheduleId(null);
@@ -695,11 +752,38 @@ export default function Schedules() {
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Ch&#7885;n k&#7883;ch b&#7843;n</label>
                 <CustomSelect
                   value={formScriptId}
-                  onChange={setFormScriptId}
+                  onChange={(v) => {
+                    setFormScriptId(v);
+                    // Reset variables when switching script (to avoid stale keys)
+                    if (v !== formScriptId) {
+                      setFormVariables({});
+                      setFormVarErrors({});
+                    }
+                  }}
                   options={(scriptsList ?? []).map(s => ({ value: s.id, label: s.name }))}
                   placeholder="Chọn kịch bản..."
                 />
               </div>
+
+              {selectedScriptInputs.length > 0 && (
+                <div className="border-t border-slate-200 pt-4">
+                  <h4 className="text-sm font-semibold text-slate-700 mb-2">Biến đầu vào</h4>
+                  <p className="text-xs text-slate-500 mb-3">
+                    Giá trị này được dùng mỗi lần lịch chạy. Có thể cập nhật sau.
+                  </p>
+                  <div className="space-y-3">
+                    {selectedScriptInputs.map((spec) => (
+                      <VariableField
+                        key={spec.name}
+                        spec={spec}
+                        value={formVariables[spec.name]}
+                        error={formVarErrors[spec.name]}
+                        onChange={(v) => setFormVariables({ ...formVariables, [spec.name]: v })}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Thi&#7871;t b&#7883; / Nh&#243;m th&#7921;c thi</label>

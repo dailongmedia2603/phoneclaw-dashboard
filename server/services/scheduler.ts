@@ -1,7 +1,9 @@
 import { readCollection, writeCollection, generateId, readUserCollection, writeUserCollection, readAllTenantsCollection, getAllTenantIds } from '../store';
-import { executeScript } from './script-engine';
+import { executeScript, executeScriptDirect } from './script-engine';
 import { getAllDevices, getAllGroups, getDevicesForTenant, getGroupsForTenant } from './device-manager';
-import type { Schedule, ScheduleHistory } from '../../src/types';
+import { resolveScriptInputs } from './script-inputs';
+import { injectVariables } from '../helpers/inject-variables';
+import type { Schedule, ScheduleHistory, Script } from '../../src/types';
 
 let schedulerTimer: ReturnType<typeof setInterval> | null = null;
 let onExecutionUpdate: ((execution: ScheduleHistory) => void) | null = null;
@@ -177,21 +179,57 @@ async function checkSchedules() {
       }
 
       const tenantDevices = await readUserCollection<{ id: string; name: string; status: string }>(tenantId, 'devices');
+
+      // Resolve variables once per schedule fire (reuse for all target devices)
+      let modifiedScript: Script | null = null;
+      const hasVariables = schedule.variables && Object.keys(schedule.variables).length > 0;
+      if (hasVariables) {
+        const scripts = await readUserCollection<Script>(tenantId, 'scripts');
+        const script = scripts.find(s => s.id === schedule.scriptId);
+        if (script) {
+          try {
+            const resolved = await resolveScriptInputs(script, schedule.variables, tenantId);
+            if (Object.keys(resolved).length > 0) {
+              modifiedScript = {
+                ...script,
+                steps: injectVariables(script.steps, resolved) as Script['steps'],
+              };
+            }
+          } catch (err: any) {
+            console.error(`Schedule ${schedule.name} variable resolution failed:`, err.message);
+            continue; // skip this schedule firing; don't run with wrong inputs
+          }
+        }
+      }
+
       let deviceIdx = 0;
       for (const deviceId of deviceIds) {
         const device = tenantDevices.find(d => d.id === deviceId);
         if (!device || device.status === 'offline') continue;
 
-        executeScript(
-          schedule.scriptId,
-          deviceId,
-          schedule.name,
-          onExecutionUpdate || undefined,
-          tenantId,
-          deviceIdx
-        ).catch(err => {
-          console.error(`Schedule ${schedule.name} failed on ${device.name}:`, err);
-        });
+        if (modifiedScript) {
+          executeScriptDirect(
+            modifiedScript,
+            deviceId,
+            schedule.name,
+            onExecutionUpdate || undefined,
+            tenantId,
+            deviceIdx
+          ).catch(err => {
+            console.error(`Schedule ${schedule.name} failed on ${device.name}:`, err);
+          });
+        } else {
+          executeScript(
+            schedule.scriptId,
+            deviceId,
+            schedule.name,
+            onExecutionUpdate || undefined,
+            tenantId,
+            deviceIdx
+          ).catch(err => {
+            console.error(`Schedule ${schedule.name} failed on ${device.name}:`, err);
+          });
+        }
         deviceIdx++;
       }
 

@@ -15,12 +15,14 @@ const edgeTypes = { default: DeleteEdge };
 import NodePalette from './NodePalette';
 import PropertyPanel from './PropertyPanel';
 import CoordinatePicker from './CoordinatePicker';
+import InputsPanel from './InputsPanel';
 import { graphToScriptSteps, scriptStepsToGraph } from './graphConverter';
 import { scripts as scriptsApi, sharedScripts as sharedScriptsApi, devices as devicesApi } from '../../services/api';
 import { showToast } from '../Toast';
-import { ArrowLeft, Save, Loader2, ChevronDown, Music, Globe, Facebook, Smartphone, LayoutGrid, Sparkles, AlertTriangle } from 'lucide-react';
+import { extractPlaceholders } from '../../lib/placeholders';
+import { ArrowLeft, Save, Loader2, ChevronDown, Music, Globe, Facebook, Smartphone, LayoutGrid, Sparkles, AlertTriangle, Workflow, SlidersHorizontal } from 'lucide-react';
 import { layoutProfessional, layoutCreative } from './autoLayout';
-import type { Script, Device } from '../../types';
+import type { Script, Device, ScriptInput } from '../../types';
 
 interface ScriptEditorPageProps {
   appTab?: string;
@@ -62,6 +64,8 @@ export default function ScriptEditorPage({ appTab, apiType = 'scripts' }: Script
   }, []);
   const [scriptDesc, setScriptDesc] = useState('');
   const [scriptChannel, setScriptChannel] = useState(appTab || 'tiktok_vn');
+  const [scriptInputs, setScriptInputs] = useState<ScriptInput[]>([]);
+  const [activeTab, setActiveTab] = useState<'graph' | 'inputs'>('graph');
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [showChannelDropdown, setShowChannelDropdown] = useState(false);
@@ -96,6 +100,7 @@ export default function ScriptEditorPage({ appTab, apiType = 'scripts' }: Script
           setScriptName(script.name);
           setScriptDesc(script.description);
           if (script.channel) setScriptChannel(script.channel);
+          if (script.inputs) setScriptInputs(script.inputs);
           // Prefer saved graphData (preserves positions + edges)
           if (script.graphData?.nodes?.length) {
             setNodes(script.graphData.nodes as Node[]);
@@ -129,7 +134,7 @@ export default function ScriptEditorPage({ appTab, apiType = 'scripts' }: Script
       setHasUnsavedChanges(true);
     }
     loadedRef.current = loaded;
-  }, [nodes, edges, scriptName, scriptDesc, scriptChannel]);
+  }, [nodes, edges, scriptName, scriptDesc, scriptChannel, scriptInputs]);
 
   const onConnect = useCallback((connection: Connection) => {
     setEdges(eds => addEdge(connection, eds));
@@ -194,24 +199,32 @@ export default function ScriptEditorPage({ appTab, apiType = 'scripts' }: Script
     try {
       const graphData = { nodes: nodes.map(n => ({ ...n })), edges: edges.map(e => ({ ...e })) };
 
+      const payload: Record<string, unknown> = {
+        name: scriptName,
+        description: scriptDesc,
+        channel: scriptChannel,
+        steps,
+        graphData,
+      };
+      // Only include `inputs` when non-empty — avoid adding the field to legacy scripts
+      if (scriptInputs.length > 0) payload.inputs = scriptInputs;
+
       if (scriptId) {
-        await api.update(scriptId, {
-          name: scriptName,
-          description: scriptDesc,
-          channel: scriptChannel,
-          steps,
-          graphData,
-        });
+        const res = await api.update(scriptId, payload as any);
+        if (res && (res as any).success === false) {
+          showToast('error', (res as any).error || 'Lưu thất bại');
+          setSaving(false);
+          return;
+        }
         showToast('success', 'Đã lưu kịch bản');
         setHasUnsavedChanges(false);
       } else {
-        await api.create({
-          name: scriptName,
-          description: scriptDesc,
-          channel: scriptChannel,
-          steps,
-          graphData,
-        });
+        const res = await api.create(payload as any);
+        if (res && (res as any).success === false) {
+          showToast('error', (res as any).error || 'Tạo thất bại');
+          setSaving(false);
+          return;
+        }
         showToast('success', 'Đã tạo kịch bản');
         setHasUnsavedChanges(false);
         navigate(backPath);
@@ -220,7 +233,7 @@ export default function ScriptEditorPage({ appTab, apiType = 'scripts' }: Script
       showToast('error', 'Lưu thất bại');
     }
     setSaving(false);
-  }, [scriptId, scriptName, scriptDesc, nodes, edges, onBack]);
+  }, [scriptId, scriptName, scriptDesc, scriptChannel, scriptInputs, nodes, edges, onBack]);
 
   // --- Auto Layout ---
   const handleLayoutProfessional = useCallback(() => {
@@ -400,8 +413,39 @@ export default function ScriptEditorPage({ appTab, apiType = 'scripts' }: Script
         </button>
       </div>
 
+      {/* Tab switcher */}
+      <div className="flex border-b border-slate-200 bg-white px-2">
+        <button
+          onClick={() => setActiveTab('graph')}
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'graph'
+              ? 'border-blue-600 text-blue-600'
+              : 'border-transparent text-slate-600 hover:text-slate-800'
+          }`}
+        >
+          <Workflow size={14} />
+          Kịch bản
+        </button>
+        <button
+          onClick={() => setActiveTab('inputs')}
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'inputs'
+              ? 'border-blue-600 text-blue-600'
+              : 'border-transparent text-slate-600 hover:text-slate-800'
+          }`}
+        >
+          <SlidersHorizontal size={14} />
+          Biến đầu vào
+          {scriptInputs.length > 0 && (
+            <span className="ml-1 px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
+              {scriptInputs.length}
+            </span>
+          )}
+        </button>
+      </div>
+
       {/* Editor Body */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden" style={{ display: activeTab === 'graph' ? 'flex' : 'none' }}>
         {/* Left: Node Palette */}
         <NodePalette onCustomNodesLoaded={updateCustomDefs} />
 
@@ -461,6 +505,44 @@ export default function ScriptEditorPage({ appTab, apiType = 'scripts' }: Script
           pickerDeviceId={pickerDeviceId}
         />
       </div>
+
+      {/* Inputs tab body */}
+      {activeTab === 'inputs' && (
+        <div className="flex-1 flex overflow-hidden bg-slate-50">
+          <InputsPanel
+            inputs={scriptInputs}
+            placeholdersInSteps={extractPlaceholders(graphToScriptSteps(nodes, edges))}
+            onChange={setScriptInputs}
+            scriptId={scriptId}
+          />
+          <div className="flex-1 p-6 overflow-y-auto">
+            <div className="max-w-2xl">
+              <h2 className="text-lg font-semibold text-slate-800 mb-3">Về biến đầu vào</h2>
+              <div className="prose prose-sm text-slate-600 space-y-3">
+                <p>
+                  Khai báo các biến mà script sẽ nhận khi được chạy — caption, video, URL... Thay
+                  vì hardcode giá trị vào các node, dùng <code className="bg-slate-200 px-1 rounded">{'{{tên_biến}}'}</code>{' '}
+                  và hệ thống sẽ tự thay thế mỗi lần chạy.
+                </p>
+                <p>
+                  <strong>Ví dụ:</strong> node "Gõ text" với nội dung{' '}
+                  <code className="bg-slate-200 px-1 rounded">{'{{caption}}'}</code> → khi chạy bạn
+                  chọn caption khác nhau cho mỗi lần chạy.
+                </p>
+                <p>
+                  Khi phần mềm bên ngoài gọi API{' '}
+                  <code className="bg-slate-200 px-1 rounded">POST /scripts/:id/run</code>, có thể
+                  truyền map <code className="bg-slate-200 px-1 rounded">{'{ variables: { caption: "..." } }'}</code>{' '}
+                  — server validate theo schema này trước khi chạy.
+                </p>
+                <p className="text-xs text-slate-500 border-t pt-3">
+                  Script không khai báo biến nào vẫn chạy bình thường như cũ.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Coordinate Picker Modal */}
       {pickerTarget && pickerDeviceId && (

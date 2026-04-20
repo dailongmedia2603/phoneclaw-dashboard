@@ -4,6 +4,7 @@ import { getScriptsForTenant } from '../services/script-engine';
 import { findDeviceGlobal, getGroupsForTenant } from '../services/device-manager';
 import { getTenantId, getAuthUserId } from '../helpers/get-user';
 import { checkQuota } from '../helpers/check-quota';
+import { resolveScriptInputs, InputValidationError } from '../services/script-inputs';
 
 const router = Router();
 
@@ -31,15 +32,28 @@ router.post('/', async (req, res) => {
   const quota = await checkQuota(req, 'schedules');
   if (!quota.allowed) return res.status(403).json({ success: false, error: quota.error });
 
-  const { name, scriptId, scriptName, targetType, targetId, targetName, cron, enabled } = req.body;
+  const { name, scriptId, scriptName, targetType, targetId, targetName, cron, enabled, variables } = req.body;
   if (!name || !scriptId || !cron) {
     return res.status(400).json({ success: false, error: 'name, scriptId, and cron are required' });
   }
 
   // Verify scriptId thuộc user
   const userScripts = await getScriptsForTenant(userId);
-  if (!userScripts.find(s => s.id === scriptId)) {
+  const script = userScripts.find(s => s.id === scriptId);
+  if (!script) {
     return res.status(403).json({ success: false, error: 'Script không thuộc về bạn' });
+  }
+
+  // Validate variables against script.inputs schema (if any)
+  if (variables !== undefined) {
+    try {
+      await resolveScriptInputs(script, variables, userId);
+    } catch (err: any) {
+      if (err instanceof InputValidationError) {
+        return res.status(400).json({ success: false, error: `variables: ${err.message}`, field: err.field });
+      }
+      throw err;
+    }
   }
 
   // Verify targetId thuộc user
@@ -65,6 +79,7 @@ router.post('/', async (req, res) => {
     cron,
     enabled: enabled !== false,
     nextRun: sched.getNextRun(cron),
+    ...(variables !== undefined ? { variables } : {}),
   });
   res.status(201).json({ success: true, data: schedule });
 });
@@ -77,6 +92,27 @@ router.put('/:id', async (req, res) => {
   const data = { ...req.body };
   if (data.cron) {
     data.nextRun = sched.getNextRun(data.cron);
+  }
+
+  // If variables provided, validate against script schema
+  if (data.variables !== undefined) {
+    const schedules = await sched.getSchedulesForTenant(userId);
+    const existing = schedules.find(s => s.id === req.params.id);
+    const scriptId = data.scriptId || existing?.scriptId;
+    if (scriptId) {
+      const userScripts = await getScriptsForTenant(userId);
+      const script = userScripts.find(s => s.id === scriptId);
+      if (script) {
+        try {
+          await resolveScriptInputs(script, data.variables, userId);
+        } catch (err: any) {
+          if (err instanceof InputValidationError) {
+            return res.status(400).json({ success: false, error: `variables: ${err.message}`, field: err.field });
+          }
+          throw err;
+        }
+      }
+    }
   }
 
   const schedule = await sched.updateScheduleForTenant(userId, req.params.id, data);

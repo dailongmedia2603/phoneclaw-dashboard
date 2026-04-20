@@ -93,6 +93,39 @@ export interface ScriptStep {
   children?: ScriptStep[]; // for repeat, if blocks
 }
 
+// --- Script Inputs (Parameterization) ---
+export type ScriptInputType =
+  | 'string'    // single-line text
+  | 'text'      // multi-line text (caption, description)
+  | 'number'
+  | 'boolean'
+  | 'url'       // validated via URL parser, http/https only
+  | 'video'     // value = videoId; server resolves + checks ownership
+  | 'enum';     // must be one of options[]
+
+export interface ScriptInput {
+  /** Slug key used in {{name}} placeholder. Must match /^[a-z_][a-z0-9_]{0,63}$/ */
+  name: string;
+  /** Human-readable label shown in UI */
+  label: string;
+  type: ScriptInputType;
+  /** Default: false */
+  required?: boolean;
+  /** Default value if not provided. Only primitives, no {{var}} references. */
+  default?: string | number | boolean;
+  /** Tooltip / help text */
+  description?: string;
+  /** Required when type='enum' */
+  options?: string[];
+  /** string/text only */
+  maxLength?: number;
+  /** number only */
+  min?: number;
+  max?: number;
+  /** UI hint */
+  placeholder?: string;
+}
+
 export interface Script {
   id: string;
   name: string;
@@ -106,6 +139,8 @@ export interface Script {
   createdAt: string;
   updatedAt: string;
   ownerId?: string;
+  /** Optional input schema for parameterization. Script without `inputs` runs legacy flow. */
+  inputs?: ScriptInput[];
 }
 
 // --- Schedule ---
@@ -119,6 +154,8 @@ export interface Schedule {
   targetName: string;
   cron: string;
   enabled: boolean;
+  /** Optional variable values injected into script.inputs placeholders each time schedule fires. */
+  variables?: Record<string, string | number | boolean>;
   nextRun?: string;
   lastRun?: string;
   createdAt: string;

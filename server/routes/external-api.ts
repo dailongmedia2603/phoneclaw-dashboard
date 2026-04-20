@@ -7,9 +7,25 @@
 
 import { Router, Request, Response } from 'express';
 import { getAuthUserId } from '../helpers/get-user';
-import { readUserCollection, readCollection, writeUserCollection } from '../store';
+import { readUserCollection, readCollection, writeUserCollection, generateId } from '../store';
 import { executeScript, executeScriptDirect } from '../services/script-engine';
+import { checkVideoStorage } from '../helpers/check-quota';
+import { injectVariables } from '../helpers/inject-variables';
+import { resolveScriptInputs, InputValidationError } from '../services/script-inputs';
 import type { Script } from '../../src/types';
+
+interface ExternalVideo {
+  id: string;
+  name: string;
+  filename: string;
+  r2Key: string;
+  url: string;
+  size: number;
+  mimeType: string;
+  uploadedAt: string;
+  ownerId?: string;
+  source?: 'upload' | 'url';
+}
 
 const router = Router();
 
@@ -174,17 +190,50 @@ router.get('/scripts/:id', async (req: Request, res: Response) => {
 });
 
 /**
+ * GET /api/v1/external/scripts/:id/inputs
+ * Returns the input schema for a script so external software can discover
+ * required/optional variables before calling /run.
+ *
+ * Response: { success: true, data: { scriptId, name, inputs: ScriptInput[] } }
+ */
+router.get('/scripts/:id/inputs', async (req: Request, res: Response) => {
+  const userId = getAuthUserId(req);
+  if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+  try {
+    const scripts = await readUserCollection<Script>(userId, 'scripts');
+    let script = scripts.find(s => s.id === req.params.id);
+    if (!script) {
+      const shared = await readCollection<Script>('shared-scripts');
+      script = shared.find(s => s.id === req.params.id);
+    }
+    if (!script) return res.status(404).json({ success: false, error: 'Script not found' });
+
+    res.json({
+      success: true,
+      data: {
+        scriptId: script.id,
+        name: script.name,
+        inputs: script.inputs ?? [],
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
  * POST /api/v1/external/scripts/:id/run
  * Run a script on a device.
  *
  * Body: {
  *   deviceId: string,
- *   variables?: Record<string, string>  // Inject into {{key}} placeholders
+ *   variables?: Record<string, unknown>  // Inject into {{key}} placeholders
  * }
  *
- * Uses correct script-engine interface:
- * - No variables → executeScript(scriptId, deviceId, name, undefined, tenantId)
- * - With variables → executeScriptDirect(modifiedScript, deviceId, name, undefined, tenantId)
+ * If script.inputs is defined: variables are validated against schema (type,
+ * required, maxLength, video ownership). Returns 400 with `field` on validation error.
+ * If script.inputs is missing/empty: legacy behavior — variables passed through as strings.
  */
 router.post('/scripts/:id/run', async (req: Request, res: Response) => {
   const userId = getAuthUserId(req);
@@ -209,31 +258,41 @@ router.post('/scripts/:id/run', async (req: Request, res: Response) => {
     // Find script (user's or shared)
     const scripts = await readUserCollection<Script>(userId, 'scripts');
     let script: Script | undefined = scripts.find(s => s.id === req.params.id);
-    let isShared = false;
-
     if (!script) {
       const shared = await readCollection<Script>('shared-scripts');
       script = shared.find(s => s.id === req.params.id);
-      isShared = !!script;
     }
     if (!script) {
       return res.status(404).json({ success: false, error: 'Script not found' });
     }
 
-    const scheduleName = `API: ${script.name}`;
+    // Validate + resolve variables (backward-compat: no schema → pass-through)
+    let resolved: Record<string, string>;
+    try {
+      resolved = await resolveScriptInputs(script, variables, userId);
+    } catch (err: any) {
+      if (err instanceof InputValidationError) {
+        return res.status(400).json({
+          success: false,
+          error: err.message,
+          field: err.field,
+        });
+      }
+      throw err;
+    }
 
-    if (variables && Object.keys(variables).length > 0) {
-      // Has variables → inject then use executeScriptDirect
+    const scheduleName = `API: ${script.name}`;
+    const hasVars = Object.keys(resolved).length > 0;
+
+    if (hasVars) {
       const modifiedScript: Script = {
         ...script,
-        steps: injectVariables(script.steps, variables),
+        steps: injectVariables(script.steps, resolved) as Script['steps'],
       };
-      // Fire and forget (same pattern as scripts.ts:75)
       executeScriptDirect(modifiedScript, deviceId, scheduleName, undefined, userId, 0).catch(err => {
         console.error('[External API] Script execution error:', err.message);
       });
     } else {
-      // No variables → use executeScript
       executeScript(req.params.id, deviceId, scheduleName, undefined, userId, 0).catch(err => {
         console.error('[External API] Script execution error:', err.message);
       });
@@ -245,36 +304,14 @@ router.post('/scripts/:id/run', async (req: Request, res: Response) => {
         message: `Script "${script.name}" started on device "${device.name}"`,
         scriptId: script.id,
         deviceId: device.id,
-        hasVariables: !!(variables && Object.keys(variables).length > 0),
+        hasVariables: hasVars,
+        resolvedVariables: Object.keys(resolved),
       },
     });
   } catch (err: any) {
     res.status(500).json({ success: false, error: `Execution failed: ${err.message}` });
   }
 });
-
-/**
- * Inject variables into script steps.
- * Replaces {{variable_name}} with actual values.
- */
-function injectVariables(steps: any[], variables: Record<string, string>): any[] {
-  const json = JSON.stringify(steps);
-  let result = json;
-  for (const [key, value] of Object.entries(variables)) {
-    const safeValue = value
-      .replace(/\\/g, '\\\\')
-      .replace(/"/g, '\\"')
-      .replace(/\n/g, '\\n')
-      .replace(/\r/g, '\\r')
-      .replace(/\t/g, '\\t');
-    result = result.replace(new RegExp(`\\{\\{${escapeRegex(key)}\\}\\}`, 'g'), safeValue);
-  }
-  return JSON.parse(result);
-}
-
-function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
 
 // ============================================================
 // Schedules
@@ -411,6 +448,160 @@ router.get('/device-groups', async (req: Request, res: Response) => {
   try {
     const groups = await readUserCollection<any>(userId, 'device-groups');
     res.json({ success: true, data: groups });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ============================================================
+// Videos (for external integration: register video by URL)
+// ============================================================
+
+router.get('/videos', async (req: Request, res: Response) => {
+  const userId = getAuthUserId(req);
+  if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+  try {
+    const videos = await readUserCollection<ExternalVideo>(userId, 'videos');
+    videos.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+    res.json({
+      success: true,
+      data: videos.map(v => ({
+        id: v.id,
+        name: v.name,
+        filename: v.filename,
+        url: v.url,
+        size: v.size,
+        mimeType: v.mimeType,
+        uploadedAt: v.uploadedAt,
+        source: v.source || 'upload',
+      })),
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.get('/videos/:id', async (req: Request, res: Response) => {
+  const userId = getAuthUserId(req);
+  if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+  try {
+    const videos = await readUserCollection<ExternalVideo>(userId, 'videos');
+    const video = videos.find(v => v.id === req.params.id);
+    if (!video) return res.status(404).json({ success: false, error: 'Video not found' });
+    res.json({ success: true, data: video });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/v1/external/videos/register
+ * Register a video by URL (no file upload needed).
+ * The URL must be PUBLIC and accessible from the iPhone device.
+ *
+ * Body: { url: string, name?: string, mimeType?: string, size?: number }
+ *
+ * Returns: { id, name, url, ... } — use `id` as videoId in script run variables.
+ */
+router.post('/videos/register', async (req: Request, res: Response) => {
+  const userId = getAuthUserId(req);
+  if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+  const { url, name, mimeType, size } = req.body || {};
+  if (!url || typeof url !== 'string') {
+    return res.status(400).json({ success: false, error: 'url is required (public, accessible from device)' });
+  }
+  if (!/^https?:\/\//i.test(url)) {
+    return res.status(400).json({ success: false, error: 'url must start with http:// or https://' });
+  }
+
+  try {
+    // Pre-check: HEAD the URL to validate it's reachable; pull size/mime if not provided.
+    let resolvedSize = Number(size) || 0;
+    let resolvedMime = (typeof mimeType === 'string' && mimeType) || 'video/mp4';
+    let headOk = false;
+    try {
+      const headRes = await fetch(url, { method: 'HEAD' });
+      if (headRes.ok) {
+        headOk = true;
+        const cl = headRes.headers.get('content-length');
+        if (cl && !resolvedSize) resolvedSize = Number(cl) || 0;
+        const ct = headRes.headers.get('content-type');
+        if (ct && (!mimeType)) resolvedMime = ct.split(';')[0].trim();
+      }
+    } catch { /* ignore — some CDNs reject HEAD; we'll still register */ }
+
+    // Enforce quota only if we know a size
+    if (resolvedSize > 0) {
+      const storageCheck = await checkVideoStorage(req, resolvedSize);
+      if (!storageCheck.allowed) {
+        return res.status(403).json({ success: false, error: storageCheck.error });
+      }
+    }
+
+    const id = generateId();
+    const filename = (() => {
+      try { return new URL(url).pathname.split('/').pop() || `${id}.mp4`; }
+      catch { return `${id}.mp4`; }
+    })();
+    const finalName = (typeof name === 'string' && name.trim()) || filename.replace(/\.[^.]+$/, '');
+
+    const video: ExternalVideo = {
+      id,
+      name: finalName,
+      filename,
+      r2Key: '', // not stored in R2 — external URL
+      url,
+      size: resolvedSize,
+      mimeType: resolvedMime,
+      uploadedAt: new Date().toISOString(),
+      ownerId: userId,
+      source: 'url',
+    };
+
+    const videos = await readUserCollection<ExternalVideo>(userId, 'videos');
+    videos.push(video);
+    await writeUserCollection(userId, 'videos', videos);
+
+    res.json({
+      success: true,
+      data: {
+        id: video.id,
+        name: video.name,
+        url: video.url,
+        size: video.size,
+        mimeType: video.mimeType,
+        uploadedAt: video.uploadedAt,
+        source: video.source,
+        urlReachable: headOk,
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: `Register failed: ${err.message}` });
+  }
+});
+
+router.delete('/videos/:id', async (req: Request, res: Response) => {
+  const userId = getAuthUserId(req);
+  if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+  try {
+    const videos = await readUserCollection<ExternalVideo>(userId, 'videos');
+    const video = videos.find(v => v.id === req.params.id);
+    if (!video) return res.status(404).json({ success: false, error: 'Video not found' });
+
+    // Only delete metadata for url-registered videos. R2-uploaded videos must be deleted via dashboard.
+    if (video.source === 'upload' && video.r2Key) {
+      return res.status(400).json({
+        success: false,
+        error: 'Video này được upload qua dashboard (R2 storage). Vui lòng xoá qua dashboard để giải phóng quota.',
+      });
+    }
+
+    await writeUserCollection(userId, 'videos', videos.filter(v => v.id !== req.params.id));
+    res.json({ success: true });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
   }
