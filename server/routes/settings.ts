@@ -48,6 +48,11 @@ router.put('/', adminOnly, async (req, res) => {
   const current = await readSingleton<AppSettings>('settings', DEFAULT_SETTINGS);
   const updated = { ...current, ...req.body };
   await writeSingleton('settings', updated);
+  // Invalidate script-engine settings cache so useTelexTyping toggle takes effect immediately
+  try {
+    const { invalidateSettingsCache } = await import('../services/script-engine');
+    invalidateSettingsCache();
+  } catch { /* ignore — cache invalidation is best-effort */ }
   res.json({ success: true, data: updated });
 });
 

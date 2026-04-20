@@ -267,6 +267,16 @@ export interface AppSettings {
   language: 'vi' | 'en';
   logRetentionDays: number;
   screenshotRetentionDays: number;
+  /**
+   * If true, server converts Vietnamese text → Telex ASCII before sending to phone via /api/type.
+   * Phone's iOS Vietnamese-Telex IME then converts back to Vietnamese — bypassing UIPasteboard
+   * (no "Pasted from X" banner, gõ tự nhiên từng ký tự).
+   *
+   * Requires each iPhone to have Vietnamese-Telex keyboard installed and active in target app.
+   * If iPhone doesn't have Telex active, user will see literal Telex ASCII (e.g. "ddejp")
+   * instead of "đẹp" — so this is OPT-IN.
+   */
+  useTelexTyping?: boolean;
 }
 
 // --- Notification ---

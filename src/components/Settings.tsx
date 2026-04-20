@@ -87,6 +87,10 @@ export default function Settings() {
   });
   const [showBotToken, setShowBotToken] = useState(false);
 
+  // Telex typing toggle
+  const [useTelexTyping, setUseTelexTyping] = useState<boolean>(!!cfg.useTelexTyping);
+  const [savingTelex, setSavingTelex] = useState(false);
+
   // Sync form state khi settings load xong từ API
   useEffect(() => {
     if (appSettings) {
@@ -103,8 +107,23 @@ export default function Settings() {
         telegramChatId: appSettings.notifications.telegramChatId || '',
         webhookUrl: appSettings.notifications.webhookUrl || '',
       });
+      setUseTelexTyping(!!appSettings.useTelexTyping);
     }
   }, [appSettings]);
+
+  const handleSaveTelex = async (newValue: boolean) => {
+    setUseTelexTyping(newValue);
+    setSavingTelex(true);
+    const res = await settingsApi.update({ useTelexTyping: newValue });
+    setSavingTelex(false);
+    if (res.success) {
+      showToast('success', newValue ? 'Đã bật gõ Telex' : 'Đã tắt gõ Telex');
+      refreshSettings();
+    } else {
+      setUseTelexTyping(!newValue); // rollback
+      showToast('error', res.error || 'Lưu cấu hình thất bại');
+    }
+  };
 
   const handleSaveVnc = async () => {
     setSaving(true);
@@ -361,6 +380,44 @@ export default function Settings() {
                   <button onClick={handleSaveVnc} disabled={saving} className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white px-6 py-2.5 rounded-xl flex items-center gap-2 text-sm font-medium transition-colors shadow-sm shadow-blue-200">
                     {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} Lưu cấu hình
                   </button>
+                </div>
+              </div>
+
+              {/* Vietnamese typing via Telex IME */}
+              <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                <div className="mb-4">
+                  <h3 className="text-lg font-bold text-slate-900">Gõ tiếng Việt qua Telex IM</h3>
+                  <p className="text-sm text-slate-500 mt-1">
+                    Bypass clipboard paste — gõ từng ký tự thật, không hiển thị banner "Pasted from PhoneAgent" trên TikTok/app.
+                  </p>
+                </div>
+
+                <label className="flex items-start gap-3 p-4 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={useTelexTyping}
+                    disabled={savingTelex}
+                    onChange={(e) => handleSaveTelex(e.target.checked)}
+                    className="mt-1 w-5 h-5 accent-blue-600"
+                  />
+                  <div className="flex-1">
+                    <div className="font-medium text-slate-900">Bật chế độ gõ Telex</div>
+                    <div className="text-xs text-slate-600 mt-1">
+                      Server tự convert "đẹp quá" → "ddejp quas" trước khi gửi tới iPhone. iOS Vietnamese-Telex IM convert lại "đẹp quá" trên app.
+                    </div>
+                  </div>
+                </label>
+
+                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                  <div className="text-sm font-medium text-blue-900 mb-2">⚠️ Yêu cầu setup mỗi iPhone</div>
+                  <ol className="text-xs text-blue-800 space-y-1 list-decimal list-inside">
+                    <li>iPhone → <strong>Settings → General → Keyboard → Keyboards → Add</strong> → chọn <strong>Vietnamese → Telex</strong></li>
+                    <li>Trong app target (TikTok...), bấm <strong>Globe key</strong> trên soft keyboard cho đến khi spacebar hiện <strong>"Tiếng Việt - Telex"</strong></li>
+                    <li>Sau đó kịch bản chạy → tiếng Việt hiện đúng, không banner</li>
+                  </ol>
+                  <div className="text-xs text-blue-700 mt-2">
+                    <strong>Nếu iPhone không setup keyboard Telex</strong> → app sẽ hiện literal "ddejp quas" thay vì "đẹp quá". Tắt option này để fallback paste an toàn.
+                  </div>
                 </div>
               </div>
             </div>

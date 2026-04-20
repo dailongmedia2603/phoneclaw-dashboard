@@ -1,7 +1,48 @@
 import { readCollection, writeCollection, generateId, readUserCollection, writeUserCollection, readAllTenantsCollection, readSingleton } from '../store';
 import { callDeviceApi, updateDevice, getDevice, updateDeviceForTenant, findDeviceGlobal } from './device-manager';
 import { decodeJpegBase64, getPixelAt, parseHexColor, compareColor } from './pixel-checker';
-import type { Script, ScriptStep, ScheduleHistory, ExecutionStep } from '../../src/types';
+import { vietnameseToTelex, hasNonAscii } from '../helpers/vietnamese-telex';
+import type { Script, ScriptStep, ScheduleHistory, ExecutionStep, AppSettings } from '../../src/types';
+
+/**
+ * Cached app settings for the current process. Refreshed lazily.
+ * Used by typing logic to decide if Vietnamese text should be Telex-encoded.
+ */
+let _settingsCache: AppSettings | null = null;
+let _settingsCacheAt = 0;
+const SETTINGS_CACHE_TTL_MS = 30_000;
+
+async function getCachedSettings(): Promise<AppSettings> {
+  const now = Date.now();
+  if (_settingsCache && now - _settingsCacheAt < SETTINGS_CACHE_TTL_MS) {
+    return _settingsCache;
+  }
+  _settingsCache = await readSingleton<AppSettings>('settings', {} as AppSettings);
+  _settingsCacheAt = now;
+  return _settingsCache;
+}
+
+/**
+ * Prepare a text string for /api/type call.
+ * - If `useTelexTyping` setting is on AND text has non-ASCII chars → convert to Telex ASCII.
+ *   iPhone's Vietnamese-Telex IM will convert it back to Vietnamese as it types.
+ * - Otherwise pass text through unchanged (phone-side handles ASCII char-by-char + unicode paste).
+ */
+async function prepareTypeText(rawText: unknown): Promise<string> {
+  const text = String(rawText ?? '');
+  if (!hasNonAscii(text)) return text; // ASCII fast path
+  const settings = await getCachedSettings();
+  if (settings.useTelexTyping) {
+    return vietnameseToTelex(text);
+  }
+  return text;
+}
+
+/** Invalidate settings cache (called from settings PUT handler). */
+export function invalidateSettingsCache(): void {
+  _settingsCache = null;
+  _settingsCacheAt = 0;
+}
 
 // --- Script CRUD ---
 
@@ -416,7 +457,8 @@ async function executeStep(
       break;
     }
     case 'type': {
-      const res = await callDeviceApi(deviceId, 'POST', '/api/type', { text: p.text });
+      const text = await prepareTypeText(p.text);
+      const res = await callDeviceApi(deviceId, 'POST', '/api/type', { text });
       if (!res.ok) throw new Error(`Type failed: ${res.error}`);
       break;
     }
@@ -567,7 +609,7 @@ async function executeStep(
 
       // 2. Gõ username
       await callDeviceApi(deviceId, 'POST', '/api/type', {
-        text: account.username,
+        text: await prepareTypeText(account.username),
       });
       await sleep(3000);
 
@@ -580,7 +622,7 @@ async function executeStep(
 
       // 4. Gõ password
       await callDeviceApi(deviceId, 'POST', '/api/type', {
-        text: account.password,
+        text: await prepareTypeText(account.password),
       });
 
       break;
@@ -616,7 +658,7 @@ async function executeStep(
 
       // 2. Gõ email
       await callDeviceApi(deviceId, 'POST', '/api/type', {
-        text: account.email,
+        text: await prepareTypeText(account.email),
       });
       await sleep(3000);
 
@@ -629,7 +671,7 @@ async function executeStep(
 
       // 4. Gõ email password
       await callDeviceApi(deviceId, 'POST', '/api/type', {
-        text: account.emailPassword,
+        text: await prepareTypeText(account.emailPassword),
       });
 
       break;
@@ -676,7 +718,7 @@ async function executeStep(
       await sleep(3000);
 
       // Gõ text
-      await callDeviceApi(deviceId, 'POST', '/api/type', { text: textToType });
+      await callDeviceApi(deviceId, 'POST', '/api/type', { text: await prepareTypeText(textToType) });
 
       break;
     }
@@ -809,7 +851,8 @@ async function executeStep(
       });
       await sleep(1500);
 
-      await callDeviceApi(deviceId, 'POST', '/api/type', { text: otpCode });
+      // OTP codes are numeric (ASCII) so prepareTypeText fast-paths through
+      await callDeviceApi(deviceId, 'POST', '/api/type', { text: await prepareTypeText(otpCode) });
 
       break;
     }
