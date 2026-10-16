@@ -102,14 +102,16 @@ function generateConfig(): Record<string, unknown> {
       servers: dnsServers,
       rules: [{ outbound: 'any', server: 'local-dns' }],
       final: 'direct-dns',
+      strategy: 'ipv4_only',
     },
     inbounds: [{
       type: 'tproxy',
       tag: 'tproxy-in',
-      listen: '::',
+      listen: '0.0.0.0',
       listen_port: 12345,
       sniff: true,
       sniff_override_destination: true,
+      domain_strategy: 'ipv4_only',
     }],
     outbounds,
     route: {

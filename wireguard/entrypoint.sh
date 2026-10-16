@@ -73,7 +73,13 @@ ensure mangle PREROUTING -i "$WG_IFACE" -p tcp -j TPROXY --on-port "$TPROXY_PORT
 ensure mangle PREROUTING -i "$WG_IFACE" -p udp -j TPROXY --on-port "$TPROXY_PORT" --tproxy-mark "$TPROXY_MARK/$TPROXY_MARK"
 ip rule show | grep -q "fwmark 0x$TPROXY_MARK lookup 100" || ip rule add fwmark "$TPROXY_MARK" table 100
 ip route show table 100 2>/dev/null | grep -q "local default" || ip route add local 0.0.0.0/0 dev lo table 100
-sysctl -q -w net.ipv4.ip_forward=1 || true
+# VPS có src_valid_mark=1 (Tailscale/wg-quick đặt) → bước rp_filter tra ngược
+# địa chỉ nguồn cũng mang mark 1, rơi vào table 100 (local) và loại gói tproxy.
+# Ép mọi lookup tới chính subnet điện thoại dùng bảng main.
+WG_NET="$(ip -o -4 route show dev "$WG_IFACE" proto kernel | awk '{print $1; exit}')"
+if [ -n "$WG_NET" ] && ! ip rule show | grep -q "to $WG_NET lookup main"; then
+  ip rule add to "$WG_NET" lookup main priority 5200
+fi
 # Không bật FORWARD cho $WG_IFACE: máy này không đi tới máy kia, và nếu
 # sing-box dừng thì traffic bị chặn (không rò IP thật ra ngoài proxy).
 
