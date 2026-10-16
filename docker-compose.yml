@@ -34,8 +34,12 @@ services:
         condition: service_healthy
     ports:
       - "9000:9000"    # Direct access for Tailscale heartbeat
+    environment:
+      WG_DATA_DIR: /app/wireguard
+      WG_ENDPOINT: ${WG_ENDPOINT:-phoneagent.io.vn:51830}
     volumes:
       - app-data:/app/server/data
+      - wg-data:/app/wireguard
       - ./singbox:/app/singbox  # Mount singbox dir for config updates
       - /var/run/docker.sock:/var/run/docker.sock  # For restarting singbox container
     networks:
@@ -73,6 +77,23 @@ services:
     network_mode: host
 
   # ============================================================
+  # WireGuard hub (thay Tailscale) — interface wgpa0, 10.88.0.0/16
+  # Peers do app server ghi vào volume wg-data (peers.json)
+  # ============================================================
+  wireguard:
+    build: ./wireguard
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    network_mode: host
+    environment:
+      WG_IFACE: wgpa0
+      WG_PORT: "51830"
+      WG_ADDR: 10.88.0.1/16
+    volumes:
+      - wg-data:/data
+
+  # ============================================================
   # Certbot (SSL Certificate Auto-Renewal)
   # ============================================================
   certbot:
@@ -90,6 +111,8 @@ volumes:
   certbot-etc:
     driver: local
   certbot-www:
+    driver: local
+  wg-data:
     driver: local
 
 networks:

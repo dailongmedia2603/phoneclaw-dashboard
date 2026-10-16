@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   Search, Plus, Smartphone, Battery, BatteryMedium, BatteryLow,
   Wifi, WifiOff, CheckSquare, Square, Play, Camera, FolderPlus, X,
-  MonitorPlay, TerminalSquare, Loader2, Edit, Trash2, ArrowUpCircle
+  MonitorPlay, TerminalSquare, Loader2, Edit, Trash2, ArrowUpCircle, KeyRound
 } from 'lucide-react';
 import { devices as devicesApi, control, packages as packagesApi } from '../services/api';
 import { useApi } from '../hooks/useApi';
@@ -11,12 +11,17 @@ import { useWebSocket } from '../hooks/useWebSocket';
 import { showToast } from './Toast';
 import type { Device, DeviceGroup, Package } from '../types';
 import CustomSelect from './CustomSelect';
+import PairDeviceModal from './PairDeviceModal';
+
+// Máy kết nối bằng WireGuard (app Phone Agent tự kết nối) có IP 10.88.x.x
+const isWireGuardIp = (ip: string) => ip.startsWith('10.88.');
 
 export default function Devices() {
   const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
   const [activeGroup, setActiveGroup] = useState('Tất cả');
   const [search, setSearch] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showPairModal, setShowPairModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState<string | null>(null);
   const [addForm, setAddForm] = useState({ name: '', tailscaleIp: '', group: '', vncPassword: '', account: '' });
   const [adding, setAdding] = useState(false);
@@ -181,13 +186,23 @@ export default function Devices() {
           <h1 className="text-2xl font-bold text-slate-900 mb-1">Quản lý Thiết bị</h1>
           <p className="text-sm text-slate-500">{allDevices.length} thiết bị | {allDevices.filter(d => d.status !== 'offline').length} online</p>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 text-sm font-medium transition-colors shadow-sm shadow-blue-200"
-        >
-          <Plus size={18} />
-          Thêm thiết bị
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2.5 rounded-xl flex items-center gap-2 text-sm font-medium transition-colors"
+            title="Thêm máy bằng IP Tailscale (cách cũ)"
+          >
+            <Plus size={18} />
+            Thêm bằng IP
+          </button>
+          <button
+            onClick={() => setShowPairModal(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 text-sm font-medium transition-colors shadow-sm shadow-blue-200"
+          >
+            <KeyRound size={18} />
+            Thêm thiết bị
+          </button>
+        </div>
       </div>
 
       {/* Quota Banner (user with package) */}
@@ -316,7 +331,7 @@ export default function Devices() {
                 </button>
               </th>
               <th className="py-3 px-4">Tên thiết bị</th>
-              <th className="py-3 px-4">IP Tailscale</th>
+              <th className="py-3 px-4">IP kết nối</th>
               <th className="py-3 px-4">iOS Version</th>
               <th className="py-3 px-4">Tài khoản</th>
               <th className="py-3 px-4">Trạng thái</th>
@@ -359,6 +374,9 @@ export default function Devices() {
                 </td>
                 <td className="py-3 px-4">
                   <span className="font-mono text-sm text-slate-600">{device.tailscaleIp}</span>
+                  {isWireGuardIp(device.tailscaleIp) && (
+                    <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5">WireGuard</span>
+                  )}
                 </td>
                 <td className="py-3 px-4">
                   <span className="text-sm text-slate-600">iOS {device.iosVersion}</span>
@@ -418,6 +436,16 @@ export default function Devices() {
           </tbody>
         </table>
       </div>
+
+      {/* Pair Device Modal (WireGuard, mã ghép) */}
+      {showPairModal && (
+        <PairDeviceModal
+          groups={groupList || []}
+          devices={allDevices}
+          onClose={() => { setShowPairModal(false); refreshDevices(); }}
+          onPaired={refreshDevices}
+        />
+      )}
 
       {/* Add Device Modal */}
       {showAddModal && (
@@ -535,7 +563,7 @@ export default function Devices() {
                   <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
                     <p className="text-xs text-slate-500 mb-1 flex items-center gap-1.5">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f86a06" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-                      IP Tailscale
+                      {isWireGuardIp(detailDevice.tailscaleIp) ? 'IP WireGuard' : 'IP Tailscale'}
                     </p>
                     <p className="font-mono text-sm font-medium text-slate-900">{detailDevice.tailscaleIp}</p>
                   </div>

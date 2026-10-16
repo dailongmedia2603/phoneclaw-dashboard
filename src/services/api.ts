@@ -212,6 +212,35 @@ export const proxy = {
 // ============================================================
 // Exit Node (VPS sing-box zero-leak routing)
 // ============================================================
+export interface PairingCodeInfo {
+  code: string;
+  name: string;
+  expiresAt: string;
+}
+
+export interface PairingStatus {
+  status: 'pending' | 'used' | 'expired';
+  expiresAt?: string;
+  deviceId?: string;
+  device?: Device;
+}
+
+export interface WireGuardPeerStatus {
+  deviceId: string;
+  ip: string;
+  endpoint: string | null;
+  lastHandshakeSecondsAgo: number | null;
+  rxBytes: number;
+  txBytes: number;
+}
+
+export const wireguard = {
+  createPairingCode: (name: string, group?: string) =>
+    post<PairingCodeInfo>('/api/wireguard/pairing-codes', { name, group }),
+  getPairingStatus: (code: string) => get<PairingStatus>(`/api/wireguard/pairing-codes/${code}`),
+  getStatus: () => get<{ enabled: boolean; peers: WireGuardPeerStatus[] }>('/api/wireguard/status'),
+};
+
 export const exitNode = {
   getStatus: () => get<{ devices: { tailscaleIp: string; mode: string }[]; count: number }>('/api/exit-node/status'),
   setConfig: (data: { deviceId: string; mode: string; proxyIp?: string; proxyPort?: number; proxyUser?: string; proxyPass?: string }) =>

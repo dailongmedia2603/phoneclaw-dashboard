@@ -34,6 +34,7 @@ import socialAccountsRoutes from './routes/social-accounts';
 import gmailAuthRoutes from './routes/gmail-auth';
 import pixelCheckerRoutes from './routes/pixel-checker';
 import exitNodeRoutes from './routes/exit-node';
+import { wireguardPublicRoutes, wireguardRoutes } from './routes/wireguard';
 import testOtpRoutes from './routes/test-otp';
 import { apiTokenAuthMiddleware } from './middleware/api-token-auth';
 import { ipRateLimiter, userRateLimiter, authFailLimiter } from './middleware/rate-limit';
@@ -193,6 +194,7 @@ app.use((_req, res, next) => {
 // --- Auth ---
 app.use('/api/auth', authRoutes);
 app.use('/api/heartbeat', heartbeatRoutes); // Before auth — phones use Tailscale network auth
+app.use('/api/wireguard', wireguardPublicRoutes); // Before auth — /enroll dùng mã ghép làm xác thực
 // Gmail OAuth — all endpoints before authMiddleware (start/callback are public, generate-link verifies JWT internally)
 app.use('/api/gmail-auth', gmailAuthRoutes);
 
@@ -229,6 +231,7 @@ app.use('/api/packages', packagesRoutes);
 app.use('/api/social-accounts', socialAccountsRoutes);
 app.use('/api/pixel-checker', pixelCheckerRoutes);
 app.use('/api/exit-node', exitNodeRoutes);
+app.use('/api/wireguard', wireguardRoutes);
 app.use('/api/test', testOtpRoutes);
 
 // Health check endpoint

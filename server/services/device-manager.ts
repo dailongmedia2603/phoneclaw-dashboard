@@ -2,6 +2,7 @@ import { readCollection, writeCollection, generateId, readUserCollection, writeU
 import { config } from '../config';
 import { Agent, setGlobalDispatcher } from 'undici';
 import type { Device, DeviceGroup } from '../../src/types';
+import { isWireGuardIp, removePeerForDevice } from './wireguard';
 
 // ============================================================
 // HTTP Keep-Alive: tái sử dụng TCP connections tới phones
@@ -186,6 +187,18 @@ export async function deleteDeviceForTenant(userId: string, id: string): Promise
     ipDeviceMap.delete(device.tailscaleIp);
   }
 
+  // Thu hồi quyền vào mạng WireGuard của máy này; gỡ rule exit node theo IP để
+  // máy khác được cấp lại IP này không thừa hưởng proxy cũ
+  await removePeerForDevice(id).catch(err => console.error('[WireGuard] remove peer failed:', err));
+  if (device && isWireGuardIp(device.tailscaleIp)) {
+    const sb = await import('./singbox-manager');
+    if (sb.getDeviceProxy(device.tailscaleIp)) {
+      sb.removeDeviceProxy(device.tailscaleIp);
+      sb.persistState();
+      sb.updateAndReload().catch(() => {});
+    }
+  }
+
   return true;
 }
 
@@ -316,7 +329,8 @@ export async function handleHeartbeat(payload: HeartbeatPayload): Promise<Device
   if (payload.model) updateData.model = String(payload.model);
   if (payload.battery !== undefined) updateData.battery = payload.battery;
 
-  if (payload.proxyStatus === 'running' || payload.proxyStatus === 'stopped') {
+  // Máy WireGuard: proxy chạy ở exit node trên VPS, sing-box local trên máy luôn "stopped"
+  if (!isWireGuardIp(device.tailscaleIp) && (payload.proxyStatus === 'running' || payload.proxyStatus === 'stopped')) {
     updateData.proxyStatus = payload.proxyStatus;
   }
 
@@ -342,7 +356,7 @@ export async function handleHeartbeat(payload: HeartbeatPayload): Promise<Device
   }
 
   // 9. Auto-push heartbeat URL nếu phone chưa được cấu hình
-  if (!device.heartbeatConfigured && config.heartbeatUrl) {
+  if (!device.heartbeatConfigured && heartbeatUrlFor(device)) {
     pushHeartbeatConfig(device.id).then(async ok => {
       if (ok) {
         await updateDeviceForTenant(tenantId, deviceId, { heartbeatConfigured: true });
@@ -428,28 +442,85 @@ export const stopHealthChecks = stopDeviceMonitor;
 
 // --- Heartbeat Config Push ---
 
+/** Máy WireGuard gửi heartbeat trong tunnel; máy Tailscale dùng HEARTBEAT_URL cũ. */
+function heartbeatUrlFor(device: Pick<Device, 'tailscaleIp'>): string {
+  return isWireGuardIp(device.tailscaleIp) ? config.wgHeartbeatUrl : config.heartbeatUrl;
+}
+
 async function pushHeartbeatConfig(deviceId: string): Promise<boolean> {
-  if (!config.heartbeatUrl) return false;
-  const result = await callDeviceApi(deviceId, 'POST', '/api/heartbeat/config', {
-    url: config.heartbeatUrl,
-  });
+  const found = await findDeviceGlobal(deviceId);
+  const url = found ? heartbeatUrlFor(found.device) : config.heartbeatUrl;
+  if (!url) return false;
+  const result = await callDeviceApi(deviceId, 'POST', '/api/heartbeat/config', { url });
   if (result.ok) {
-    console.log(`[Heartbeat] Config pushed to device ${deviceId}: ${config.heartbeatUrl}`);
+    console.log(`[Heartbeat] Config pushed to device ${deviceId}: ${url}`);
     return true;
   }
   console.log(`[Heartbeat] Failed to push config to device ${deviceId}: ${result.error}`);
   return false;
 }
 
+/**
+ * Máy vừa ghép qua WireGuard: tunnel lên sau vài giây → thử liên tục tới khi
+ * gọi được API của máy, rồi đẩy heartbeat URL + cập nhật thông tin máy.
+ */
+export function configureNewTunnelDevice(tenantId: string, deviceId: string, timeoutMs = 5 * 60_000) {
+  const deadline = Date.now() + timeoutMs;
+  const attempt = async () => {
+    const found = await findDeviceGlobal(deviceId);
+    if (!found) return; // đã bị xoá
+    if (found.device.heartbeatConfigured) return;
+    const status = await callDeviceApi(deviceId, 'GET', '/api/status', undefined, 4000);
+    if (status.ok) {
+      const info = (status.data || {}) as Record<string, unknown>;
+      const ok = await pushHeartbeatConfig(deviceId);
+      const updates: Partial<Device> = { status: 'online', lastSeen: new Date().toISOString() };
+      if (info.systemVersion) updates.iosVersion = String(info.systemVersion);
+      if (info.model) updates.model = String(info.model);
+      if (ok) updates.heartbeatConfigured = true;
+      const updated = await updateDeviceForTenant(tenantId, deviceId, updates);
+      if (updated && statusChangeCallback) statusChangeCallback(updated);
+      if (ok) {
+        console.log(`[WireGuard] ${found.device.name} (${found.device.tailscaleIp}) online qua tunnel`);
+        return;
+      }
+    }
+    if (Date.now() < deadline) setTimeout(() => { attempt().catch(() => {}); }, 5000);
+    else console.log(`[WireGuard] ${found.device.name}: chưa gọi được API sau ${timeoutMs / 1000}s`);
+  };
+  setTimeout(() => { attempt().catch(() => {}); }, 3000);
+}
+
 // --- Proxy Auto-Apply ---
+
+function spoofParamsFor(pc: NonNullable<Device['proxyConfig']>): Record<string, unknown> {
+  const { mode, timezone, locale, latitude, longitude } = pc;
+  const spoofParams: Record<string, unknown> = { mode };
+  if (mode === 'us') {
+    if (timezone) spoofParams.timezone = timezone;
+    if (locale) spoofParams.locale = locale;
+    if (latitude !== undefined && longitude !== undefined) {
+      spoofParams.latitude = latitude;
+      spoofParams.longitude = longitude;
+    }
+  }
+  return spoofParams;
+}
 
 async function autoApplyProxy(device: Device, tenantId?: string) {
   if (!device.proxyConfig) return;
-  const { ip, port, username, password, mode, timezone, locale, latitude, longitude } = device.proxyConfig;
+  const { ip, port, username, password, mode } = device.proxyConfig;
 
   if (!mode || mode === 'none') return;
 
   console.log(`[HealthCheck] Auto-applying proxy for ${device.name} (mode=${mode})`);
+
+  // Máy WireGuard: rule proxy đã nằm sẵn trong sing-box trên VPS → chỉ cần spoof lại
+  if (isWireGuardIp(device.tailscaleIp)) {
+    await callDeviceApi(device.id, 'POST', '/api/proxy/spoof', spoofParamsFor(device.proxyConfig));
+    console.log(`[HealthCheck] ${device.name}: exit node proxy + spoof (mode=${mode})`);
+    return;
+  }
 
   const configResult = await callDeviceApi(device.id, 'POST', '/api/proxy/config', {
     ip, port, username, password, mode,
@@ -472,16 +543,7 @@ async function autoApplyProxy(device: Device, tenantId?: string) {
     return;
   }
 
-  const spoofParams: Record<string, unknown> = { mode };
-  if (mode === 'us') {
-    if (timezone) spoofParams.timezone = timezone;
-    if (locale) spoofParams.locale = locale;
-    if (latitude !== undefined && longitude !== undefined) {
-      spoofParams.latitude = latitude;
-      spoofParams.longitude = longitude;
-    }
-  }
-  await callDeviceApi(device.id, 'POST', '/api/proxy/spoof', spoofParams);
+  await callDeviceApi(device.id, 'POST', '/api/proxy/spoof', spoofParamsFor(device.proxyConfig));
   console.log(`[HealthCheck] Spoof settings applied to ${device.name} (mode=${mode})`);
 }
 

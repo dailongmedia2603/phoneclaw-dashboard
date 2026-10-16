@@ -3,6 +3,7 @@ import { callDeviceApi, findDeviceGlobal, updateDeviceForTenant } from '../servi
 import { getAuthUserId } from '../helpers/get-user';
 import { checkFeature } from '../helpers/check-quota';
 import { setDeviceProxy, removeDeviceProxy, updateAndReload, persistState } from '../services/singbox-manager';
+import { isWireGuardIp } from '../services/wireguard';
 import type { ProxyConfig } from '../../src/types';
 
 const router = Router();
@@ -139,6 +140,17 @@ router.post('/batch/start', async (req, res) => {
         latitude: proxyConfig.latitude,
         longitude: proxyConfig.longitude,
       });
+    }
+
+    // Máy WireGuard: toàn bộ traffic đã đi qua exit node trên VPS (sing-box định
+    // tuyến theo IP tunnel) → không bật sing-box local trên iPhone, tránh proxy lồng proxy.
+    if (isWireGuardIp(device.tailscaleIp) && proxyConfig && (proxyConfig.mode === 'us' || proxyConfig.mode === 'vn')) {
+      await updateDeviceForTenant(tid, deviceId, {
+        proxyConfig: { ...proxyConfig, enabled: true },
+        proxyStatus: 'running',
+      });
+      results[deviceId] = { ok: true };
+      continue;
     }
 
     // Step 3: Also start local sing-box on iPhone (backward compat)
@@ -339,6 +351,15 @@ router.post('/:deviceId/start', verifyDeviceAccess, async (req, res) => {
       latitude: proxyConfig.latitude,
       longitude: proxyConfig.longitude,
     });
+  }
+
+  // Máy WireGuard: exit node trên VPS đã lo proxy (xem batch/start)
+  if (exitNodeOk && isWireGuardIp(device?.tailscaleIp)) {
+    await updateDeviceForTenant(tid, req.params.deviceId, {
+      proxyConfig: { ...proxyConfig!, enabled: true },
+      proxyStatus: 'running',
+    });
+    return res.json({ success: true, data: { exitNode: true, localProxy: false } });
   }
 
   // Step 3: Start local sing-box on iPhone (backward compat)

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { handleHeartbeat } from '../services/device-manager';
+import { isWireGuardIp } from '../services/wireguard';
 
 const router = Router();
 
@@ -18,6 +19,13 @@ router.post('/', async (req, res) => {
       success: false,
       error: 'tailscaleIp is required',
     });
+  }
+
+  // Máy WireGuard: heartbeat đi trong tunnel nên IP nguồn chính là IP tunnel.
+  // Chặn máy này giả heartbeat của máy khác trong cùng mạng 10.88.x.x.
+  const remote = (req.socket.remoteAddress || '').replace(/^::ffff:/, '');
+  if (isWireGuardIp(remote) && remote !== tailscaleIp.trim()) {
+    return res.status(403).json({ success: false, error: 'IP không khớp tunnel' });
   }
 
   const result = await handleHeartbeat({
